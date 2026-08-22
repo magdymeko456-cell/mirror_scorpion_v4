@@ -23,3 +23,8 @@ test_firebase.js
 functions/node_modules/
 firebase-debug.log
 firebase-debug.*.log
+node_modules/
+*.rej
+/resolve_conflict.sh
+/secure_keys.sh
+/sync_github.sh
