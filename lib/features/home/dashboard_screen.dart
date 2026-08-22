@@ -164,10 +164,14 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
                 opacity: 0.25,
                 child: Transform.translate(
                   offset: const Offset(0, 110),
-                  child: Transform(
-                    transform: Matrix4.identity()..rotateX(1.4)..scale(1.2, -1.0),
-                    alignment: Alignment.center,
-                    child: _buildScorpionLogo(isReflection: true),
+                  child: Transform.scale(
+                    scaleX: 1.2,
+                    scaleY: -1.0,
+                    child: Transform(
+                      transform: Matrix4.rotationX(1.4),
+                      alignment: Alignment.center,
+                      child: _buildScorpionLogo(isReflection: true),
+                    ),
                   ),
                 ),
               ),

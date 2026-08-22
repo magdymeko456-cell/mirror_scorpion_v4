@@ -552,25 +552,6 @@ class _ProActivationPageState extends State<_ProActivationPage> {
   }
 }
 
-class _LanguageMenu extends StatelessWidget {
-  const _LanguageMenu({required this.value, required this.values, required this.onChanged});
-
-  final String value;
-  final List<String> values;
-  final ValueChanged<String> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return DropdownButtonFormField<String>(
-      value: value,
-      items: values.map((item) => DropdownMenuItem(value: item, child: Text(item))).toList(),
-      onChanged: (item) {
-        if (item != null) onChanged(item);
-      },
-    );
-  }
-}
-
 class _SectionNotice extends StatelessWidget {
   const _SectionNotice({required this.title, required this.detail});
 
