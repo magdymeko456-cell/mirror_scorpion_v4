@@ -33,6 +33,38 @@ jobs:
           java-version: "17"
       - name: Generate Android project
         run: flutter create --platforms=android --project-name mirror_scorpion_v4 .
+      - name: Configure Firebase Android
+        env:
+          ANDROID_GOOGLE_SERVICES_JSON: ${{ secrets.ANDROID_GOOGLE_SERVICES_JSON }}
+        run: |
+          test -n "$ANDROID_GOOGLE_SERVICES_JSON" || {
+            echo "ANDROID_GOOGLE_SERVICES_JSON is required for the Android Firebase build."
+            exit 1
+          }
+          mkdir -p android/app
+          printf '%s' "$ANDROID_GOOGLE_SERVICES_JSON" > android/app/google-services.json
+          grep -q '"package_name": "com.mirror.scorpion.v4"' android/app/google-services.json || {
+            echo "The Firebase Android configuration does not match com.mirror.scorpion.v4."
+            exit 1
+          }
+          if [ -f android/app/build.gradle.kts ]; then
+            sed -i 's/applicationId = "com.example.mirror_scorpion_v4"/applicationId = "com.mirror.scorpion.v4"/' android/app/build.gradle.kts
+            grep -q 'applicationId = "com.mirror.scorpion.v4"' android/app/build.gradle.kts || exit 1
+            grep -q 'com.google.gms.google-services' android/settings.gradle.kts || \
+              sed -i '/id("com.android.application") version/a\    id("com.google.gms.google-services") version "4.5.0" apply false' android/settings.gradle.kts
+            grep -q 'com.google.gms.google-services' android/app/build.gradle.kts || \
+              sed -i '/id("com.android.application")/a\    id("com.google.gms.google-services")' android/app/build.gradle.kts
+          elif [ -f android/app/build.gradle ]; then
+            sed -i 's/applicationId "com.example.mirror_scorpion_v4"/applicationId "com.mirror.scorpion.v4"/' android/app/build.gradle
+            grep -q 'applicationId "com.mirror.scorpion.v4"' android/app/build.gradle || exit 1
+            grep -q 'com.google.gms.google-services' android/build.gradle || \
+              sed -i "/id 'com.android.application' version/a\    id 'com.google.gms.google-services' version '4.5.0' apply false" android/build.gradle
+            grep -q 'com.google.gms.google-services' android/app/build.gradle || \
+              sed -i "/id 'com.android.application'/a\    id 'com.google.gms.google-services'" android/app/build.gradle
+          else
+            echo "Android app Gradle file was not generated."
+            exit 1
+          fi
       - name: Install dependencies
         run: flutter pub get
       - name: Static analysis
@@ -41,6 +73,9 @@ jobs:
         run: flutter test
       - name: Build release APK
         run: flutter build apk --release
+      - name: Remove Firebase Android config
+        if: always()
+        run: rm -f android/app/google-services.json
       - uses: actions/upload-artifact@v4
         with:
           name: mirror-scorpion-v4-flutter-apk

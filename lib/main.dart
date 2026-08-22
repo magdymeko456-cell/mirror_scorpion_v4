@@ -1,4 +1,6 @@
 import 'package:flutter/widgets.dart';
+import 'package:flutter/foundation.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 
 import 'app/mirror_scorpion_app.dart';
@@ -6,6 +8,9 @@ import 'core/pro/premium_verification_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  if (defaultTargetPlatform == TargetPlatform.android) {
+    await Firebase.initializeApp();
+  }
   final premiumService = PremiumVerificationService();
   await premiumService.initialize();
   runApp(
