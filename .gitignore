@@ -15,3 +15,5 @@
 android/app/google-services.json
 lib/firebase_options.dart
 functions/.env
+serviceAccountKey.json
+private_key.pem
