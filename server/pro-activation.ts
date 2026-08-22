@@ -1,4 +1,4 @@
-import { createPublicKey, verify } from "node:crypto";
+import { createPublicKey, type KeyObject, verify } from "node:crypto";
 
 export type ProActivationPayload = {
   version: 1;
@@ -17,7 +17,7 @@ type ProVerificationResult = {
 const PUBLIC_KEY_ENV = "MIRROR_PRO_ACTIVATION_PUBLIC_KEY";
 
 function publicKey() {
-  const value = process.env[PUBLIC_KEY_ENV]?.trim();
+  const value = process.env[PUBLIC_KEY_ENV]?.trim().replace(/(?:\\r)?\\n/g, "\n");
   if (!value) return null;
   try {
     const key = createPublicKey(value);
@@ -53,10 +53,7 @@ function decodePayload(value: string): ProActivationPayload | null {
   }
 }
 
-export function verifyProActivationPatch(input: { deviceId: string; patch: string }): ProVerificationResult {
-  const key = publicKey();
-  if (!key) return { valid: false, reason: "not_configured" };
-
+export function verifyProActivationPatchWithKey(input: { deviceId: string; patch: string }, key: KeyObject): ProVerificationResult {
   const [prefix, payloadPart, signaturePart, extra] = input.patch.trim().split(".");
   if (prefix !== "MS4" || !payloadPart || !signaturePart || extra || input.patch.length > 8_192) {
     return { valid: false, reason: "malformed" };
@@ -75,4 +72,10 @@ export function verifyProActivationPatch(input: { deviceId: string; patch: strin
   if (payload.expiresAt !== undefined && payload.expiresAt < Date.now()) return { valid: false, reason: "expired" };
 
   return { valid: true, payload };
+}
+
+export function verifyProActivationPatch(input: { deviceId: string; patch: string }): ProVerificationResult {
+  const key = publicKey();
+  if (!key) return { valid: false, reason: "not_configured" };
+  return verifyProActivationPatchWithKey(input, key);
 }
