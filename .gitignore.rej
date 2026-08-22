@@ -1,0 +1,11 @@
+diff a/.gitignore b/.gitignore	(rejected hunks)
+@@ -17,3 +17,9 @@ lib/firebase_options.dart
+ functions/.env
+ serviceAccountKey.json
+ private_key.pem
++test_firebase.js
++**/serviceAccountKey.json
++**/test_firebase.js
++functions/node_modules/
++firebase-debug.log
++firebase-debug.*.log
