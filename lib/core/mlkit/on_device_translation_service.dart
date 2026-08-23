@@ -55,6 +55,7 @@ class OnDeviceTranslationService {
   Future<OnDeviceTranslationResult> translate({
     required String text,
     required String targetLanguageCode,
+    String? sourceLanguageCode,
   }) async {
     final sourceText = text.trim();
     if (!isNativePlatform) {
@@ -72,7 +73,10 @@ class OnDeviceTranslationService {
 
     final identifier = LanguageIdentifier(confidenceThreshold: 0.5);
     try {
-      final detectedCode = await identifier.identifyLanguage(sourceText);
+      final requestedSourceCode = sourceLanguageCode?.trim().toLowerCase();
+      final detectedCode = requestedSourceCode?.isNotEmpty == true
+          ? requestedSourceCode!
+          : await identifier.identifyLanguage(sourceText);
       if (detectedCode == identifier.undeterminedLanguageCode) {
         return const OnDeviceTranslationResult(
           state: OnDeviceTranslationState.undeterminedSource,

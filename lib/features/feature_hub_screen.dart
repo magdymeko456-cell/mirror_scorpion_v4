@@ -15,6 +15,29 @@ import '../core/speech/system_tts_service.dart';
 
 enum FeatureKind { translation, dialogue, documents, stories, games, settings }
 
+abstract final class TranslationLanguageCatalog {
+  static const labels = <String, String>{
+    'af': 'Afrikaans', 'sq': 'Shqip', 'am': 'አማርኛ', 'ar': 'العربية', 'hy': 'Հայերեն', 'az': 'Azərbaycan',
+    'eu': 'Euskara', 'be': 'Беларуская', 'bn': 'বাংলা', 'bs': 'Bosanski', 'bg': 'Български', 'ca': 'Català',
+    'ceb': 'Cebuano', 'ny': 'Chichewa', 'zh': '中文', 'co': 'Corsu', 'hr': 'Hrvatski', 'cs': 'Čeština',
+    'da': 'Dansk', 'nl': 'Nederlands', 'en': 'English', 'eo': 'Esperanto', 'et': 'Eesti', 'tl': 'Filipino',
+    'fi': 'Suomi', 'fr': 'Français', 'fy': 'Frysk', 'gl': 'Galego', 'ka': 'ქართული', 'de': 'Deutsch',
+    'el': 'Ελληνικά', 'gu': 'ગુજરાતી', 'ht': 'Kreyòl', 'ha': 'Hausa', 'haw': 'Hawaiʻi', 'iw': 'עברית',
+    'hi': 'हिन्दी', 'hmn': 'Hmong', 'hu': 'Magyar', 'is': 'Íslenska', 'ig': 'Igbo', 'id': 'Bahasa Indonesia',
+    'ga': 'Gaeilge', 'it': 'Italiano', 'ja': '日本語', 'jw': 'Basa Jawa', 'kn': 'ಕನ್ನಡ', 'kk': 'Қазақ',
+    'km': 'ខ្មែរ', 'rw': 'Kinyarwanda', 'ko': '한국어', 'ku': 'Kurdî', 'ky': 'Кыргызча', 'lo': 'ລາວ',
+    'la': 'Latina', 'lv': 'Latviešu', 'lt': 'Lietuvių', 'lb': 'Lëtzebuergesch', 'mk': 'Македонски',
+    'mg': 'Malagasy', 'ms': 'Bahasa Melayu', 'ml': 'മലയാളം', 'mt': 'Malti', 'mi': 'Māori', 'mr': 'मराठी',
+    'mn': 'Монгол', 'my': 'မြန်မာ', 'ne': 'नेपाली', 'no': 'Norsk', 'or': 'ଓଡ଼ିଆ', 'ps': 'پښتو',
+    'fa': 'فارسی', 'pl': 'Polski', 'pt': 'Português', 'pa': 'ਪੰਜਾਬੀ', 'ro': 'Română', 'ru': 'Русский',
+    'sm': 'Samoa', 'gd': 'Gàidhlig', 'sr': 'Српски', 'st': 'Sesotho', 'sn': 'Shona', 'sd': 'سنڌي',
+    'si': 'සිංහල', 'sk': 'Slovenčina', 'sl': 'Slovenščina', 'so': 'Soomaali', 'es': 'Español', 'su': 'Basa Sunda',
+    'sw': 'Kiswahili', 'sv': 'Svenska', 'tg': 'Тоҷикӣ', 'ta': 'தமிழ்', 'tt': 'Татар', 'te': 'తెలుగు',
+    'th': 'ไทย', 'tr': 'Türkçe', 'tk': 'Türkmen', 'ug': 'ئۇيغۇرچە', 'uk': 'Українська', 'ur': 'اردو',
+    'uz': "O'zbek", 'vi': 'Tiếng Việt', 'cy': 'Cymraeg', 'xh': 'isiXhosa', 'yi': 'יידיש', 'yo': 'Yorùbá', 'zu': 'isiZulu',
+  };
+}
+
 class FeatureHubScreen extends StatelessWidget {
   const FeatureHubScreen({required this.kind, super.key});
 
@@ -65,27 +88,6 @@ class _TranslationPanelState extends State<_TranslationPanel> {
   bool _isTranslating = false;
   bool _loadedLanguagePreference = false;
   Timer? _translationDebounce;
-  static const _languages = <String, String>{
-    'af': 'Afrikaans', 'sq': 'Shqip', 'am': 'አማርኛ', 'ar': 'العربية', 'hy': 'Հայերեն', 'az': 'Azərbaycan',
-    'eu': 'Euskara', 'be': 'Беларуская', 'bn': 'বাংলা', 'bs': 'Bosanski', 'bg': 'Български', 'ca': 'Català',
-    'ceb': 'Cebuano', 'ny': 'Chichewa', 'zh': '中文', 'co': 'Corsu', 'hr': 'Hrvatski', 'cs': 'Čeština',
-    'da': 'Dansk', 'nl': 'Nederlands', 'en': 'English', 'eo': 'Esperanto', 'et': 'Eesti', 'tl': 'Filipino',
-    'fi': 'Suomi', 'fr': 'Français', 'fy': 'Frysk', 'gl': 'Galego', 'ka': 'ქართული', 'de': 'Deutsch',
-    'el': 'Ελληνικά', 'gu': 'ગુજરાતી', 'ht': 'Kreyòl', 'ha': 'Hausa', 'haw': 'Hawaiʻi', 'iw': 'עברית',
-    'hi': 'हिन्दी', 'hmn': 'Hmong', 'hu': 'Magyar', 'is': 'Íslenska', 'ig': 'Igbo', 'id': 'Bahasa Indonesia',
-    'ga': 'Gaeilge', 'it': 'Italiano', 'ja': '日本語', 'jw': 'Basa Jawa', 'kn': 'ಕನ್ನಡ', 'kk': 'Қазақ',
-    'km': 'ខ្មែរ', 'rw': 'Kinyarwanda', 'ko': '한국어', 'ku': 'Kurdî', 'ky': 'Кыргызча', 'lo': 'ລາວ',
-    'la': 'Latina', 'lv': 'Latviešu', 'lt': 'Lietuvių', 'lb': 'Lëtzebuergesch', 'mk': 'Македонски',
-    'mg': 'Malagasy', 'ms': 'Bahasa Melayu', 'ml': 'മലയാളം', 'mt': 'Malti', 'mi': 'Māori', 'mr': 'मराठी',
-    'mn': 'Монгол', 'my': 'မြန်မာ', 'ne': 'नेपाली', 'no': 'Norsk', 'or': 'ଓଡ଼ିଆ', 'ps': 'پښتو',
-    'fa': 'فارسی', 'pl': 'Polski', 'pt': 'Português', 'pa': 'ਪੰਜਾਬੀ', 'ro': 'Română', 'ru': 'Русский',
-    'sm': 'Samoa', 'gd': 'Gàidhlig', 'sr': 'Српски', 'st': 'Sesotho', 'sn': 'Shona', 'sd': 'سنڌي',
-    'si': 'සිංහල', 'sk': 'Slovenčina', 'sl': 'Slovenščina', 'so': 'Soomaali', 'es': 'Español', 'su': 'Basa Sunda',
-    'sw': 'Kiswahili', 'sv': 'Svenska', 'tg': 'Тоҷикӣ', 'ta': 'தமிழ்', 'tt': 'Татар', 'te': 'తెలుగు',
-    'th': 'ไทย', 'tr': 'Türkçe', 'tk': 'Türkmen', 'ug': 'ئۇيغۇرچە', 'uk': 'Українська', 'ur': 'اردو',
-    'uz': "O'zbek", 'vi': 'Tiếng Việt', 'cy': 'Cymraeg', 'xh': 'isiXhosa', 'yi': 'יידיש', 'yo': 'Yorùbá', 'zu': 'isiZulu',
-  };
-
   @override
   void initState() {
     super.initState();
@@ -99,7 +101,7 @@ class _TranslationPanelState extends State<_TranslationPanel> {
     super.didChangeDependencies();
     if (!_loadedLanguagePreference) {
       final saved = context.read<LanguagePreferences>().translationTargetLanguage;
-      if (_languages.containsKey(saved)) _selectedLanguage = saved;
+      if (TranslationLanguageCatalog.labels.containsKey(saved)) _selectedLanguage = saved;
       _loadedLanguagePreference = true;
     }
   }
@@ -148,7 +150,10 @@ class _TranslationPanelState extends State<_TranslationPanel> {
           _clearOnNextInput = false;
         }
         _input.text = recognizedText;
-        _queueTranslation(recognizedText);
+        _queueTranslation(
+          recognizedText,
+          sourceLanguageCode: sourceLanguage,
+        );
       },
     );
     if (mounted && _recognitionService.message != null) {
@@ -172,7 +177,7 @@ class _TranslationPanelState extends State<_TranslationPanel> {
     setState(() => _notice = '$action يحتاج خدمة صوت أو ملفات منفصلة؛ لم يتم إنشاء ناتج بديل.');
   }
 
-  void _queueTranslation(String value) {
+  void _queueTranslation(String value, {String? sourceLanguageCode}) {
     _translationDebounce?.cancel();
     if (value.trim().isEmpty) {
       setState(() {
@@ -183,11 +188,14 @@ class _TranslationPanelState extends State<_TranslationPanel> {
       return;
     }
     _translationDebounce = Timer(const Duration(milliseconds: 650), () {
-      _translateLocally(value);
+      _translateLocally(value, sourceLanguageCode: sourceLanguageCode);
     });
   }
 
-  Future<void> _translateLocally(String value) async {
+  Future<void> _translateLocally(
+    String value, {
+    String? sourceLanguageCode,
+  }) async {
     if (!mounted || value.trim() != _input.text.trim()) return;
     setState(() {
       _isTranslating = true;
@@ -196,6 +204,7 @@ class _TranslationPanelState extends State<_TranslationPanel> {
     final result = await _translationService.translate(
       text: value,
       targetLanguageCode: _selectedLanguage,
+      sourceLanguageCode: sourceLanguageCode,
     );
     if (!mounted || value.trim() != _input.text.trim()) return;
     if (result.sourceLanguage != null) {
@@ -268,7 +277,7 @@ class _TranslationPanelState extends State<_TranslationPanel> {
                 isExpanded: true,
                 dropdownColor: const Color(0xFF1B2838),
                 icon: const Icon(Icons.keyboard_arrow_down, color: Colors.cyanAccent),
-                items: _languages.entries.map((entry) => DropdownMenuItem(value: entry.key, child: Text(entry.value))).toList(),
+                items: TranslationLanguageCatalog.labels.entries.map((entry) => DropdownMenuItem(value: entry.key, child: Text(entry.value))).toList(),
                 onChanged: (code) {
                   if (code != null) _selectLanguage(code);
                 },
@@ -459,10 +468,26 @@ class _DocumentsPanel extends StatefulWidget {
 class _DocumentsPanelState extends State<_DocumentsPanel> {
   final _picker = ImagePicker();
   final _ocrService = const OnDeviceOcrService();
+  final _translationService = const OnDeviceTranslationService();
   bool _isScanning = false;
+  bool _isTranslating = false;
   String? _selectedFileName;
   String? _extractedText;
+  String? _translatedText;
   String? _notice;
+  String _targetLanguage = 'en';
+  bool _loadedLanguagePreference = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_loadedLanguagePreference) return;
+    final saved = context.read<LanguagePreferences>().translationTargetLanguage;
+    if (TranslationLanguageCatalog.labels.containsKey(saved)) {
+      _targetLanguage = saved;
+    }
+    _loadedLanguagePreference = true;
+  }
 
   Future<void> _scanImage(ImageSource source) async {
     final image = await _picker.pickImage(source: source, imageQuality: 100);
@@ -475,6 +500,7 @@ class _DocumentsPanelState extends State<_DocumentsPanel> {
       _isScanning = true;
       _selectedFileName = image.name;
       _extractedText = null;
+      _translatedText = null;
       _notice = 'جارٍ فحص الصورة محلياً…';
     });
     final result = await _ocrService.recognizeImagePath(image.path);
@@ -486,6 +512,39 @@ class _DocumentsPanelState extends State<_DocumentsPanel> {
       _extractedText = result.isSuccess ? result.text : null;
       _notice = result.message;
     });
+    final extractedText = result.isSuccess ? result.text : null;
+    if (extractedText != null && extractedText.trim().isNotEmpty) {
+      await _translateExtractedText(extractedText);
+    }
+  }
+
+  Future<void> _translateExtractedText(String text) async {
+    if (!mounted) return;
+    final targetLanguage = _targetLanguage;
+    setState(() {
+      _isTranslating = true;
+      _translatedText = null;
+      _notice = 'جارٍ ترجمة النص المستخرج إلى ${TranslationLanguageCatalog.labels[targetLanguage] ?? targetLanguage}…';
+    });
+    final result = await _translationService.translate(
+      text: text,
+      targetLanguageCode: targetLanguage,
+    );
+    if (!mounted || text != _extractedText) return;
+    setState(() {
+      _isTranslating = false;
+      _translatedText = result.isSuccess ? result.text : null;
+      _notice = result.message;
+    });
+  }
+
+  Future<void> _selectTargetLanguage(String code) async {
+    setState(() => _targetLanguage = code);
+    await context.read<LanguagePreferences>().setTranslationTargetLanguage(code);
+    final extractedText = _extractedText;
+    if (extractedText != null && extractedText.trim().isNotEmpty) {
+      await _translateExtractedText(extractedText);
+    }
   }
 
   @override
@@ -493,8 +552,33 @@ class _DocumentsPanelState extends State<_DocumentsPanel> {
     return ListView(
       padding: const EdgeInsets.all(18),
       children: [
-        const _SectionNotice(title: 'OCR بلا نتيجة مصطنعة', detail: 'تفحص العدسة الصورة المختارة محلياً وتعرض النص المستخرج بعد ثلاث ثوانٍ على الأقل. الإصدار المحلي الحالي يقرأ النص اللاتيني فقط؛ العربية وPDF يتطلبان محركاً مناسباً أو خدمة خادم لاحقاً.'),
+        const _SectionNotice(title: 'عدسة OCR وترجمة محلية', detail: 'تفحص العدسة الصورة المختارة محلياً ثم تمرر النص المستخرج إلى ML Kit للترجمة نحو اللغة المختارة. الإصدار المحلي الحالي يقرأ النص اللاتيني فقط؛ العربية وPDF يتطلبان محركاً مناسباً أو خدمة خادم لاحقاً.'),
         const SizedBox(height: 20),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1B2838),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: Colors.blueAccent.withValues(alpha: 0.4)),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: _targetLanguage,
+              isExpanded: true,
+              dropdownColor: const Color(0xFF1B2838),
+              icon: const Icon(Icons.translate, color: Colors.cyanAccent),
+              items: TranslationLanguageCatalog.labels.entries
+                  .map((entry) => DropdownMenuItem(value: entry.key, child: Text('ترجمة إلى: ${entry.value}')))
+                  .toList(),
+              onChanged: _isScanning || _isTranslating
+                  ? null
+                  : (code) {
+                      if (code != null) _selectTargetLanguage(code);
+                    },
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
         Card(
           child: ListTile(
             leading: const Icon(Icons.camera_alt_outlined, color: RoyalColors.gold),
@@ -519,7 +603,7 @@ class _DocumentsPanelState extends State<_DocumentsPanel> {
             padding: const EdgeInsets.only(top: 18),
             child: Text('الصورة المختارة: $_selectedFileName', style: const TextStyle(color: RoyalColors.muted)),
           ),
-        if (_isScanning)
+        if (_isScanning || _isTranslating)
           const Padding(
             padding: EdgeInsets.only(top: 18),
             child: LinearProgressIndicator(),
@@ -534,7 +618,30 @@ class _DocumentsPanelState extends State<_DocumentsPanel> {
             margin: const EdgeInsets.only(top: 16),
             child: Padding(
               padding: const EdgeInsets.all(16),
-              child: SelectableText(_extractedText!, style: const TextStyle(height: 1.6)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Text('النص الأصلي المستخرج', style: TextStyle(color: RoyalColors.muted)),
+                  const SizedBox(height: 8),
+                  SelectableText(_extractedText!, style: const TextStyle(height: 1.6)),
+                ],
+              ),
+            ),
+          ),
+        if (_translatedText != null)
+          Card(
+            margin: const EdgeInsets.only(top: 12),
+            color: Colors.blueAccent.withValues(alpha: 0.08),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text('الترجمة إلى: ${TranslationLanguageCatalog.labels[_targetLanguage] ?? _targetLanguage}', style: const TextStyle(color: RoyalColors.gold)),
+                  const SizedBox(height: 8),
+                  SelectableText(_translatedText!, style: const TextStyle(height: 1.6)),
+                ],
+              ),
             ),
           ),
       ],
