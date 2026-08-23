@@ -592,11 +592,14 @@ class _DialoguePanelState extends State<_DialoguePanel> {
   }
 
   Future<void> _selectLeftTargetLanguage(String code) async {
+    final preferences = context.read<LanguagePreferences>();
+    final sourceLanguage = preferences.deviceLanguageCode;
     setState(() => _leftTargetLanguage = code);
-    await context.read<LanguagePreferences>().setTranslationTargetLanguage(code);
+    await preferences.setTranslationTargetLanguage(code);
+    if (!mounted) return;
     _queueTranslation(
       _source.text,
-      sourceLanguageCode: context.read<LanguagePreferences>().deviceLanguageCode,
+      sourceLanguageCode: sourceLanguage,
     );
   }
 
@@ -608,8 +611,9 @@ class _DialoguePanelState extends State<_DialoguePanel> {
       }
       return;
     }
-    await _speechService.stop();
     final sourceLanguage = context.read<LanguagePreferences>().deviceLanguageCode;
+    await _speechService.stop();
+    if (!mounted) return;
     await _recognitionService.start(
       languageCode: sourceLanguage,
       onText: (recognizedText) {
