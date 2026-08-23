@@ -1485,10 +1485,109 @@ class _SettingsPanel extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          const Card(child: ListTile(leading: Icon(Icons.download_outlined, color: RoyalColors.cyan), title: Text('حزم لغات أوف لاين'), subtitle: Text('تُضاف بعد اختيار محرك الترجمة وملفات النماذج المعتمدة.'))),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.download_outlined, color: RoyalColors.cyan),
+              title: const Text('حزم المحتوى واللغات أوف لاين'),
+              subtitle: const Text('عرض المساحة المحلية وحزم JSON المستوردة؛ نماذج ML Kit تُدار من مسار الترجمة.'),
+              trailing: const Icon(Icons.chevron_left),
+              onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const _OfflinePackagesPage())),
+            ),
+          ),
           const SizedBox(height: 12),
-          const Card(child: ListTile(leading: Icon(Icons.bubble_chart_outlined, color: RoyalColors.teal), title: Text('الفقاعة العائمة'), subtitle: Text('تحتاج خدمة Android Foreground وإذن الظهور فوق التطبيقات.'))),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.bubble_chart_outlined, color: RoyalColors.teal),
+              title: const Text('الفقاعة العائمة والخصوصية'),
+              subtitle: const Text('غير مفعلة حتى يكتمل إذن Android وخدمة foreground واختبار الهاتف.'),
+              trailing: const Icon(Icons.chevron_left),
+              onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const _BubblePrivacyPage())),
+            ),
+          ),
+          const SizedBox(height: 12),
+          const Card(
+            child: ListTile(
+              leading: Icon(Icons.info_outline, color: RoyalColors.gold),
+              title: Text('حول Mirror Scorpion'),
+              subtitle: Text('ترجمة محلية عندما تدعمها نماذج الجهاز، محتوى أوفلاين اختياري، وخصوصية قائمة على الفعل الصريح للمستخدم.'),
+            ),
+          ),
         ],
+      ),
+    );
+  }
+}
+
+class _OfflinePackagesPage extends StatefulWidget {
+  const _OfflinePackagesPage();
+
+  @override
+  State<_OfflinePackagesPage> createState() => _OfflinePackagesPageState();
+}
+
+class _OfflinePackagesPageState extends State<_OfflinePackagesPage> {
+  final _storage = const OfflineContentStorage();
+  late Future<List<OfflinePackageRecord>> _packages;
+
+  @override
+  void initState() {
+    super.initState();
+    _packages = _storage.listPackages();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Scaffold(
+        appBar: AppBar(title: const Text('الحزم المحلية')),
+        body: FutureBuilder<List<OfflinePackageRecord>>(
+          future: _packages,
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+            final packages = snapshot.data!;
+            return ListView(
+              padding: const EdgeInsets.all(18),
+              children: [
+                const _SectionNotice(
+                  title: 'مساحة العمل أوفلاين',
+                  detail: 'تحتفظ هذه المساحة فقط بحزم JSON التي يختار المستخدم استيرادها. تنزيل قصص من الشبكة لا يبدأ قبل إعداد مصدر مرخّص، والتحقق من التوقيع، وسياسة تحديث وحذف.',
+                ),
+                const SizedBox(height: 16),
+                if (packages.isEmpty)
+                  const Card(child: ListTile(title: Text('لا توجد حزم مستوردة بعد'), subtitle: Text('يمكن استيراد حزمة JSON من كارت القصص.'))),
+                ...packages.map((item) => Card(child: ListTile(leading: const Icon(Icons.inventory_2_outlined, color: RoyalColors.cyan), title: Text(item.title), subtitle: Text(item.id)))),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _BubblePrivacyPage extends StatelessWidget {
+  const _BubblePrivacyPage();
+
+  @override
+  Widget build(BuildContext context) {
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Scaffold(
+        appBar: AppBar(title: const Text('الفقاعة العائمة والخصوصية')),
+        body: ListView(
+          padding: const EdgeInsets.all(18),
+          children: const [
+            _SectionNotice(
+              title: 'حدود الفقاعة',
+              detail: 'عند تنفيذها ستحتاج الفقاعة إلى إذن Android صريح للظهور فوق التطبيقات وخدمة foreground. ستعمل فقط عندما يطلب المستخدم ترجمة نص عبر Share أو Process Text أو من داخل الفقاعة نفسها.',
+            ),
+            SizedBox(height: 12),
+            Card(child: ListTile(leading: Icon(Icons.block_outlined, color: Colors.redAccent), title: Text('غير مسموح'), subtitle: Text('لا خدمة Accessibility، ولا Notification Listener، ولا قراءة تلقائية لرسائل WhatsApp أو البريد أو Messenger.'))),
+            SizedBox(height: 12),
+            Card(child: ListTile(leading: Icon(Icons.check_circle_outline, color: Colors.greenAccent), title: Text('مسموح بعد الاختبار'), subtitle: Text('إظهار فقاعة قابلة للسحب، وفتح محرر الترجمة للنص الذي شاركه المستخدم بوضوح.'))),
+          ],
+        ),
       ),
     );
   }
