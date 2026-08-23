@@ -116,6 +116,8 @@
 - [x] مراجعة قواعد تجاهل `serviceAccountKey.json` و`private_key.pem` بعد حل التعارض الأخير
 - [ ] جمع لقطات مرجعية قابلة للعرض للواجهة الأصلية إذا تعذر استنتاجها بصرياً من APK وحده
 - [x] تسجيل تطبيق Android في Firebase Project `mirorr-d11b2` بالمعرف المعتمد `com.mirror.scorpion.v4` وحفظ إعداد Android في GitHub Actions Secrets
-- [ ] استرجاع `google-services.json` من `ANDROID_GOOGLE_SERVICES_JSON` داخل CI وتثبيت `com.mirror.scorpion.v4` قبل بناء APK
-- [ ] إضافة `firebase_core` وتهيئة Firebase الآمنة عند بدء تطبيق Android
-- [ ] اختبار تهيئة Firebase عبر GitHub Actions وAPK دون وضع ملف الإعداد في Git
+- [x] استرجاع `google-services.json` من `ANDROID_GOOGLE_SERVICES_JSON` داخل CI وتثبيت `com.mirror.scorpion.v4` قبل بناء APK
+- [x] إضافة `firebase_core` وتهيئة Firebase الآمنة عند بدء تطبيق Android
+- [x] اختبار تهيئة Firebase عبر GitHub Actions وAPK دون وضع ملف الإعداد في Git
+- [ ] تنفيذ خدمات محلية قابلة للاختبار دون نشر دوال حية، مع إبقاء جميع مزايا PRO غير مقفلة
+- [ ] استئناف نشر `healthCheck` والاختبار الحي بعد اكتمال الخدمات وقبل تطبيق أي قفل PRO

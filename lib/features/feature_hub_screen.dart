@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../app/royal_dark_theme.dart';
+import '../core/mlkit/on_device_translation_service.dart';
 import '../core/pro/premium_verification_service.dart';
 
 enum FeatureKind { translation, dialogue, documents, stories, games, settings }
@@ -51,9 +52,12 @@ class _TranslationPanel extends StatefulWidget {
 class _TranslationPanelState extends State<_TranslationPanel> {
   final _input = TextEditingController();
   final _output = TextEditingController();
+  final _translationService = const OnDeviceTranslationService();
   String _selectedLanguage = 'ar';
   String? _notice;
   bool _clearOnNextInput = false;
+  bool _isTranslating = false;
+  Timer? _translationDebounce;
   static const _languages = <String, String>{
     'af': 'Afrikaans', 'sq': 'Shqip', 'am': 'አማርኛ', 'ar': 'العربية', 'hy': 'Հայերեն', 'az': 'Azərbaycan',
     'eu': 'Euskara', 'be': 'Беларуская', 'bn': 'বাংলা', 'bs': 'Bosanski', 'bg': 'Български', 'ca': 'Català',
@@ -93,6 +97,7 @@ class _TranslationPanelState extends State<_TranslationPanel> {
     setState(() => _selectedLanguage = code);
     final preferences = await SharedPreferences.getInstance();
     await preferences.setString('mirror_scorpion_translation_target', code);
+    _queueTranslation(_input.text);
   }
 
   void _beginNewInput(String action) {
@@ -102,11 +107,46 @@ class _TranslationPanelState extends State<_TranslationPanel> {
       _notice = null;
       _clearOnNextInput = false;
     }
-    setState(() => _notice = '$action يحتاج ربط خدمة فعلية؛ لم يتم إنشاء ترجمة بديلة.');
+    setState(() => _notice = '$action يحتاج خدمة صوت أو ملفات منفصلة؛ لم يتم إنشاء ناتج بديل.');
+  }
+
+  void _queueTranslation(String value) {
+    _translationDebounce?.cancel();
+    if (value.trim().isEmpty) {
+      setState(() {
+        _output.clear();
+        _notice = null;
+        _isTranslating = false;
+      });
+      return;
+    }
+    _translationDebounce = Timer(const Duration(milliseconds: 650), () {
+      _translateLocally(value);
+    });
+  }
+
+  Future<void> _translateLocally(String value) async {
+    if (!mounted || value.trim() != _input.text.trim()) return;
+    setState(() {
+      _isTranslating = true;
+      _notice = 'جارٍ تحديد لغة النص وتجهيز نموذج الترجمة المحلي…';
+    });
+    final result = await _translationService.translate(
+      text: value,
+      targetLanguageCode: _selectedLanguage,
+    );
+    if (!mounted || value.trim() != _input.text.trim()) return;
+    setState(() {
+      _isTranslating = false;
+      if (result.isSuccess) _output.text = result.text ?? '';
+      if (!result.isSuccess) _output.clear();
+      _notice = result.message;
+    });
   }
 
   @override
   void dispose() {
+    _translationDebounce?.cancel();
     _input.dispose();
     _output.dispose();
     super.dispose();
@@ -173,15 +213,33 @@ class _TranslationPanelState extends State<_TranslationPanel> {
           onTap: () {
             if (_clearOnNextInput) _beginNewInput('جلسة ترجمة جديدة');
           },
+          onChanged: _queueTranslation,
           actions: [
             _EditorAction(icon: Icons.mic, tooltip: 'التقاط الكلام', onPressed: () => _beginNewInput('التقاط الكلام')),
           ],
         ),
-        if (_notice != null) Padding(padding: const EdgeInsets.only(top: 10), child: Text(_notice!, style: const TextStyle(color: RoyalColors.gold))),
+        if (_notice != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 10),
+            child: Row(
+              children: [
+                if (_isTranslating)
+                  const Padding(
+                    padding: EdgeInsetsDirectional.only(end: 8),
+                    child: SizedBox(
+                      width: 15,
+                      height: 15,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  ),
+                Expanded(child: Text(_notice!, style: const TextStyle(color: RoyalColors.gold))),
+              ],
+            ),
+          ),
         const SizedBox(height: 14),
         _TranslationEditor(
           controller: _output,
-          hint: 'ستظهر الترجمة هنا بعد اتصال الخدمة.',
+          hint: 'ستظهر ترجمة ML Kit المحلية هنا بعد تنزيل النماذج.',
           readOnly: true,
           actionsOnRight: true,
           actions: [
@@ -195,7 +253,7 @@ class _TranslationPanelState extends State<_TranslationPanel> {
           ],
         ),
         const SizedBox(height: 18),
-        const _SectionNotice(title: 'دقة قبل السرعة', detail: 'واجهة المائة لغة وحفظ الاختيار يعملان محلياً. سيتصل زر الترجمة التلقائية بخدمة خادم فعلية في مرحلة التكامل، ولن يملأ المحرر نصاً مزيّفاً.'),
+        const _SectionNotice(title: 'ترجمة محلية صادقة', detail: 'تحدد ML Kit لغة النص وتنزّل نموذجَي المصدر والهدف عند الحاجة، ثم تترجم على الجهاز. القائمة المرئية واسعة، لكن تظهر حالة واضحة إذا كانت لغة مختارة خارج اللغات التي يدعمها ML Kit محلياً.'),
       ],
     );
   }
@@ -209,6 +267,7 @@ class _TranslationEditor extends StatelessWidget {
     required this.actions,
     required this.actionsOnRight,
     this.onTap,
+    this.onChanged,
   });
 
   final TextEditingController controller;
@@ -217,6 +276,7 @@ class _TranslationEditor extends StatelessWidget {
   final List<_EditorAction> actions;
   final bool actionsOnRight;
   final VoidCallback? onTap;
+  final ValueChanged<String>? onChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -241,6 +301,7 @@ class _TranslationEditor extends StatelessWidget {
               border: InputBorder.none,
             ),
             onTap: onTap,
+            onChanged: onChanged,
           ),
           Positioned(
             bottom: 0,
