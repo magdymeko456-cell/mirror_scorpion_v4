@@ -132,7 +132,10 @@ class _TranslationPanelState extends State<_TranslationPanel> {
   }
 
   Future<void> _selectSourceLanguage(String code) async {
-    setState(() => _sourceLanguage = code);
+    setState(() {
+      _sourceLanguage = code;
+      _notice = 'لغة الكلام المحددة: ${TranslationLanguageCatalog.labels[code] ?? code}. لن يبدأ الميكروفون بلغة بديلة إذا لم تكن هذه اللغة متاحة في خدمة التعرف بالجهاز.';
+    });
     await context.read<LanguagePreferences>().setTranslationSourceLanguage(code);
     _queueTranslation(_input.text, sourceLanguageCode: code);
   }
@@ -560,7 +563,10 @@ class _DialoguePanelState extends State<_DialoguePanel> {
   }
 
   Future<void> _selectRightSourceLanguage(String code) async {
-    setState(() => _rightSourceLanguage = code);
+    setState(() {
+      _rightSourceLanguage = code;
+      _notice = 'لغة الكلام المصدر المحددة: ${TranslationLanguageCatalog.labels[code] ?? code}. لن يبدأ الميكروفون بلغة بديلة إذا لم تكن هذه اللغة متاحة في خدمة التعرف بالجهاز.';
+    });
     await context.read<LanguagePreferences>().setTranslationSourceLanguage(code);
     _queueTranslation(_source.text, sourceLanguageCode: code);
   }

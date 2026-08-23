@@ -14,6 +14,7 @@ class DeviceSpeechRecognitionService extends ChangeNotifier {
   bool _isReady = false;
   String? _message;
   ValueChanged<String>? _onText;
+  String _requestedLanguageCode = 'ar';
 
   bool get isListening => _speechToText.isListening;
   bool get isReady => _isReady;
@@ -24,6 +25,7 @@ class DeviceSpeechRecognitionService extends ChangeNotifier {
     required ValueChanged<String> onText,
   }) async {
     _onText = onText;
+    _requestedLanguageCode = languageCode.toLowerCase();
     try {
       if (!_isReady) {
         _isReady = await _speechToText.initialize(
@@ -42,11 +44,21 @@ class DeviceSpeechRecognitionService extends ChangeNotifier {
         languageCode: languageCode,
         installedLocaleIds: installedLocales.map((locale) => locale.localeId),
       );
+      if (localeId == null) {
+        final available = SpeechLocaleResolver.availableLanguageCodes(
+          installedLocales.map((locale) => locale.localeId),
+        );
+        _message = available.isEmpty
+            ? 'لا توجد لغة تعرف كلام متاحة في الجهاز. لم يبدأ الاستماع ولم يُستخدم بديل عربي.'
+            : 'لغة الكلام «$languageCode» غير متاحة في خدمة التعرف. اللغات المتاحة: ${available.join('، ')}. لم يبدأ الاستماع ولم يُستخدم بديل عربي.';
+        notifyListeners();
+        return false;
+      }
       await _speechToText.listen(
         onResult: _handleResult,
         listenOptions: stt.SpeechListenOptions(localeId: localeId),
       );
-      _message = 'استمع الآن؛ سيظهر النص المعترف به في محرر المصدر.';
+      _message = 'استمع الآن بلغة الكلام «$languageCode» ($localeId)؛ سيظهر النص المعترف به في محرر المصدر.';
       notifyListeners();
       return true;
     } catch (_) {
@@ -67,7 +79,16 @@ class DeviceSpeechRecognitionService extends ChangeNotifier {
 
   void _handleResult(SpeechRecognitionResult result) {
     final text = result.recognizedWords.trim();
-    if (text.isNotEmpty) _onText?.call(text);
+    if (text.isEmpty) return;
+    if (SpeechRecognitionScriptGuard.rejectsArabicFallback(
+      expectedLanguageCode: _requestedLanguageCode,
+      recognizedText: text,
+    )) {
+      _message = 'أعادت خدمة الجهاز نصاً عربياً رغم اختيار «$_requestedLanguageCode». لم يُرسل النص إلى الترجمة؛ ثبّت لغة الكلام المطلوبة في إعدادات التعرف الصوتي ثم أعد المحاولة.';
+      notifyListeners();
+      return;
+    }
+    _onText?.call(text);
   }
 
   void _handleStatus(String status) {
@@ -91,8 +112,8 @@ class DeviceSpeechRecognitionService extends ChangeNotifier {
   }
 }
 
-/// يطابق لغة المصدر مع لغة تعرف مثبّتة على الهاتف، ثم يعيد null ليستعمل
-/// النظام لغته الافتراضية عندما لا تتوفر مطابقة صريحة.
+/// يطابق لغة المصدر مع لغة تعرف مثبّتة على الهاتف. لا يسمح للواجهة بالرجوع
+/// بصمت إلى لغة النظام عندما لا تتوفر مطابقة صريحة.
 class SpeechLocaleResolver {
   const SpeechLocaleResolver._();
 
@@ -110,5 +131,43 @@ class SpeechLocaleResolver {
       if (localeLanguage == normalized) return localeId;
     }
     return null;
+  }
+
+  static List<String> availableLanguageCodes(Iterable<String> installedLocaleIds) {
+    return installedLocaleIds
+        .map(
+          (localeId) => localeId
+              .replaceAll('_', '-')
+              .split('-')
+              .first
+              .toLowerCase(),
+        )
+        .toSet()
+        .toList()
+      ..sort();
+  }
+}
+
+/// يمنع تمرير ناتج معروف بأنه تعريب نطقي للإنجليزية إلى مترجم الإنجليزية.
+/// هذا حارس شفاف لحالة القبول المبلغ عنها، وليس كاشف لغة عام أو أداة ذكاء.
+class SpeechRecognitionScriptGuard {
+  const SpeechRecognitionScriptGuard._();
+
+  static const _latinScriptLanguages = <String>{
+    'af', 'ca', 'cs', 'da', 'de', 'en', 'es', 'et', 'eu', 'fi', 'fr', 'ga',
+    'gl', 'hr', 'hu', 'id', 'is', 'it', 'lt', 'lv', 'ms', 'nl', 'no', 'pl',
+    'pt', 'ro', 'sk', 'sl', 'sq', 'sv', 'sw', 'tl', 'tr', 'vi', 'zu',
+  };
+
+  static bool rejectsArabicFallback({
+    required String expectedLanguageCode,
+    required String recognizedText,
+  }) {
+    if (!_latinScriptLanguages.contains(expectedLanguageCode.toLowerCase())) {
+      return false;
+    }
+    final hasArabic = RegExp(r'[\u0600-\u06FF]').hasMatch(recognizedText);
+    final hasLatin = RegExp(r'[A-Za-z]').hasMatch(recognizedText);
+    return hasArabic && !hasLatin;
   }
 }
