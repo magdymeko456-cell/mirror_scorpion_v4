@@ -10,6 +10,7 @@ import '../core/localization/language_preferences.dart';
 import '../core/mlkit/on_device_ocr_service.dart';
 import '../core/mlkit/on_device_translation_service.dart';
 import '../core/pro/premium_verification_service.dart';
+import '../core/speech/device_speech_recognition_service.dart';
 import '../core/speech/system_tts_service.dart';
 
 enum FeatureKind { translation, dialogue, documents, stories, games, settings }
@@ -57,6 +58,7 @@ class _TranslationPanelState extends State<_TranslationPanel> {
   final _output = TextEditingController();
   final _translationService = const OnDeviceTranslationService();
   final _speechService = SystemTtsService();
+  final _recognitionService = DeviceSpeechRecognitionService();
   String _selectedLanguage = 'ar';
   String? _notice;
   bool _clearOnNextInput = false;
@@ -89,6 +91,7 @@ class _TranslationPanelState extends State<_TranslationPanel> {
     super.initState();
     _speechService.addListener(_onSpeechChanged);
     _speechService.initialize();
+    _recognitionService.addListener(_onSpeechChanged);
   }
 
   @override
@@ -123,6 +126,40 @@ class _TranslationPanelState extends State<_TranslationPanel> {
     if (mounted && _speechService.message != null) {
       setState(() => _notice = _speechService.message);
     }
+  }
+
+  Future<void> _toggleMicrophone() async {
+    if (_recognitionService.isListening) {
+      await _recognitionService.stop();
+      if (mounted && _recognitionService.message != null) {
+        setState(() => _notice = _recognitionService.message);
+      }
+      return;
+    }
+    await _speechService.stop();
+    final sourceLanguage = context.read<LanguagePreferences>().translationSourceLanguage;
+    await _recognitionService.start(
+      languageCode: sourceLanguage,
+      onText: (recognizedText) {
+        if (!mounted) return;
+        if (_clearOnNextInput) {
+          _input.clear();
+          _output.clear();
+          _clearOnNextInput = false;
+        }
+        _input.text = recognizedText;
+        _queueTranslation(recognizedText);
+      },
+    );
+    if (mounted && _recognitionService.message != null) {
+      setState(() => _notice = _recognitionService.message);
+    }
+  }
+
+  void _audioUploadUnavailable() {
+    setState(() {
+      _notice = 'اختيار الملف موجود في محرر المصدر، لكن تفريغ الملفات وترجمتها لم يُربطا بعد بخدمة صوت حية؛ لن يُنتج التطبيق ترجمة وهمية.';
+    });
   }
 
   void _beginNewInput(String action) {
@@ -180,6 +217,8 @@ class _TranslationPanelState extends State<_TranslationPanel> {
     _translationDebounce?.cancel();
     _speechService.removeListener(_onSpeechChanged);
     _speechService.stop();
+    _recognitionService.removeListener(_onSpeechChanged);
+    _recognitionService.dispose();
     _input.dispose();
     _output.dispose();
     super.dispose();
@@ -248,7 +287,16 @@ class _TranslationPanelState extends State<_TranslationPanel> {
           },
           onChanged: _queueTranslation,
           actions: [
-            _EditorAction(icon: Icons.mic, tooltip: 'التقاط الكلام', onPressed: () => _beginNewInput('التقاط الكلام')),
+            _EditorAction(
+              icon: _recognitionService.isListening ? Icons.stop_circle_outlined : Icons.mic,
+              tooltip: _recognitionService.isListening ? 'إيقاف التقاط الكلام' : 'التقاط الكلام من ميكروفون الجهاز',
+              onPressed: _toggleMicrophone,
+            ),
+            _EditorAction(
+              icon: Icons.attach_file,
+              tooltip: 'اختيار ملف صوتي لترجمته',
+              onPressed: _audioUploadUnavailable,
+            ),
           ],
         ),
         if (_notice != null)
@@ -278,7 +326,6 @@ class _TranslationPanelState extends State<_TranslationPanel> {
           actions: [
             _EditorAction(icon: _speechService.isSpeaking ? Icons.stop_circle_outlined : Icons.volume_up, tooltip: _speechService.isSpeaking ? 'إيقاف النطق' : 'نطق الترجمة بصوت النظام', onPressed: _speakTranslation),
             _EditorAction(icon: Icons.share, tooltip: 'مشاركة ملف صوت مترجم', onPressed: () => _beginNewInput('مشاركة الترجمة')),
-            _EditorAction(icon: Icons.attach_file, tooltip: 'رفع ملف صوتي', onPressed: () => _beginNewInput('رفع الملف الصوتي')),
             _EditorAction(icon: Icons.copy, tooltip: 'نسخ الترجمة', onPressed: () async {
               if (_output.text.isNotEmpty) await Clipboard.setData(ClipboardData(text: _output.text));
               if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('لا يوجد نص مترجم لنسخه بعد.')));
@@ -286,7 +333,7 @@ class _TranslationPanelState extends State<_TranslationPanel> {
           ],
         ),
         const SizedBox(height: 18),
-        const _SectionNotice(title: 'ترجمة محلية صادقة', detail: 'تبدأ تفضيلات الترجمة من لغة الجهاز ثم تحفظ آخر لغة مصدر وهدف. تحدد ML Kit لغة النص وتنزّل نموذجَي المصدر والهدف عند الحاجة، ثم تترجم على الجهاز. صوت القراءة هو صوت النظام المتاح، وليس أحد الأصوات المميزة أو صوت المستخدم بعد.'),
+        const _SectionNotice(title: 'ترجمة محلية صادقة', detail: 'تبدأ تفضيلات الترجمة من لغة الجهاز ثم تحفظ آخر لغة مصدر وهدف. يطلب زر الميكروفون إذنًا صريحًا ويستخدم تعرف الكلام المتاح في الجهاز للجمل القصيرة، ثم تمرر النتيجة إلى ML Kit للترجمة المحلية. دبوس محرر المصدر مخصص لملفات الصوت، لكنه ينتظر خدمة تفريغ فعلية ولا ينتج ترجمة مصطنعة. صوت القراءة هو صوت النظام المتاح، وليس أحد الأصوات المميزة أو صوت المستخدم بعد.'),
       ],
     );
   }
