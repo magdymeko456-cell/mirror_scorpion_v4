@@ -59,7 +59,7 @@ class ChessGameController {
   void reset() => _game = chess.Chess();
 
   int _materialScore(chess.Chess position) {
-    const values = {
+    final values = {
       chess.Chess.PAWN: 100,
       chess.Chess.KNIGHT: 320,
       chess.Chess.BISHOP: 330,
