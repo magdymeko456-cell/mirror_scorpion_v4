@@ -13,6 +13,16 @@ void main() {
       );
     });
 
+    test('matches English speech to an installed regional locale', () {
+      expect(
+        SpeechLocaleResolver.preferredLocaleId(
+          languageCode: 'en',
+          installedLocaleIds: const ['ar_EG', 'en-US'],
+        ),
+        'en-US',
+      );
+    });
+
     test('allows the device default when a matching locale is absent', () {
       expect(
         SpeechLocaleResolver.preferredLocaleId(

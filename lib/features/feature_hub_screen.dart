@@ -99,6 +99,7 @@ class _TranslationPanelState extends State<_TranslationPanel> {
   final _translationService = const OnDeviceTranslationService();
   final _speechService = SystemTtsService();
   final _recognitionService = DeviceSpeechRecognitionService();
+  String _sourceLanguage = 'ar';
   String _selectedLanguage = 'ar';
   String? _notice;
   bool _clearOnNextInput = false;
@@ -117,10 +118,23 @@ class _TranslationPanelState extends State<_TranslationPanel> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_loadedLanguagePreference) {
-      final saved = context.read<LanguagePreferences>().translationTargetLanguage;
-      if (TranslationLanguageCatalog.labels.containsKey(saved)) _selectedLanguage = saved;
+      final preferences = context.read<LanguagePreferences>();
+      final savedSource = preferences.translationSourceLanguage;
+      final savedTarget = preferences.translationTargetLanguage;
+      if (TranslationLanguageCatalog.labels.containsKey(savedSource)) {
+        _sourceLanguage = savedSource;
+      }
+      if (TranslationLanguageCatalog.labels.containsKey(savedTarget)) {
+        _selectedLanguage = savedTarget;
+      }
       _loadedLanguagePreference = true;
     }
+  }
+
+  Future<void> _selectSourceLanguage(String code) async {
+    setState(() => _sourceLanguage = code);
+    await context.read<LanguagePreferences>().setTranslationSourceLanguage(code);
+    _queueTranslation(_input.text, sourceLanguageCode: code);
   }
 
   Future<void> _selectLanguage(String code) async {
@@ -155,7 +169,7 @@ class _TranslationPanelState extends State<_TranslationPanel> {
       }
       return;
     }
-    final sourceLanguage = context.read<LanguagePreferences>().translationSourceLanguage;
+    final sourceLanguage = _sourceLanguage;
     await _speechService.stop();
     await _recognitionService.start(
       languageCode: sourceLanguage,
@@ -292,28 +306,26 @@ class _TranslationPanelState extends State<_TranslationPanel> {
           ),
         ),
         const SizedBox(height: 12),
-        Center(
-          child: Container(
-            width: 260,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            decoration: BoxDecoration(
-              color: const Color(0xFF1B2838),
-              borderRadius: BorderRadius.circular(30),
-              border: Border.all(color: Colors.blueAccent.withValues(alpha: 0.4), width: 1.5),
-            ),
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<String>(
-                value: _selectedLanguage,
-                isExpanded: true,
-                dropdownColor: const Color(0xFF1B2838),
-                icon: const Icon(Icons.keyboard_arrow_down, color: Colors.cyanAccent),
-                items: TranslationLanguageCatalog.labels.entries.map((entry) => DropdownMenuItem(value: entry.key, child: Text(entry.value))).toList(),
-                onChanged: (code) {
-                  if (code != null) _selectLanguage(code);
-                },
+        Row(
+          children: [
+            Expanded(
+              child: _TranslationLanguageMenu(
+                value: _sourceLanguage,
+                label: 'لغة الكلام',
+                icon: Icons.mic,
+                onChanged: _selectSourceLanguage,
               ),
             ),
-          ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _TranslationLanguageMenu(
+                value: _selectedLanguage,
+                label: 'لغة الترجمة',
+                icon: Icons.translate,
+                onChanged: _selectLanguage,
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 15),
         _TranslationEditor(
@@ -372,8 +384,60 @@ class _TranslationPanelState extends State<_TranslationPanel> {
           ],
         ),
         const SizedBox(height: 18),
-        const _SectionNotice(title: 'ترجمة محلية صادقة', detail: 'تبدأ تفضيلات الترجمة من لغة الجهاز ثم تحفظ آخر لغة مصدر وهدف. يطلب زر الميكروفون إذنًا صريحًا ويستخدم تعرف الكلام المتاح في الجهاز للجمل القصيرة، ثم تمرر النتيجة إلى ML Kit للترجمة المحلية. دبوس محرر المصدر مخصص لملفات الصوت، لكنه ينتظر خدمة تفريغ فعلية ولا ينتج ترجمة مصطنعة. صوت القراءة هو صوت النظام المتاح، وليس أحد الأصوات المميزة أو صوت المستخدم بعد.'),
+        const _SectionNotice(title: 'ترجمة محلية صادقة', detail: 'اختر «لغة الكلام» قبل الضغط على الميكروفون، واختر «لغة الترجمة» للناتج. يبدأ الاختيار من لغة الجهاز فقط في أول تشغيل ثم يحفظ المصدر والهدف بشكل مستقل. تعرف الكلام يعتمد اللغة المختارة وخدمة التعرف المثبتة في الهاتف للجمل القصيرة، ثم تمرر النتيجة إلى ML Kit للترجمة المحلية. دبوس محرر المصدر مخصص لملفات الصوت، لكنه ينتظر خدمة تفريغ فعلية ولا ينتج ترجمة مصطنعة. صوت القراءة هو صوت النظام المتاح، وليس أحد الأصوات المميزة أو صوت المستخدم بعد.'),
       ],
+    );
+  }
+}
+
+class _TranslationLanguageMenu extends StatelessWidget {
+  const _TranslationLanguageMenu({
+    required this.value,
+    required this.label,
+    required this.icon,
+    required this.onChanged,
+  });
+
+  final String value;
+  final String label;
+  final IconData icon;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1B2838),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.blueAccent.withValues(alpha: 0.4)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 14, color: Colors.cyanAccent),
+              const SizedBox(width: 5),
+              Text(label, style: const TextStyle(color: RoyalColors.muted, fontSize: 11)),
+            ],
+          ),
+          DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: value,
+              isExpanded: true,
+              dropdownColor: const Color(0xFF1B2838),
+              icon: const Icon(Icons.keyboard_arrow_down, color: Colors.cyanAccent),
+              items: TranslationLanguageCatalog.labels.entries
+                  .map((entry) => DropdownMenuItem(value: entry.key, child: Text(entry.value, overflow: TextOverflow.ellipsis)))
+                  .toList(),
+              onChanged: (code) {
+                if (code != null) onChanged(code);
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -630,7 +694,7 @@ class _DialoguePanelState extends State<_DialoguePanel> {
     return ListView(
       padding: const EdgeInsets.all(18),
       children: [
-        const _SectionNotice(title: 'حوار ثنائي اللغة محلي', detail: 'المحرر العلوي هو المصدر ويتبع زر اللغة في اليمين دائماً، والمحرر السفلي هو الناتج ويتبع زر اللغة في اليسار. يلتقط الميكروفون كلام الطرف العلوي فقط بإذن صريح ثم يترجمه ML Kit محلياً.'),
+        const _SectionNotice(title: 'حوار ثنائي اللغة محلي', detail: 'اختر «لغة الكلام المصدر» في اليمين قبل الضغط على الميكروفون، واختر لغة الترجمة في اليسار. المحرر العلوي هو المصدر ويتبع زر اليمين دائماً، والمحرر السفلي هو الناتج ويتبع زر اليسار. يلتقط الميكروفون كلام الطرف العلوي فقط بإذن صريح ثم يترجمه ML Kit محلياً.'),
         const SizedBox(height: 16),
         _DialogueEditor(
           controller: _source,
@@ -662,7 +726,7 @@ class _DialoguePanelState extends State<_DialoguePanel> {
               Expanded(
                 child: _DialogueLanguageMenu(
                   value: _leftTargetLanguage,
-                  label: 'الهدف — يسار',
+                  label: 'لغة الترجمة — يسار',
                   onChanged: _selectLeftTargetLanguage,
                 ),
               ),
@@ -693,7 +757,7 @@ class _DialoguePanelState extends State<_DialoguePanel> {
               Expanded(
                 child: _DialogueLanguageMenu(
                   value: _rightSourceLanguage,
-                  label: 'المصدر — يمين',
+                  label: 'لغة الكلام المصدر — يمين',
                   onChanged: _selectRightSourceLanguage,
                 ),
               ),
