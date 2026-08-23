@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
@@ -173,9 +174,15 @@ class _TranslationPanelState extends State<_TranslationPanel> {
     }
   }
 
-  void _audioUploadUnavailable() {
+  Future<void> _pickAudioFile() async {
+    final file = await FilePicker.pickFile(type: FileType.audio);
+    if (!mounted) return;
+    if (file == null) {
+      setState(() => _notice = 'لم يتم اختيار ملف صوت.');
+      return;
+    }
     setState(() {
-      _notice = 'اختيار الملف موجود في محرر المصدر، لكن تفريغ الملفات وترجمتها لم يُربطا بعد بخدمة صوت حية؛ لن يُنتج التطبيق ترجمة وهمية.';
+      _notice = 'تم اختيار «${file.name}» محلياً. لن يُرفع أو يُفرّغ قبل تشغيل خدمة الصوت الحية وموافقتك الصريحة.';
     });
   }
 
@@ -323,7 +330,7 @@ class _TranslationPanelState extends State<_TranslationPanel> {
             _EditorAction(
               icon: Icons.attach_file,
               tooltip: 'اختيار ملف صوتي لترجمته',
-              onPressed: _audioUploadUnavailable,
+              onPressed: _pickAudioFile,
             ),
           ],
         ),
@@ -592,9 +599,13 @@ class _DialoguePanelState extends State<_DialoguePanel> {
     }
   }
 
-  void _audioFileUnavailable() {
+  Future<void> _pickDialogueAudioFile() async {
+    final file = await FilePicker.pickFile(type: FileType.audio);
+    if (!mounted) return;
     setState(() {
-      _notice = 'دبوس محرر المصدر جاهز لاختيار ملف صوت، لكن تفريغ الملف وترجمته يحتاجان خدمة صوت حية؛ لا توجد نتيجة بديلة مصطنعة.';
+      _notice = file == null
+          ? 'لم يتم اختيار ملف صوت.'
+          : 'تم اختيار «${file.name}» لمصدر الحوار. التفريغ والترجمة ينتظران خدمة صوت حية؛ لا توجد نتيجة بديلة مصطنعة.';
     });
   }
 
@@ -625,7 +636,7 @@ class _DialoguePanelState extends State<_DialoguePanel> {
             _EditorAction(
               icon: Icons.attach_file,
               tooltip: 'اختيار ملف صوت لمصدر الحوار',
-              onPressed: _audioFileUnavailable,
+              onPressed: _pickDialogueAudioFile,
             ),
           ],
           onChanged: (value) => _queueTranslation(
@@ -842,6 +853,7 @@ class _DocumentsPanelState extends State<_DocumentsPanel> {
   bool _isScanning = false;
   bool _isTranslating = false;
   String? _selectedFileName;
+  PlatformFile? _selectedPdf;
   String? _extractedText;
   String? _translatedText;
   String? _notice;
@@ -926,6 +938,20 @@ class _DocumentsPanelState extends State<_DocumentsPanel> {
     }
   }
 
+  Future<void> _pickPdf() async {
+    final file = await FilePicker.pickFile(
+      type: FileType.custom,
+      allowedExtensions: const ['pdf'],
+    );
+    if (!mounted) return;
+    setState(() {
+      _selectedPdf = file;
+      _notice = file == null
+          ? 'لم يتم اختيار PDF.'
+          : 'تم اختيار «${file.name}» محلياً. استخراج صفحات PDF وترجمتها مسار مستقل لم يُفعّل بعد؛ لن يعرض التطبيق نتيجة مصطنعة.';
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListView(
@@ -975,6 +1001,16 @@ class _DocumentsPanelState extends State<_DocumentsPanel> {
             subtitle: const Text('OCR محلي للصورة؛ PDF مؤجل لمسار مستقل'),
             trailing: const Icon(Icons.chevron_left),
             onTap: _isScanning ? null : () => _scanImage(ImageSource.gallery),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Card(
+          child: ListTile(
+            leading: const Icon(Icons.picture_as_pdf_outlined, color: RoyalColors.gold),
+            title: const Text('اختيار مستند PDF'),
+            subtitle: Text(_selectedPdf == null ? 'اختيار محلي أولاً؛ الترجمة متعددة الصفحات لم تُفعّل بعد' : 'المستند المختار: ${_selectedPdf!.name}'),
+            trailing: const Icon(Icons.chevron_left),
+            onTap: _isScanning || _isTranslating ? null : _pickPdf,
           ),
         ),
         if (_selectedFileName != null)
