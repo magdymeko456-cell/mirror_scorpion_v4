@@ -10,6 +10,7 @@ import 'package:provider/provider.dart';
 import '../app/royal_dark_theme.dart';
 import '../core/localization/language_preferences.dart';
 import '../core/content/offline_content_storage.dart';
+import '../core/inspiration/inspiration_safety.dart';
 import '../core/mlkit/on_device_ocr_service.dart';
 import '../core/mlkit/on_device_translation_service.dart';
 import '../core/pro/premium_verification_service.dart';
@@ -1076,9 +1077,13 @@ class _StoriesPanel extends StatefulWidget {
 class _StoriesPanelState extends State<_StoriesPanel> {
   final _speechService = SystemTtsService();
   final _contentStorage = const OfflineContentStorage();
+  final _moodController = TextEditingController();
+  final _storyDraftController = TextEditingController();
   late Future<List<_StoryEntry>> _storiesFuture;
   late Future<List<OfflinePackageRecord>> _packagesFuture;
   String? _notice;
+  bool _consentToAi = false;
+  bool _threeHourReminder = false;
 
   @override
   void initState() {
@@ -1165,10 +1170,30 @@ class _StoriesPanelState extends State<_StoriesPanel> {
     );
   }
 
+  void _requestInspiration() {
+    final result = InspirationSafety.assessMoodText(_moodController.text);
+    setState(() {
+      if (result.level == InspirationSafetyLevel.crisis) {
+        _notice = result.message;
+      } else if (!_consentToAi) {
+        _notice = 'للمتابعة إلى خدمة الإلهام الذكية مستقبلاً، فعّل موافقتك الصريحة أولاً. لا تُرسل الكتابة حالياً إلى أي خدمة.';
+      } else {
+        _notice = '${result.message}\nتم تجهيز طلب محلي فقط. تحتاج الرسالة الذكية الفعلية إلى نشر خدمة خادمية وموديل محدد وسياسة احتفاظ واضحة.';
+      }
+    });
+  }
+
+  void _checkStoryDraft() {
+    final result = InspirationSafety.assessStoryDraft(_storyDraftController.text);
+    setState(() => _notice = result.message);
+  }
+
   @override
   void dispose() {
     _speechService.removeListener(_onSpeechChanged);
     _speechService.stop();
+    _moodController.dispose();
+    _storyDraftController.dispose();
     super.dispose();
   }
 
@@ -1178,6 +1203,80 @@ class _StoriesPanelState extends State<_StoriesPanel> {
       padding: const EdgeInsets.all(18),
       children: [
         const _SectionNotice(title: 'قصص وإلهام آمن', detail: 'تبدأ هذه النسخة بحزمة أصلية مرفقة وقارئ داخلي. الفهارس الدينية لا تعرض نصاً حتى يتحقق المصدر والحقوق. يمكن استيراد حزمة JSON محلية إلى مساحة التطبيق؛ أما التنزيل الشبكي وسيناريو الفيديو فيتطلبان خدمات منفصلة.'),
+        const SizedBox(height: 12),
+        Card(
+          color: Colors.blueAccent.withValues(alpha: 0.06),
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Text('إلهام اختياري وآمن', style: TextStyle(color: RoyalColors.gold, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                const Text('اكتب ما ترغب في مشاركته. لا يقرأ التطبيق رسائلك أو سلوكك في التطبيقات الأخرى، ولا يشخّص حالتك.'),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: _moodController,
+                  minLines: 2,
+                  maxLines: 4,
+                  decoration: const InputDecoration(hintText: 'مثال: أشعر بتشتت وأحتاج خطوة صغيرة أبدأ بها…'),
+                ),
+                CheckboxListTile(
+                  value: _consentToAi,
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('أوافق صراحة على إرسال ما أكتبه إلى خدمة إلهام مستقبلية عندما تُنشر.'),
+                  onChanged: (value) => setState(() => _consentToAi = value ?? false),
+                ),
+                FilledButton.icon(
+                  onPressed: _requestInspiration,
+                  icon: const Icon(Icons.auto_awesome_outlined),
+                  label: const Text('فحص طلب الإلهام'),
+                ),
+                SwitchListTile(
+                  value: _threeHourReminder,
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('تذكير اختياري كل 3 ساعات'),
+                  subtitle: const Text('مغلق افتراضياً؛ يتطلب نشر إشعارات محلية واختبار Android قبل التفعيل.'),
+                  onChanged: (value) {
+                    setState(() {
+                      _threeHourReminder = false;
+                      _notice = value
+                          ? 'لا يمكن تفعيل التذكير بعد؛ سيتم ربطه بإشعارات محلية صريحة بعد اختبارها.'
+                          : 'ظل تذكير الإلهام مغلقاً.';
+                    });
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Text('قصة المستخدم إلى فيديو', style: TextStyle(color: RoyalColors.teal, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                const Text('الفحص التالي لا ينشئ فيديو. يرفض محلياً مؤشرات الكراهية والتنمر والإهانة والمحتوى الجنسي والألفاظ البذيئة قبل أي خدمة فيديو مستقبلية.'),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: _storyDraftController,
+                  minLines: 3,
+                  maxLines: 6,
+                  decoration: const InputDecoration(hintText: 'اكتب مسودة قصتك الهادفة…'),
+                ),
+                const SizedBox(height: 10),
+                OutlinedButton.icon(
+                  onPressed: _checkStoryDraft,
+                  icon: const Icon(Icons.verified_user_outlined),
+                  label: const Text('فحص مسودة القصة'),
+                ),
+              ],
+            ),
+          ),
+        ),
         const SizedBox(height: 12),
         Card(
           child: ListTile(
