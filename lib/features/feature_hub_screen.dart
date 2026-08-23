@@ -4,12 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../app/royal_dark_theme.dart';
+import '../core/localization/language_preferences.dart';
 import '../core/mlkit/on_device_ocr_service.dart';
 import '../core/mlkit/on_device_translation_service.dart';
 import '../core/pro/premium_verification_service.dart';
+import '../core/speech/system_tts_service.dart';
 
 enum FeatureKind { translation, dialogue, documents, stories, games, settings }
 
@@ -55,10 +56,12 @@ class _TranslationPanelState extends State<_TranslationPanel> {
   final _input = TextEditingController();
   final _output = TextEditingController();
   final _translationService = const OnDeviceTranslationService();
+  final _speechService = SystemTtsService();
   String _selectedLanguage = 'ar';
   String? _notice;
   bool _clearOnNextInput = false;
   bool _isTranslating = false;
+  bool _loadedLanguagePreference = false;
   Timer? _translationDebounce;
   static const _languages = <String, String>{
     'af': 'Afrikaans', 'sq': 'Shqip', 'am': 'አማርኛ', 'ar': 'العربية', 'hy': 'Հայերեն', 'az': 'Azərbaycan',
@@ -84,22 +87,42 @@ class _TranslationPanelState extends State<_TranslationPanel> {
   @override
   void initState() {
     super.initState();
-    _loadLastLanguage();
+    _speechService.addListener(_onSpeechChanged);
+    _speechService.initialize();
   }
 
-  Future<void> _loadLastLanguage() async {
-    final preferences = await SharedPreferences.getInstance();
-    final saved = preferences.getString('mirror_scorpion_translation_target');
-    if (saved != null && _languages.containsKey(saved) && mounted) {
-      setState(() => _selectedLanguage = saved);
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_loadedLanguagePreference) {
+      final saved = context.read<LanguagePreferences>().translationTargetLanguage;
+      if (_languages.containsKey(saved)) _selectedLanguage = saved;
+      _loadedLanguagePreference = true;
     }
   }
 
   Future<void> _selectLanguage(String code) async {
     setState(() => _selectedLanguage = code);
-    final preferences = await SharedPreferences.getInstance();
-    await preferences.setString('mirror_scorpion_translation_target', code);
+    await context.read<LanguagePreferences>().setTranslationTargetLanguage(code);
     _queueTranslation(_input.text);
+  }
+
+  void _onSpeechChanged() {
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _speakTranslation() async {
+    if (_speechService.isSpeaking) {
+      await _speechService.stop();
+      return;
+    }
+    await _speechService.speak(
+      text: _output.text,
+      languageCode: _selectedLanguage,
+    );
+    if (mounted && _speechService.message != null) {
+      setState(() => _notice = _speechService.message);
+    }
   }
 
   void _beginNewInput(String action) {
@@ -138,6 +161,12 @@ class _TranslationPanelState extends State<_TranslationPanel> {
       targetLanguageCode: _selectedLanguage,
     );
     if (!mounted || value.trim() != _input.text.trim()) return;
+    if (result.sourceLanguage != null) {
+      await context
+          .read<LanguagePreferences>()
+          .setTranslationSourceLanguage(result.sourceLanguage!);
+    }
+    if (!mounted || value.trim() != _input.text.trim()) return;
     setState(() {
       _isTranslating = false;
       if (result.isSuccess) _output.text = result.text ?? '';
@@ -149,6 +178,8 @@ class _TranslationPanelState extends State<_TranslationPanel> {
   @override
   void dispose() {
     _translationDebounce?.cancel();
+    _speechService.removeListener(_onSpeechChanged);
+    _speechService.stop();
     _input.dispose();
     _output.dispose();
     super.dispose();
@@ -245,7 +276,7 @@ class _TranslationPanelState extends State<_TranslationPanel> {
           readOnly: true,
           actionsOnRight: true,
           actions: [
-            _EditorAction(icon: Icons.volume_up, tooltip: 'نطق الترجمة', onPressed: () => _beginNewInput('نطق الترجمة')),
+            _EditorAction(icon: _speechService.isSpeaking ? Icons.stop_circle_outlined : Icons.volume_up, tooltip: _speechService.isSpeaking ? 'إيقاف النطق' : 'نطق الترجمة بصوت النظام', onPressed: _speakTranslation),
             _EditorAction(icon: Icons.share, tooltip: 'مشاركة ملف صوت مترجم', onPressed: () => _beginNewInput('مشاركة الترجمة')),
             _EditorAction(icon: Icons.attach_file, tooltip: 'رفع ملف صوتي', onPressed: () => _beginNewInput('رفع الملف الصوتي')),
             _EditorAction(icon: Icons.copy, tooltip: 'نسخ الترجمة', onPressed: () async {
@@ -255,7 +286,7 @@ class _TranslationPanelState extends State<_TranslationPanel> {
           ],
         ),
         const SizedBox(height: 18),
-        const _SectionNotice(title: 'ترجمة محلية صادقة', detail: 'تحدد ML Kit لغة النص وتنزّل نموذجَي المصدر والهدف عند الحاجة، ثم تترجم على الجهاز. القائمة المرئية واسعة، لكن تظهر حالة واضحة إذا كانت لغة مختارة خارج اللغات التي يدعمها ML Kit محلياً.'),
+        const _SectionNotice(title: 'ترجمة محلية صادقة', detail: 'تبدأ تفضيلات الترجمة من لغة الجهاز ثم تحفظ آخر لغة مصدر وهدف. تحدد ML Kit لغة النص وتنزّل نموذجَي المصدر والهدف عند الحاجة، ثم تترجم على الجهاز. صوت القراءة هو صوت النظام المتاح، وليس أحد الأصوات المميزة أو صوت المستخدم بعد.'),
       ],
     );
   }
@@ -464,8 +495,33 @@ class _DocumentsPanelState extends State<_DocumentsPanel> {
   }
 }
 
-class _StoriesPanel extends StatelessWidget {
+class _StoriesPanel extends StatefulWidget {
   const _StoriesPanel();
+
+  @override
+  State<_StoriesPanel> createState() => _StoriesPanelState();
+}
+
+class _StoriesPanelState extends State<_StoriesPanel> {
+  final _speechService = SystemTtsService();
+
+  @override
+  void initState() {
+    super.initState();
+    _speechService.addListener(_onSpeechChanged);
+    _speechService.initialize();
+  }
+
+  void _onSpeechChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _speechService.removeListener(_onSpeechChanged);
+    _speechService.stop();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -477,9 +533,36 @@ class _StoriesPanel extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(18),
       children: [
-        const _SectionNotice(title: 'قصص وإلهام آمن', detail: 'القراءة الصوتية وسيناريو الفيديو يعتمدان على خدمات منفصلة. يبقى إنتاج MP4 خارج نطاق التطبيق حتى يربط مزود فيديو حقيقي.'),
+        const _SectionNotice(title: 'قصص وإلهام آمن', detail: 'تبدأ لغة القراءة من لغة الجهاز عند توفر بيانات مترجمة. يمكن تجربة صوت النظام على النصوص الظاهرة؛ أما الأصوات المميزة وسيناريو الفيديو فيتطلبان خدمات منفصلة.'),
         const SizedBox(height: 12),
-        ...stories.map((story) => Card(child: ListTile(title: Text(story.$1), subtitle: Text(story.$2), trailing: const Text('المزيد', style: TextStyle(color: RoyalColors.purple))))),
+        ...stories.map(
+          (story) => Card(
+            child: ListTile(
+              title: Text(story.$1),
+              subtitle: Text(story.$2),
+              trailing: Wrap(
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  IconButton(
+                    tooltip: _speechService.isSpeaking ? 'إيقاف القراءة' : 'قراءة النص بصوت النظام',
+                    onPressed: () async {
+                      if (_speechService.isSpeaking) {
+                        await _speechService.stop();
+                      } else {
+                        await _speechService.speak(
+                          text: '${story.$1}. ${story.$2}',
+                          languageCode: context.read<LanguagePreferences>().storyLanguageCode,
+                        );
+                      }
+                    },
+                    icon: Icon(_speechService.isSpeaking ? Icons.stop_circle_outlined : Icons.volume_up, color: RoyalColors.gold),
+                  ),
+                  const Text('المزيد', style: TextStyle(color: RoyalColors.purple)),
+                ],
+              ),
+            ),
+          ),
+        ),
       ],
     );
   }

@@ -4,6 +4,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 
 import 'app/mirror_scorpion_app.dart';
+import 'core/localization/language_preferences.dart';
 import 'core/pro/premium_verification_service.dart';
 
 Future<void> main() async {
@@ -13,9 +14,14 @@ Future<void> main() async {
   }
   final premiumService = PremiumVerificationService();
   await premiumService.initialize();
+  final languagePreferences = LanguagePreferences();
+  await languagePreferences.initialize();
   runApp(
-    ChangeNotifierProvider.value(
-      value: premiumService,
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider.value(value: premiumService),
+        ChangeNotifierProvider.value(value: languagePreferences),
+      ],
       child: const MirrorScorpionApp(),
     ),
   );
