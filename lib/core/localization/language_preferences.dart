@@ -3,10 +3,10 @@ import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// يحتفظ باللغة التي اختارها المستخدم في تدفقات الترجمة، ويستخدم لغة الجهاز
-/// كبداية فقط عندما لا توجد تفضيلات محفوظة. لا يترجم نصوص الواجهة ذاتها.
+/// يحتفظ بلغة هدف الترجمة فقط. لغة مصدر الميكروفون هي لغة الجهاز دائماً،
+/// لذلك لا تحفظ كاختيار منفصل ولا تختلط بلغة واجهة التطبيق.
 class LanguagePreferences extends ChangeNotifier {
-  static const _sourceKey = 'mirror_scorpion_translation_source';
+  static const _legacySourceKey = 'mirror_scorpion_translation_source';
   static const _targetKey = 'mirror_scorpion_translation_target';
 
   LanguagePreferences({Locale? deviceLocale})
@@ -14,27 +14,23 @@ class LanguagePreferences extends ChangeNotifier {
 
   final Locale _deviceLocale;
   late SharedPreferences _preferences;
-  late String _sourceLanguage = deviceLanguageCode;
-  late String _targetLanguage =
-      deviceLanguageCode == 'ar' ? 'en' : 'ar';
+  late String _targetLanguage = 'en';
 
   Locale get deviceLocale => _deviceLocale;
   String get deviceLanguageCode => _deviceLocale.languageCode.toLowerCase();
-  String get translationSourceLanguage => _sourceLanguage;
+  String get translationSourceLanguage => deviceLanguageCode;
   String get translationTargetLanguage => _targetLanguage;
   String get storyLanguageCode => deviceLanguageCode;
 
   Future<void> initialize() async {
     _preferences = await SharedPreferences.getInstance();
-    final fallbackSource = deviceLanguageCode;
-    _sourceLanguage = _preferences.getString(_sourceKey) ?? fallbackSource;
-    _targetLanguage = _preferences.getString(_targetKey) ??
-        (fallbackSource == 'ar' ? 'en' : 'ar');
+    await _preferences.remove(_legacySourceKey);
+    _targetLanguage = _preferences.getString(_targetKey) ?? 'en';
   }
 
+  @Deprecated('لغة مصدر المايك هي لغة الجهاز دائماً.')
   Future<void> setTranslationSourceLanguage(String code) async {
-    _sourceLanguage = code.toLowerCase();
-    await _preferences.setString(_sourceKey, _sourceLanguage);
+    await _preferences.remove(_legacySourceKey);
     notifyListeners();
   }
 
@@ -44,12 +40,9 @@ class LanguagePreferences extends ChangeNotifier {
     notifyListeners();
   }
 
+  @Deprecated('لا يمكن تبديل لغة جهاز المايك مع لغة الترجمة.')
   Future<void> swapTranslationLanguages() async {
-    final oldSource = _sourceLanguage;
-    _sourceLanguage = _targetLanguage;
-    _targetLanguage = oldSource;
-    await _preferences.setString(_sourceKey, _sourceLanguage);
-    await _preferences.setString(_targetKey, _targetLanguage);
+    await _preferences.remove(_legacySourceKey);
     notifyListeners();
   }
 }

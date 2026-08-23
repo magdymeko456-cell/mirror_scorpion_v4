@@ -5,16 +5,15 @@ import 'package:mirror_scorpion_v4/core/localization/language_preferences.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  test('uses device language first then persists source and target preferences', () async {
+  test('uses device language as a fixed microphone source and persists target only', () async {
     SharedPreferences.setMockInitialValues(<String, Object>{});
     final preferences = LanguagePreferences(deviceLocale: const Locale('en', 'US'));
 
     await preferences.initialize();
 
     expect(preferences.translationSourceLanguage, 'en');
-    expect(preferences.translationTargetLanguage, 'ar');
+    expect(preferences.translationTargetLanguage, 'en');
 
-    await preferences.setTranslationSourceLanguage('fr');
     await preferences.setTranslationTargetLanguage('de');
 
     SharedPreferences.setMockInitialValues(<String, Object>{
@@ -24,7 +23,17 @@ void main() {
     final restored = LanguagePreferences(deviceLocale: const Locale('ar', 'SA'));
     await restored.initialize();
 
-    expect(restored.translationSourceLanguage, 'fr');
+    expect(restored.translationSourceLanguage, 'ar');
     expect(restored.translationTargetLanguage, 'de');
+  });
+
+  test('uses Turkish device language for microphone with English target by default', () async {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    final preferences = LanguagePreferences(deviceLocale: const Locale('tr', 'TR'));
+
+    await preferences.initialize();
+
+    expect(preferences.translationSourceLanguage, 'tr');
+    expect(preferences.translationTargetLanguage, 'en');
   });
 }
