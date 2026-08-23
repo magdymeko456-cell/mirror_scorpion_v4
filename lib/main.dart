@@ -20,9 +20,8 @@ Future<void> main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider.value(value: premiumService),
-        ChangeNotifierProvider.value(value: languagePreferences),
       ],
-      child: const MirrorScorpionApp(),
+      child: MirrorScorpionApp(languagePreferences: languagePreferences),
     ),
   );
 }

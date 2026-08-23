@@ -14,8 +14,9 @@ class LanguagePreferences extends ChangeNotifier {
 
   final Locale _deviceLocale;
   late SharedPreferences _preferences;
-  late String _sourceLanguage;
-  late String _targetLanguage;
+  late String _sourceLanguage = deviceLanguageCode;
+  late String _targetLanguage =
+      deviceLanguageCode == 'ar' ? 'en' : 'ar';
 
   Locale get deviceLocale => _deviceLocale;
   String get deviceLanguageCode => _deviceLocale.languageCode.toLowerCase();
