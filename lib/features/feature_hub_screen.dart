@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -8,6 +9,7 @@ import 'package:provider/provider.dart';
 
 import '../app/royal_dark_theme.dart';
 import '../core/localization/language_preferences.dart';
+import '../core/content/offline_content_storage.dart';
 import '../core/mlkit/on_device_ocr_service.dart';
 import '../core/mlkit/on_device_translation_service.dart';
 import '../core/pro/premium_verification_service.dart';
@@ -1073,16 +1075,94 @@ class _StoriesPanel extends StatefulWidget {
 
 class _StoriesPanelState extends State<_StoriesPanel> {
   final _speechService = SystemTtsService();
+  final _contentStorage = const OfflineContentStorage();
+  late Future<List<_StoryEntry>> _storiesFuture;
+  late Future<List<OfflinePackageRecord>> _packagesFuture;
+  String? _notice;
 
   @override
   void initState() {
     super.initState();
     _speechService.addListener(_onSpeechChanged);
     _speechService.initialize();
+    _storiesFuture = _loadBundledStories();
+    _packagesFuture = _contentStorage.listPackages();
   }
 
   void _onSpeechChanged() {
     if (mounted) setState(() {});
+  }
+
+  Future<List<_StoryEntry>> _loadBundledStories() async {
+    final decoded = jsonDecode(
+      await rootBundle.loadString('assets/data/starter_original_ar.json'),
+    ) as Map<String, dynamic>;
+    final stories = decoded['stories'] as List<dynamic>? ?? const [];
+    return stories
+        .whereType<Map<String, dynamic>>()
+        .map(_StoryEntry.fromJson)
+        .toList();
+  }
+
+  Future<void> _importContentPackage() async {
+    final file = await FilePicker.pickFile(
+      type: FileType.custom,
+      allowedExtensions: const ['json'],
+    );
+    if (!mounted || file == null) return;
+    try {
+      final decoded = jsonDecode(utf8.decode(await file.readAsBytes()));
+      if (decoded is! Map<String, dynamic>) {
+        throw const FormatException('Invalid root object');
+      }
+      final packageId = decoded['packageId'] as String?;
+      if (packageId == null || packageId.isEmpty) {
+        throw const FormatException('Missing packageId');
+      }
+      await _contentStorage.savePackage(id: packageId, content: decoded);
+      if (!mounted) return;
+      setState(() {
+        _packagesFuture = _contentStorage.listPackages();
+        _notice = 'تم حفظ حزمة «$packageId» في مساحة المحتوى المحلية. لا تُعرض كمصدر ديني موثوق ما لم تحمل حقول المصدر والحقوق المناسبة.';
+      });
+    } on FormatException {
+      if (mounted) {
+        setState(() => _notice = 'ملف JSON غير صالح كحزمة محتوى. يجب أن يحتوي على packageId وبنية الحزمة المعلنة.');
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _notice = 'تعذر قراءة أو حفظ حزمة المحتوى المختارة.');
+      }
+    }
+  }
+
+  void _openReader(_StoryEntry story) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF0D1623),
+      builder: (sheetContext) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(story.title, style: Theme.of(sheetContext).textTheme.headlineSmall),
+                  const SizedBox(height: 14),
+                  Text(story.body, style: const TextStyle(height: 1.8, fontSize: 17)),
+                  const SizedBox(height: 18),
+                  Text('المصدر: ${story.source}', style: const TextStyle(color: RoyalColors.muted)),
+                  Text('الإحالة: ${story.citation}', style: const TextStyle(color: RoyalColors.muted)),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -1094,47 +1174,117 @@ class _StoriesPanelState extends State<_StoriesPanel> {
 
   @override
   Widget build(BuildContext context) {
-    const stories = [
-      ('رسالة احترام', 'القصص التي يكتبها المستخدم تُراجع قبل العرض لمنع الكراهية والتنمر والألفاظ البذيئة.'),
-      ('قصص الأنبياء', 'سيُنقل الفهرس المحلي والمصادر القابلة للتنزيل إلى JSON موثق داخل التطبيق.'),
-      ('أسباب النزول', 'يعرض القسم المصدر وحالة التنزيل بدلاً من ادعاء توفر نص لم يُحفظ بعد.'),
-    ];
     return ListView(
       padding: const EdgeInsets.all(18),
       children: [
-        const _SectionNotice(title: 'قصص وإلهام آمن', detail: 'تبدأ لغة القراءة من لغة الجهاز عند توفر بيانات مترجمة. يمكن تجربة صوت النظام على النصوص الظاهرة؛ أما الأصوات المميزة وسيناريو الفيديو فيتطلبان خدمات منفصلة.'),
+        const _SectionNotice(title: 'قصص وإلهام آمن', detail: 'تبدأ هذه النسخة بحزمة أصلية مرفقة وقارئ داخلي. الفهارس الدينية لا تعرض نصاً حتى يتحقق المصدر والحقوق. يمكن استيراد حزمة JSON محلية إلى مساحة التطبيق؛ أما التنزيل الشبكي وسيناريو الفيديو فيتطلبان خدمات منفصلة.'),
         const SizedBox(height: 12),
-        ...stories.map(
-          (story) => Card(
-            child: ListTile(
-              title: Text(story.$1),
-              subtitle: Text(story.$2),
-              trailing: Wrap(
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  IconButton(
-                    tooltip: _speechService.isSpeaking ? 'إيقاف القراءة' : 'قراءة النص بصوت النظام',
-                    onPressed: () async {
-                      if (_speechService.isSpeaking) {
-                        await _speechService.stop();
-                      } else {
-                        await _speechService.speak(
-                          text: '${story.$1}. ${story.$2}',
-                          languageCode: context.read<LanguagePreferences>().storyLanguageCode,
-                        );
-                      }
-                    },
-                    icon: Icon(_speechService.isSpeaking ? Icons.stop_circle_outlined : Icons.volume_up, color: RoyalColors.gold),
-                  ),
-                  const Text('المزيد', style: TextStyle(color: RoyalColors.purple)),
-                ],
-              ),
-            ),
+        Card(
+          child: ListTile(
+            leading: const Icon(Icons.folder_copy_outlined, color: RoyalColors.gold),
+            title: const Text('استيراد حزمة قصص أو لغة بصيغة JSON'),
+            subtitle: const Text('يحفظ الملف في مساحة التطبيق المحلية بعد اختيارك فقط'),
+            trailing: const Icon(Icons.file_upload_outlined),
+            onTap: _importContentPackage,
           ),
+        ),
+        FutureBuilder<List<OfflinePackageRecord>>(
+          future: _packagesFuture,
+          builder: (context, snapshot) {
+            final packages = snapshot.data ?? const [];
+            return Padding(
+              padding: const EdgeInsets.only(top: 10),
+              child: Text(
+                packages.isEmpty
+                    ? 'مساحة الحزم المحلية جاهزة؛ لم تُستورد حزمة إضافية بعد.'
+                    : 'الحزم المحلية المستوردة: ${packages.map((item) => item.title).join('، ')}',
+                style: const TextStyle(color: RoyalColors.muted),
+              ),
+            );
+          },
+        ),
+        if (_notice != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 12),
+            child: Text(_notice!, style: const TextStyle(color: RoyalColors.gold, height: 1.5)),
+          ),
+        FutureBuilder<List<_StoryEntry>>(
+          future: _storiesFuture,
+          builder: (context, snapshot) {
+            if (snapshot.hasError) {
+              return const Padding(
+                padding: EdgeInsets.only(top: 16),
+                child: Text('تعذر تحميل حزمة البداية المحلية.', style: TextStyle(color: Colors.redAccent)),
+              );
+            }
+            if (!snapshot.hasData) {
+              return const Padding(
+                padding: EdgeInsets.only(top: 16),
+                child: Center(child: CircularProgressIndicator()),
+              );
+            }
+            return Column(
+              children: snapshot.data!
+                  .map(
+                    (story) => Card(
+                      child: ListTile(
+                        title: Text(story.title),
+                        subtitle: Text(story.summary),
+                        onTap: () => _openReader(story),
+                        trailing: Wrap(
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            IconButton(
+                              tooltip: _speechService.isSpeaking ? 'إيقاف القراءة' : 'قراءة النص بصوت النظام',
+                              onPressed: () async {
+                                if (_speechService.isSpeaking) {
+                                  await _speechService.stop();
+                                } else {
+                                  await _speechService.speak(
+                                    text: '${story.title}. ${story.body}',
+                                    languageCode: context.read<LanguagePreferences>().storyLanguageCode,
+                                  );
+                                }
+                              },
+                              icon: Icon(_speechService.isSpeaking ? Icons.stop_circle_outlined : Icons.volume_up, color: RoyalColors.gold),
+                            ),
+                            const Text('المزيد', style: TextStyle(color: RoyalColors.purple)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  )
+                  .toList(),
+            );
+          },
         ),
       ],
     );
   }
+}
+
+class _StoryEntry {
+  const _StoryEntry({
+    required this.title,
+    required this.summary,
+    required this.body,
+    required this.source,
+    required this.citation,
+  });
+
+  final String title;
+  final String summary;
+  final String body;
+  final String source;
+  final String citation;
+
+  factory _StoryEntry.fromJson(Map<String, dynamic> json) => _StoryEntry(
+        title: json['title'] as String? ?? 'قصة بلا عنوان',
+        summary: json['summary'] as String? ?? '',
+        body: json['body'] as String? ?? '',
+        source: json['source'] as String? ?? 'غير محدد',
+        citation: json['citation'] as String? ?? 'غير محدد',
+      );
 }
 
 class _GamesPanel extends StatefulWidget {
