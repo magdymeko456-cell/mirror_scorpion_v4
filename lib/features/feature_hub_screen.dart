@@ -2,10 +2,12 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../app/royal_dark_theme.dart';
+import '../core/mlkit/on_device_ocr_service.dart';
 import '../core/mlkit/on_device_translation_service.dart';
 import '../core/pro/premium_verification_service.dart';
 
@@ -369,19 +371,94 @@ class _DialoguePanelState extends State<_DialoguePanel> {
   }
 }
 
-class _DocumentsPanel extends StatelessWidget {
+class _DocumentsPanel extends StatefulWidget {
   const _DocumentsPanel();
+
+  @override
+  State<_DocumentsPanel> createState() => _DocumentsPanelState();
+}
+
+class _DocumentsPanelState extends State<_DocumentsPanel> {
+  final _picker = ImagePicker();
+  final _ocrService = const OnDeviceOcrService();
+  bool _isScanning = false;
+  String? _selectedFileName;
+  String? _extractedText;
+  String? _notice;
+
+  Future<void> _scanImage(ImageSource source) async {
+    final image = await _picker.pickImage(source: source, imageQuality: 100);
+    if (image == null) {
+      if (mounted) setState(() => _notice = 'لم يتم اختيار صورة.');
+      return;
+    }
+    final stopwatch = Stopwatch()..start();
+    setState(() {
+      _isScanning = true;
+      _selectedFileName = image.name;
+      _extractedText = null;
+      _notice = 'جارٍ فحص الصورة محلياً…';
+    });
+    final result = await _ocrService.recognizeImagePath(image.path);
+    final remaining = const Duration(seconds: 3) - stopwatch.elapsed;
+    if (remaining > Duration.zero) await Future<void>.delayed(remaining);
+    if (!mounted) return;
+    setState(() {
+      _isScanning = false;
+      _extractedText = result.isSuccess ? result.text : null;
+      _notice = result.message;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return ListView(
       padding: const EdgeInsets.all(18),
       children: [
-        const _SectionNotice(title: 'OCR بلا نتيجة مصطنعة', detail: 'ستستخدم العدسة الكاميرا وML Kit للصور، ويُرسل PDF إلى الخادم. ينتظر العرض ثلاث ثوانٍ على الأقل ثم يعرض نتيجة OCR الحقيقية أو سبب الفشل.'),
+        const _SectionNotice(title: 'OCR بلا نتيجة مصطنعة', detail: 'تفحص العدسة الصورة المختارة محلياً وتعرض النص المستخرج بعد ثلاث ثوانٍ على الأقل. الإصدار المحلي الحالي يقرأ النص اللاتيني فقط؛ العربية وPDF يتطلبان محركاً مناسباً أو خدمة خادم لاحقاً.'),
         const SizedBox(height: 20),
-        Card(child: ListTile(leading: const Icon(Icons.camera_alt_outlined, color: RoyalColors.gold), title: const Text('عدسة ذكية'), subtitle: const Text('تحتاج ربط camera وML Kit في مرحلة الخدمات الأصلية.'), trailing: const Icon(Icons.chevron_left))),
+        Card(
+          child: ListTile(
+            leading: const Icon(Icons.camera_alt_outlined, color: RoyalColors.gold),
+            title: const Text('عدسة ذكية'),
+            subtitle: const Text('التقاط صورة وفحص النص محلياً'),
+            trailing: const Icon(Icons.chevron_left),
+            onTap: _isScanning ? null : () => _scanImage(ImageSource.camera),
+          ),
+        ),
         const SizedBox(height: 12),
-        Card(child: ListTile(leading: const Icon(Icons.attach_file, color: RoyalColors.gold), title: const Text('رفع مستند أو صورة'), subtitle: const Text('تحتاج file_picker ومسار OCR خادمي للـPDF.'), trailing: const Icon(Icons.chevron_left))),
+        Card(
+          child: ListTile(
+            leading: const Icon(Icons.photo_library_outlined, color: RoyalColors.gold),
+            title: const Text('اختيار صورة من الجهاز'),
+            subtitle: const Text('OCR محلي للصورة؛ PDF مؤجل لمسار مستقل'),
+            trailing: const Icon(Icons.chevron_left),
+            onTap: _isScanning ? null : () => _scanImage(ImageSource.gallery),
+          ),
+        ),
+        if (_selectedFileName != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 18),
+            child: Text('الصورة المختارة: $_selectedFileName', style: const TextStyle(color: RoyalColors.muted)),
+          ),
+        if (_isScanning)
+          const Padding(
+            padding: EdgeInsets.only(top: 18),
+            child: LinearProgressIndicator(),
+          ),
+        if (_notice != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 14),
+            child: Text(_notice!, style: const TextStyle(color: RoyalColors.gold, height: 1.5)),
+          ),
+        if (_extractedText != null)
+          Card(
+            margin: const EdgeInsets.only(top: 16),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: SelectableText(_extractedText!, style: const TextStyle(height: 1.6)),
+            ),
+          ),
       ],
     );
   }
