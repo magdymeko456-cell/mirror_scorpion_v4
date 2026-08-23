@@ -60,12 +60,12 @@ class ChessGameController {
 
   int _materialScore(chess.Chess position) {
     const values = {
-      chess.PAWN: 100,
-      chess.KNIGHT: 320,
-      chess.BISHOP: 330,
-      chess.ROOK: 500,
-      chess.QUEEN: 900,
-      chess.KING: 20000,
+      chess.Chess.PAWN: 100,
+      chess.Chess.KNIGHT: 320,
+      chess.Chess.BISHOP: 330,
+      chess.Chess.ROOK: 500,
+      chess.Chess.QUEEN: 900,
+      chess.Chess.KING: 20000,
     };
     var score = 0;
     for (final file in const ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']) {
