@@ -11,6 +11,28 @@ class ChessGameController {
   final Random _random = Random();
 
   chess.Piece? pieceAt(String square) => _game.get(square);
+  static String pieceSymbol(chess.Piece? piece) {
+    if (piece == null) return '';
+    const white = <String, String>{
+      'p': '♙',
+      'n': '♘',
+      'b': '♗',
+      'r': '♖',
+      'q': '♕',
+      'k': '♔',
+    };
+    const black = <String, String>{
+      'p': '♟',
+      'n': '♞',
+      'b': '♝',
+      'r': '♜',
+      'q': '♛',
+      'k': '♚',
+    };
+    final symbols = piece.color == chess.Color.WHITE ? white : black;
+    return symbols[piece.type.name] ?? '';
+  }
+
   bool get isWhiteTurn => _game.turn == chess.Color.WHITE;
   bool get gameOver => _game.game_over;
   bool get isCheckmate => _game.in_checkmate;

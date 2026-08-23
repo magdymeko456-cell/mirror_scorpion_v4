@@ -1570,14 +1570,6 @@ class _GamesPanelState extends State<_GamesPanel> {
     });
   }
 
-  String _pieceSymbol(dynamic piece) {
-    if (piece == null) return '';
-    const white = {'PAWN': '♙', 'KNIGHT': '♘', 'BISHOP': '♗', 'ROOK': '♖', 'QUEEN': '♕', 'KING': '♔'};
-    const black = {'PAWN': '♟', 'KNIGHT': '♞', 'BISHOP': '♝', 'ROOK': '♜', 'QUEEN': '♛', 'KING': '♚'};
-    final symbols = piece.color.name == 'WHITE' ? white : black;
-    return symbols[piece.type.name] ?? '';
-  }
-
   Widget _buildChessBoard() {
     const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
     return AspectRatio(
@@ -1615,7 +1607,7 @@ class _GamesPanelState extends State<_GamesPanel> {
                 ),
                 child: Center(
                   child: Text(
-                    _pieceSymbol(piece),
+                    ChessGameController.pieceSymbol(piece),
                     style: TextStyle(
                       fontSize: 31,
                       height: 1,

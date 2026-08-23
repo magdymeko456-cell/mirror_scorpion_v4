@@ -18,4 +18,14 @@ void main() {
     expect(game.movePlayer('e2', 'e4'), isTrue);
     expect(game.movePlayer('d2', 'd4'), isFalse);
   });
+
+  test('maps starting pieces to visible Unicode chess symbols', () {
+    final game = ChessGameController();
+
+    expect(ChessGameController.pieceSymbol(game.pieceAt('e2')), '♙');
+    expect(ChessGameController.pieceSymbol(game.pieceAt('e7')), '♟');
+    expect(ChessGameController.pieceSymbol(game.pieceAt('d1')), '♕');
+    expect(ChessGameController.pieceSymbol(game.pieceAt('d8')), '♛');
+    expect(ChessGameController.pieceSymbol(game.pieceAt('e4')), isEmpty);
+  });
 }
