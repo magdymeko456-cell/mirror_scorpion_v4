@@ -12,6 +12,17 @@ enum OnDeviceTranslationState {
   failed,
 }
 
+enum OnDeviceTranslationProgress {
+  identifyingLanguage,
+  checkingModels,
+  downloadingModels,
+  translating,
+}
+
+typedef OnDeviceTranslationProgressCallback = void Function(
+  OnDeviceTranslationProgress progress,
+);
+
 class OnDeviceTranslationResult {
   const OnDeviceTranslationResult({
     required this.state,
@@ -56,6 +67,7 @@ class OnDeviceTranslationService {
     required String text,
     required String targetLanguageCode,
     String? sourceLanguageCode,
+    OnDeviceTranslationProgressCallback? onProgress,
   }) async {
     final sourceText = text.trim();
     if (!isNativePlatform) {
@@ -74,6 +86,9 @@ class OnDeviceTranslationService {
     final identifier = LanguageIdentifier(confidenceThreshold: 0.5);
     try {
       final requestedSourceCode = sourceLanguageCode?.trim().toLowerCase();
+      if (requestedSourceCode?.isNotEmpty != true) {
+        onProgress?.call(OnDeviceTranslationProgress.identifyingLanguage);
+      }
       final detectedCode = requestedSourceCode?.isNotEmpty == true
           ? requestedSourceCode!
           : await identifier.identifyLanguage(sourceText);
@@ -104,8 +119,20 @@ class OnDeviceTranslationService {
       }
 
       final modelManager = OnDeviceTranslatorModelManager();
-      final sourceReady = await _ensureModel(modelManager, sourceLanguage);
-      final targetReady = await _ensureModel(modelManager, targetLanguage);
+      onProgress?.call(OnDeviceTranslationProgress.checkingModels);
+      final sourceAlreadyDownloaded =
+          await modelManager.isModelDownloaded(sourceLanguage.bcpCode);
+      final targetAlreadyDownloaded =
+          await modelManager.isModelDownloaded(targetLanguage.bcpCode);
+      if (!sourceAlreadyDownloaded || !targetAlreadyDownloaded) {
+        onProgress?.call(OnDeviceTranslationProgress.downloadingModels);
+      }
+      final readiness = await Future.wait<bool>([
+        _ensureModel(modelManager, sourceLanguage),
+        _ensureModel(modelManager, targetLanguage),
+      ]);
+      final sourceReady = readiness[0];
+      final targetReady = readiness[1];
       if (!sourceReady || !targetReady) {
         return OnDeviceTranslationResult(
           state: OnDeviceTranslationState.modelDownloadFailed,
@@ -120,6 +147,7 @@ class OnDeviceTranslationService {
         targetLanguage: targetLanguage,
       );
       try {
+        onProgress?.call(OnDeviceTranslationProgress.translating);
         final translated = await translator.translateText(sourceText);
         return OnDeviceTranslationResult(
           state: OnDeviceTranslationState.translated,

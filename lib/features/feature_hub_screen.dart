@@ -38,6 +38,18 @@ abstract final class TranslationLanguageCatalog {
   };
 }
 
+String _translationProgressMessage(OnDeviceTranslationProgress progress) =>
+    switch (progress) {
+      OnDeviceTranslationProgress.identifyingLanguage =>
+        'جارٍ تحديد لغة النص…',
+      OnDeviceTranslationProgress.checkingModels =>
+        'جارٍ فحص نماذج اللغة المحلية…',
+      OnDeviceTranslationProgress.downloadingModels =>
+        'يُنزّل التطبيق نموذجَي اللغة لأول مرة؛ قد يستغرق ذلك أكثر من 3 ثوانٍ حسب الشبكة…',
+      OnDeviceTranslationProgress.translating =>
+        'جارٍ إجراء الترجمة على الجهاز…',
+    };
+
 class FeatureHubScreen extends StatelessWidget {
   const FeatureHubScreen({required this.kind, super.key});
 
@@ -199,12 +211,19 @@ class _TranslationPanelState extends State<_TranslationPanel> {
     if (!mounted || value.trim() != _input.text.trim()) return;
     setState(() {
       _isTranslating = true;
-      _notice = 'جارٍ تحديد لغة النص وتجهيز نموذج الترجمة المحلي…';
+      _notice = sourceLanguageCode == null
+          ? 'جارٍ تحديد لغة النص وتجهيز نموذج الترجمة المحلي…'
+          : 'جارٍ تجهيز نموذج الترجمة المحلي للغة الميكروفون…';
     });
     final result = await _translationService.translate(
       text: value,
       targetLanguageCode: _selectedLanguage,
       sourceLanguageCode: sourceLanguageCode,
+      onProgress: (progress) {
+        if (mounted && value.trim() == _input.text.trim()) {
+          setState(() => _notice = _translationProgressMessage(progress));
+        }
+      },
     );
     if (!mounted || value.trim() != _input.text.trim()) return;
     if (result.sourceLanguage != null) {
@@ -490,7 +509,11 @@ class _DocumentsPanelState extends State<_DocumentsPanel> {
   }
 
   Future<void> _scanImage(ImageSource source) async {
-    final image = await _picker.pickImage(source: source, imageQuality: 100);
+    final image = await _picker.pickImage(
+      source: source,
+      imageQuality: 90,
+      maxWidth: 1920,
+    );
     if (image == null) {
       if (mounted) setState(() => _notice = 'لم يتم اختيار صورة.');
       return;
@@ -529,6 +552,11 @@ class _DocumentsPanelState extends State<_DocumentsPanel> {
     final result = await _translationService.translate(
       text: text,
       targetLanguageCode: targetLanguage,
+      onProgress: (progress) {
+        if (mounted && text == _extractedText) {
+          setState(() => _notice = _translationProgressMessage(progress));
+        }
+      },
     );
     if (!mounted || text != _extractedText) return;
     setState(() {
