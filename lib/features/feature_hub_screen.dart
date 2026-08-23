@@ -10,6 +10,7 @@ import 'package:provider/provider.dart';
 import '../app/royal_dark_theme.dart';
 import '../core/localization/language_preferences.dart';
 import '../core/content/offline_content_storage.dart';
+import '../core/games/chess_game_controller.dart';
 import '../core/inspiration/inspiration_safety.dart';
 import '../core/mlkit/on_device_ocr_service.dart';
 import '../core/mlkit/on_device_translation_service.dart';
@@ -1394,10 +1395,16 @@ class _GamesPanel extends StatefulWidget {
 }
 
 class _GamesPanelState extends State<_GamesPanel> {
+  final _chess = ChessGameController();
   Timer? _timer;
+  int _initialMinutes = 5;
   int _whiteSeconds = 300;
   int _blackSeconds = 300;
   bool _whiteTurn = true;
+  String? _selectedSquare;
+  List<String> _legalTargets = const [];
+  bool _computerThinking = false;
+  String _gameNotice = 'ابدأ بنقل قطعة بيضاء؛ الخصم المحلي يختار حركة قانونية بتقييم مادي بسيط.';
 
   @override
   void dispose() {
@@ -1416,6 +1423,11 @@ class _GamesPanelState extends State<_GamesPanel> {
       setState(() {
         if (_whiteTurn && _whiteSeconds > 0) _whiteSeconds--;
         if (!_whiteTurn && _blackSeconds > 0) _blackSeconds--;
+        if (_whiteSeconds == 0 || _blackSeconds == 0) {
+          _timer?.cancel();
+          _timer = null;
+          _gameNotice = _whiteSeconds == 0 ? 'انتهى وقت الأبيض.' : 'انتهى وقت الأسود.';
+        }
       });
     });
     setState(() {});
@@ -1423,24 +1435,191 @@ class _GamesPanelState extends State<_GamesPanel> {
 
   String _format(int value) => '${(value ~/ 60).toString().padLeft(2, '0')}:${(value % 60).toString().padLeft(2, '0')}';
 
+  Future<void> _tapSquare(String square) async {
+    if (_computerThinking || _chess.gameOver || !_chess.isWhiteTurn) return;
+    final piece = _chess.pieceAt(square);
+    if (_selectedSquare == null) {
+      if (piece == null || piece.color.name != 'WHITE') return;
+      setState(() {
+        _selectedSquare = square;
+        _legalTargets = _chess.legalMovesFrom(square);
+        _gameNotice = _legalTargets.isEmpty ? 'لا توجد حركة قانونية لهذه القطعة.' : 'اختر مربعاً مميزاً للحركة.';
+      });
+      return;
+    }
+
+    if (square == _selectedSquare) {
+      setState(() {
+        _selectedSquare = null;
+        _legalTargets = const [];
+      });
+      return;
+    }
+    if (!_legalTargets.contains(square)) {
+      if (piece != null && piece.color.name == 'WHITE') {
+        setState(() {
+          _selectedSquare = square;
+          _legalTargets = _chess.legalMovesFrom(square);
+        });
+      }
+      return;
+    }
+
+    final moved = _chess.movePlayer(_selectedSquare!, square);
+    if (!moved) return;
+    setState(() {
+      _selectedSquare = null;
+      _legalTargets = const [];
+      _whiteTurn = false;
+      _computerThinking = true;
+      _gameNotice = 'الخصم المحلي يفكر…';
+    });
+    await Future<void>.delayed(const Duration(milliseconds: 450));
+    if (!mounted) return;
+    _chess.moveComputer();
+    if (!mounted) return;
+    setState(() {
+      _whiteTurn = true;
+      _computerThinking = false;
+      _gameNotice = _outcomeMessage();
+    });
+  }
+
+  String _outcomeMessage() {
+    if (_chess.isCheckmate) return 'كش مات. انتهت المباراة.';
+    if (_chess.isDraw) return 'تعادل وفق قواعد الشطرنج.';
+    return 'دور الأبيض. اختر قطعة ثم مربعاً مميزاً للحركة.';
+  }
+
+  void _resetGame() {
+    _timer?.cancel();
+    setState(() {
+      _timer = null;
+      _chess.reset();
+      _whiteSeconds = _initialMinutes * 60;
+      _blackSeconds = _initialMinutes * 60;
+      _whiteTurn = true;
+      _selectedSquare = null;
+      _legalTargets = const [];
+      _computerThinking = false;
+      _gameNotice = 'بدأت مباراة جديدة. دور الأبيض.';
+    });
+  }
+
+  String _pieceSymbol(dynamic piece) {
+    if (piece == null) return '';
+    const white = {'PAWN': '♙', 'KNIGHT': '♘', 'BISHOP': '♗', 'ROOK': '♖', 'QUEEN': '♕', 'KING': '♔'};
+    const black = {'PAWN': '♟', 'KNIGHT': '♞', 'BISHOP': '♝', 'ROOK': '♜', 'QUEEN': '♛', 'KING': '♚'};
+    final symbols = piece.color.name == 'WHITE' ? white : black;
+    return symbols[piece.type.name] ?? '';
+  }
+
+  Widget _buildChessBoard() {
+    const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+    return AspectRatio(
+      aspectRatio: 1,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: RoyalColors.gold.withValues(alpha: 0.65), width: 2),
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.4), blurRadius: 14, offset: const Offset(0, 8))],
+        ),
+        child: GridView.builder(
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: 64,
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 8),
+          itemBuilder: (context, index) {
+            final rank = 8 - (index ~/ 8);
+            final file = files[index % 8];
+            final square = '$file$rank';
+            final piece = _chess.pieceAt(square);
+            final isLight = (index ~/ 8 + index % 8).isEven;
+            final isSelected = _selectedSquare == square;
+            final isTarget = _legalTargets.contains(square);
+            return GestureDetector(
+              onTap: () => _tapSquare(square),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 130),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? Colors.amber.withValues(alpha: 0.9)
+                      : isTarget
+                          ? Colors.lightGreen.withValues(alpha: 0.78)
+                          : isLight
+                              ? const Color(0xFFB7C7D4)
+                              : const Color(0xFF29455E),
+                ),
+                child: Center(
+                  child: Text(
+                    _pieceSymbol(piece),
+                    style: TextStyle(
+                      fontSize: 31,
+                      height: 1,
+                      color: piece?.color.name == 'WHITE' ? Colors.white : Colors.black,
+                      shadows: const [Shadow(color: Colors.black54, blurRadius: 2, offset: Offset(1, 1))],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListView(
       padding: const EdgeInsets.all(18),
       children: [
-        const _SectionNotice(title: 'شطرنج وروبيك', detail: 'ساعة الشطرنج تعمل محلياً. محرك الشطرنج والمشهد ثلاثي الأبعاد الكامل يدخلان بعد اختبار Flame/Flame 3D على جهاز Android.'),
+        const _SectionNotice(title: 'شطرنج وروبيك', detail: 'لوحة الشطرنج أدناه تستخدم قواعد قانونية وخصماً محلياً بسيطاً. ليست هذه بعد مشهداً ثلاثي الأبعاد؛ دمج 3D الحقيقي ينتظر نموذج توافق Flutter GPU منفصل. روبيك ثلاثي الأبعاد لم يُفعّل بعد.'),
         const SizedBox(height: 16),
         Card(
           child: Padding(
             padding: const EdgeInsets.all(18),
             child: Column(
               children: [
+                Row(
+                  children: [
+                    const Text('زمن البداية: '),
+                    const SizedBox(width: 8),
+                    DropdownButton<int>(
+                      value: _initialMinutes,
+                      items: const [1, 3, 5, 10].map((minutes) => DropdownMenuItem(value: minutes, child: Text('$minutes دقائق'))).toList(),
+                      onChanged: _timer == null && !_computerThinking
+                          ? (minutes) {
+                              if (minutes == null) return;
+                              setState(() {
+                                _initialMinutes = minutes;
+                                _whiteSeconds = minutes * 60;
+                                _blackSeconds = minutes * 60;
+                              });
+                            }
+                          : null,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
                 Text('الأبيض: ${_format(_whiteSeconds)}', style: const TextStyle(fontSize: 26, color: RoyalColors.text)),
                 const SizedBox(height: 8),
                 Text('الأسود: ${_format(_blackSeconds)}', style: const TextStyle(fontSize: 26, color: RoyalColors.text)),
                 const SizedBox(height: 14),
-                FilledButton(onPressed: _toggleClock, child: Text(_timer == null ? 'بدء الساعة' : 'إيقاف الساعة')),
-                TextButton(onPressed: () => setState(() => _whiteTurn = !_whiteTurn), child: const Text('تبديل الدور')),
+                _buildChessBoard(),
+                const SizedBox(height: 12),
+                Text(_gameNotice, textAlign: TextAlign.center, style: const TextStyle(color: RoyalColors.gold, height: 1.5)),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  alignment: WrapAlignment.center,
+                  children: [
+                    FilledButton(onPressed: _toggleClock, child: Text(_timer == null ? 'بدء الساعة' : 'إيقاف الساعة')),
+                    OutlinedButton(onPressed: _resetGame, child: const Text('مباراة جديدة')),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                SelectableText('PGN: ${_chess.pgn}', style: const TextStyle(color: RoyalColors.muted, fontSize: 11)),
               ],
             ),
           ),
