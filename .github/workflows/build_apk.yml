@@ -65,6 +65,27 @@ jobs:
             echo "Android app Gradle file was not generated."
             exit 1
           fi
+          if [ -f android/app/build.gradle.kts ]; then
+            cat <<'EOF' >> android/app/build.gradle.kts
+
+dependencies {
+    implementation("com.google.mlkit:text-recognition-chinese:16.0.1")
+    implementation("com.google.mlkit:text-recognition-devanagari:16.0.1")
+    implementation("com.google.mlkit:text-recognition-japanese:16.0.1")
+    implementation("com.google.mlkit:text-recognition-korean:16.0.1")
+}
+EOF
+          else
+            cat <<'EOF' >> android/app/build.gradle
+
+dependencies {
+    implementation 'com.google.mlkit:text-recognition-chinese:16.0.1'
+    implementation 'com.google.mlkit:text-recognition-devanagari:16.0.1'
+    implementation 'com.google.mlkit:text-recognition-japanese:16.0.1'
+    implementation 'com.google.mlkit:text-recognition-korean:16.0.1'
+}
+EOF
+          fi
       - name: Install dependencies
         run: flutter pub get
       - name: Static analysis
