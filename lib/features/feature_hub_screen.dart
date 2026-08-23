@@ -136,8 +136,8 @@ class _TranslationPanelState extends State<_TranslationPanel> {
       }
       return;
     }
-    await _speechService.stop();
     final sourceLanguage = context.read<LanguagePreferences>().translationSourceLanguage;
+    await _speechService.stop();
     await _recognitionService.start(
       languageCode: sourceLanguage,
       onText: (recognizedText) {

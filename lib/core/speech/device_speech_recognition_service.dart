@@ -43,8 +43,8 @@ class DeviceSpeechRecognitionService extends ChangeNotifier {
         installedLocaleIds: installedLocales.map((locale) => locale.localeId),
       );
       await _speechToText.listen(
-        localeId: localeId,
         onResult: _handleResult,
+        listenOptions: stt.SpeechListenOptions(localeId: localeId),
       );
       _message = 'استمع الآن؛ سيظهر النص المعترف به في محرر المصدر.';
       notifyListeners();
