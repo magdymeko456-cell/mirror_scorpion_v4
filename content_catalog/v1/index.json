@@ -1,0 +1,65 @@
+{
+  "catalogVersion": 1,
+  "catalogId": "mirror-scorpion-content",
+  "title": "فهرس محتوى Mirror Scorpion",
+  "updatedAt": "2026-08-24T00:00:00Z",
+  "releaseRef": "content-v1.0.0",
+  "packages": [
+    {
+      "packageId": "owner-inspiration-ar",
+      "version": "1.0.0",
+      "order": 10,
+      "status": "available",
+      "title": "تأملات ورسائل إنسانية",
+      "scope": "inspiration",
+      "language": "ar",
+      "estimatedBytes": 3850,
+      "sourceCitation": {
+        "name": "محتوى قدمه مالك التطبيق",
+        "reference": "owner-submission-2026-08-24"
+      },
+      "license": {
+        "usage": "owner-provided-content",
+        "rightsHolder": "Tamer Eldosoky"
+      },
+      "contentPath": "content_catalog/packages/owner-inspiration-ar-1.0.0.json",
+      "contentSha256": "55321d51f3264df4e0fe6fa8d78d6c1501ec2605841a6eb20fee8a1834f679cc"
+    },
+    {
+      "packageId": "hadith-qudsi-verified",
+      "version": null,
+      "order": 100,
+      "status": "requires_review",
+      "title": "الحديث القدسي — فهرس موثق",
+      "scope": "hadith_qudsi",
+      "language": "ar",
+      "sourceCitation": null,
+      "license": null,
+      "reason": "لا يُنشر محتوى قبل توثيق النص والإسناد والترخيص."
+    },
+    {
+      "packageId": "quran-narratives-index",
+      "version": null,
+      "order": 110,
+      "status": "requires_review",
+      "title": "قصص القرآن — فهرس مصدر",
+      "scope": "quran_narratives",
+      "language": "ar",
+      "sourceCitation": null,
+      "license": null,
+      "reason": "لا يُنشر محتوى قبل توثيق الآيات والمراجع وحق الاستخدام."
+    },
+    {
+      "packageId": "asbab-al-nuzul-index",
+      "version": null,
+      "order": 120,
+      "status": "requires_review",
+      "title": "أسباب النزول — فهرس مرتب",
+      "scope": "asbab_al_nuzul",
+      "language": "ar",
+      "sourceCitation": null,
+      "license": null,
+      "reason": "لا يُنشر محتوى قبل تحديد الطبعة والحقوق والمراجع."
+    }
+  ]
+}

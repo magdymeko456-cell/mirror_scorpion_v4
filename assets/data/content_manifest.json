@@ -1,6 +1,12 @@
 {
   "schemaVersion": 1,
   "updatedAt": "2026-08-23",
+  "githubCatalog": {
+    "repository": "magdymeko456-cell/mirror_scorpion_v4",
+    "indexPath": "content_catalog/v1/index.json",
+    "distribution": "user_requested_only",
+    "status": "catalog-prepared-downloader-not-yet-implemented"
+  },
   "packages": [
     {
       "id": "starter-original-ar",

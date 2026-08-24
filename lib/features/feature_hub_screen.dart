@@ -10,6 +10,7 @@ import 'package:provider/provider.dart';
 import '../app/royal_dark_theme.dart';
 import '../core/localization/language_preferences.dart';
 import '../core/content/offline_content_storage.dart';
+import '../core/content/github_content_catalog_service.dart';
 import '../core/games/chess_game_controller.dart';
 import '../core/inspiration/inspiration_safety.dart';
 import '../core/mlkit/on_device_ocr_service.dart';
@@ -1822,12 +1823,77 @@ class _OfflinePackagesPage extends StatefulWidget {
 
 class _OfflinePackagesPageState extends State<_OfflinePackagesPage> {
   final _storage = const OfflineContentStorage();
+  final _catalogService = GitHubContentCatalogService();
   late Future<List<OfflinePackageRecord>> _packages;
+  late Future<ContentCatalogLoadResult> _catalog;
+  bool _isDownloading = false;
+  String? _notice;
 
   @override
   void initState() {
     super.initState();
     _packages = _storage.listPackages();
+    _catalog = _catalogService.fetchCatalog();
+  }
+
+  @override
+  void dispose() {
+    _catalogService.dispose();
+    super.dispose();
+  }
+
+  void _refreshCatalog() {
+    setState(() => _catalog = _catalogService.fetchCatalog());
+  }
+
+  Future<void> _downloadPackage(
+    ContentCatalog catalog,
+    ContentCatalogPackage package,
+  ) async {
+    setState(() {
+      _isDownloading = true;
+      _notice = 'جارٍ تنزيل «${package.title}» والتحقق من سلامتها…';
+    });
+    final result = await _catalogService.downloadPackage(
+      catalog: catalog,
+      package: package,
+      storage: _storage,
+    );
+    if (!mounted) return;
+    setState(() {
+      _isDownloading = false;
+      _notice = result.message;
+      if (result.success) _packages = _storage.listPackages();
+    });
+  }
+
+  Future<void> _deletePackage(OfflinePackageRecord package) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('حذف الحزمة؟'),
+        content: Text('سيُحذف «${package.title}» من مساحة التطبيق فقط.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('حذف'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    final deleted = await _storage.deletePackage(package.id);
+    if (!mounted) return;
+    setState(() {
+      _packages = _storage.listPackages();
+      _notice = deleted
+          ? 'تم حذف «${package.title}» من مساحة التطبيق.'
+          : 'لم تعد الحزمة موجودة في مساحة التطبيق.';
+    });
   }
 
   @override
@@ -1846,12 +1912,114 @@ class _OfflinePackagesPageState extends State<_OfflinePackagesPage> {
               children: [
                 const _SectionNotice(
                   title: 'مساحة العمل أوفلاين',
-                  detail: 'تحتفظ هذه المساحة فقط بحزم JSON التي يختار المستخدم استيرادها. تنزيل قصص من الشبكة لا يبدأ قبل إعداد مصدر مرخّص، والتحقق من التوقيع، وسياسة تحديث وحذف.',
+                  detail: 'تعرض هذه المساحة حزم JSON التي اختارها المستخدم فقط. تتحقق الحزم المتاحة من SHA-256 قبل الحفظ؛ المصادر غير الموثقة لا يظهر لها تنزيل.',
                 ),
                 const SizedBox(height: 16),
                 if (packages.isEmpty)
                   const Card(child: ListTile(title: Text('لا توجد حزم مستوردة بعد'), subtitle: Text('يمكن استيراد حزمة JSON من كارت القصص.'))),
-                ...packages.map((item) => Card(child: ListTile(leading: const Icon(Icons.inventory_2_outlined, color: RoyalColors.cyan), title: Text(item.title), subtitle: Text(item.id)))),
+                ...packages.map(
+                  (item) => Card(
+                    child: ListTile(
+                      leading: const Icon(
+                        Icons.inventory_2_outlined,
+                        color: RoyalColors.cyan,
+                      ),
+                      title: Text(item.title),
+                      subtitle: Text(
+                        '${item.id}${item.version == null ? '' : ' • v${item.version}'}',
+                      ),
+                      trailing: IconButton(
+                        tooltip: 'حذف الحزمة من الجهاز',
+                        icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                        onPressed: () => _deletePackage(item),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                FutureBuilder<ContentCatalogLoadResult>(
+                  future: _catalog,
+                  builder: (context, catalogSnapshot) {
+                    if (!catalogSnapshot.hasData) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    final catalogResult = catalogSnapshot.data!;
+                    if (!catalogResult.isSuccess) {
+                      return Card(
+                        child: ListTile(
+                          leading: const Icon(Icons.cloud_off_outlined),
+                          title: const Text('تعذر تحميل فهرس المصادر'),
+                          subtitle: Text(catalogResult.message),
+                          trailing: IconButton(
+                            tooltip: 'إعادة المحاولة',
+                            icon: const Icon(Icons.refresh),
+                            onPressed: _refreshCatalog,
+                          ),
+                        ),
+                      );
+                    }
+                    final catalog = catalogResult.catalog!;
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Row(
+                          children: [
+                            const Expanded(
+                              child: Text(
+                                'حزم متاحة من GitHub',
+                                style: TextStyle(fontWeight: FontWeight.w800),
+                              ),
+                            ),
+                            IconButton(
+                              tooltip: 'تحديث الفهرس',
+                              icon: const Icon(Icons.refresh, color: RoyalColors.gold),
+                              onPressed: _isDownloading ? null : _refreshCatalog,
+                            ),
+                          ],
+                        ),
+                        ...catalog.packages.map(
+                          (package) => Card(
+                            child: ListTile(
+                              leading: Icon(
+                                package.canDownload
+                                    ? Icons.download_for_offline_outlined
+                                    : Icons.verified_outlined,
+                                color: package.canDownload
+                                    ? RoyalColors.gold
+                                    : RoyalColors.muted,
+                              ),
+                              title: Text(package.title),
+                              subtitle: Text(
+                                package.canDownload
+                                    ? '${package.scope} • ${package.sourceName ?? 'مصدر غير محدد'}'
+                                    : package.reason ?? 'قيد المراجعة قبل الإتاحة.',
+                              ),
+                              trailing: package.canDownload
+                                  ? FilledButton(
+                                      onPressed: _isDownloading
+                                          ? null
+                                          : () => _downloadPackage(catalog, package),
+                                      child: const Text('تنزيل'),
+                                    )
+                                  : const Text(
+                                      'قيد المراجعة',
+                                      style: TextStyle(color: RoyalColors.muted),
+                                    ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+                if (_notice != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: Text(
+                      _notice!,
+                      style: const TextStyle(color: RoyalColors.gold, height: 1.5),
+                    ),
+                  ),
               ],
             );
           },
