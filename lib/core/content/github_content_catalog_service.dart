@@ -106,7 +106,9 @@ class ContentCatalogPackage {
       order: json['order'] is int ? json['order'] as int : 9999,
       status: status,
       version: version,
-      sourceName: sourceCitation?['name'] as String?,
+      sourceName: sourceCitation?['name'] as String? ??
+          sourceCitation?['work'] as String? ??
+          sourceCitation?['author'] as String?,
       licenseUsage: license?['usage'] as String?,
       contentPath: contentPath,
       contentSha256: contentSha256,

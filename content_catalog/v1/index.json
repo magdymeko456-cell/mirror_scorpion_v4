@@ -26,40 +26,90 @@
       "contentSha256": "55321d51f3264df4e0fe6fa8d78d6c1501ec2605841a6eb20fee8a1834f679cc"
     },
     {
-      "packageId": "hadith-qudsi-verified",
+      "packageId": "jalalayn-asbab-al-nuzul",
       "version": null,
       "order": 100,
       "status": "requires_review",
-      "title": "الحديث القدسي — فهرس موثق",
-      "scope": "hadith_qudsi",
+      "title": "أسباب النزول — تفسير الجلالين ولباب النقول",
+      "scope": "asbab_al_nuzul",
       "language": "ar",
-      "sourceCitation": null,
+      "sourceCitation": {
+        "work": "تفسير الجلالين وبهامشه لباب النقول في أسباب النزول",
+        "authors": ["جلال الدين المحلي", "جلال الدين السيوطي"],
+        "publisher": "دار الكتب العلمية",
+        "year": 2019,
+        "isbn": "9782745138996"
+      },
       "license": null,
-      "reason": "لا يُنشر محتوى قبل توثيق النص والإسناد والترخيص."
+      "reason": "تحتاج الطبعة وإذن إعادة التوزيع أو ترخيصاً رقمياً قبل نشر النص."
     },
     {
-      "packageId": "quran-narratives-index",
+      "packageId": "ibn-kathir-prophets",
       "version": null,
       "order": 110,
       "status": "requires_review",
-      "title": "قصص القرآن — فهرس مصدر",
-      "scope": "quran_narratives",
+      "title": "قصص الأنبياء — ابن كثير",
+      "scope": "ibn_kathir_prophets",
       "language": "ar",
-      "sourceCitation": null,
+      "sourceCitation": {
+        "work": "قصص الأنبياء",
+        "author": "ابن كثير",
+        "publisher": "المكتبة التوفيقية للطبع والنشر والتوزيع",
+        "year": 1998,
+        "pages": 608
+      },
       "license": null,
-      "reason": "لا يُنشر محتوى قبل توثيق الآيات والمراجع وحق الاستخدام."
+      "reason": "تحتاج بيانات المحقق والطبعة وإذن إعادة التوزيع قبل نشر النص."
     },
     {
-      "packageId": "asbab-al-nuzul-index",
+      "packageId": "ibn-kathir-women",
       "version": null,
       "order": 120,
       "status": "requires_review",
-      "title": "أسباب النزول — فهرس مرتب",
-      "scope": "asbab_al_nuzul",
+      "title": "قصص النساء — من مصادر ابن كثير",
+      "scope": "ibn_kathir_women",
       "language": "ar",
-      "sourceCitation": null,
+      "sourceCitation": {
+        "work": "قصص الأنبياء ومواضع النساء في مؤلفات ابن كثير",
+        "author": "ابن كثير",
+        "referenceStatus": "يجب تحديد الموضع والطبعة قبل الاقتباس"
+      },
       "license": null,
-      "reason": "لا يُنشر محتوى قبل تحديد الطبعة والحقوق والمراجع."
+      "reason": "لا يوجد ملف تنزيل؛ يلزم تحديد النص والموضع والطبعة وحقوقها."
+    },
+    {
+      "packageId": "ibn-kathir-peoples",
+      "version": null,
+      "order": 130,
+      "status": "requires_review",
+      "title": "قصص الأقوام — من مصادر ابن كثير",
+      "scope": "ibn_kathir_peoples",
+      "language": "ar",
+      "sourceCitation": {
+        "work": "قصص الأنبياء ومواضع الأقوام في مؤلفات ابن كثير",
+        "author": "ابن كثير",
+        "referenceStatus": "يجب تحديد الموضع والطبعة قبل الاقتباس"
+      },
+      "license": null,
+      "reason": "لا يوجد ملف تنزيل؛ يلزم تحديد النص والموضع والطبعة وحقوقها."
+    },
+    {
+      "packageId": "la-tahzan-inspiration",
+      "version": null,
+      "order": 140,
+      "status": "requires_review",
+      "title": "الإلهام — لا تحزن",
+      "scope": "la_tahzan_inspiration",
+      "language": "ar",
+      "sourceCitation": {
+        "work": "لا تحزن",
+        "author": "عائض بن عبد الله القرني",
+        "publisher": "مكتبة الصحابة للطباعة والنشر والتوزيع",
+        "year": 1999,
+        "pages": 424
+      },
+      "license": null,
+      "reason": "تحتاج إذن صاحب الحق أو الناشر قبل نشر نصوص الكتاب."
     }
   ]
 }
