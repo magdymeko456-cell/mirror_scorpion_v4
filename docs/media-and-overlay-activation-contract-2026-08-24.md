@@ -4,7 +4,7 @@
 
 ## 1. القراءة الصوتية المتاحة الآن
 
-يعتمد التطبيق حالياً على محرك TTS المثبت في جهاز Android من خلال `flutter_tts`. يستطيع محرك Android نطق النص فوراً أو توليد ملف صوتي، لكن يجب تهيئته قبل الاستخدام، ويجب تحرير موارده عند الانتهاء. كما أن توافر اللغة أو بيانات الصوت يختلف من جهاز لآخر؛ ولذلك يعرض التطبيق رسالة واضحة إذا كان صوت اللغة غير مثبّت بدلاً من التحويل الصامت إلى لغة أخرى. [1]
+يعتمد التطبيق حالياً على محرك TTS المثبت في جهاز Android من خلال `flutter_tts`. يستطيع محرك Android نطق النص فوراً أو توليد ملف صوتي، لكن يجب تهيئته قبل الاستخدام، ويجب تحرير موارده عند الانتهاء. كما أن توافر اللغة أو بيانات الصوت يختلف من جهاز لآخر؛ ولذلك يعرض التطبيق رسالة واضحة إذا كان صوت اللغة غير مثبّت بدلاً من التحويل الصامت إلى لغة أخرى. [1] تدعم المكتبة المستخدمة قراءة قائمة أصوات النظام وتعيين صوت منها، ولذلك يقتصر اختيار الصوت على الأصوات التي يعيدها الجهاز فعلياً. [5]
 
 | الحالة | ما يفعله التطبيق | ما لا يدّعيه |
 |---|---|---|
@@ -57,3 +57,5 @@
 [2]: https://developer.android.com/develop/background-work/services/fgs/changes "Android foreground-service changes"
 [3]: https://developer.android.com/develop/background-work/services/fgs/restrictions-bg-start "Android foreground-service background-start restrictions"
 [4]: https://developer.android.com/guide/components/intents-filters "Android intents and intent filters"
+[5]: https://pub.dev/packages/flutter_tts "flutter_tts 4.2.5 — system voices and voice selection"
+[6]: https://docs.flutter.dev/release/breaking-changes/radio-api-redesign "Flutter RadioGroup migration"

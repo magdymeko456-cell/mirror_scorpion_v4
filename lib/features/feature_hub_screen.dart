@@ -1237,41 +1237,49 @@ class _StoriesPanelState extends State<_StoriesPanel> {
       builder: (sheetContext) => Directionality(
         textDirection: TextDirection.rtl,
         child: SafeArea(
-          child: ListView(
-            shrinkWrap: true,
-            children: [
-              const ListTile(
-                title: Text('أصوات النظام المتاحة'),
-                subtitle: Text('تظهر أصوات جهازك فقط؛ لا يُرفع النص أو يُنسخ صوتك.'),
-              ),
-              RadioListTile<SystemTtsVoice?>(
-                value: null,
-                groupValue: _speechService.selectedVoice,
-                title: const Text('صوت النظام الافتراضي'),
-                onChanged: (_) async {
-                  await _speechService.selectVoice(
-                    null,
-                    languageCode: languageCode,
-                  );
-                  if (sheetContext.mounted) Navigator.pop(sheetContext);
-                },
-              ),
-              ...voices.map(
-                (voice) => RadioListTile<SystemTtsVoice?>(
-                  value: voice,
-                  groupValue: _speechService.selectedVoice,
-                  title: Text(voice.name),
-                  subtitle: Text(voice.locale),
-                  onChanged: (_) async {
+          child: RadioGroup<SystemTtsVoice>(
+            groupValue: _speechService.selectedVoice,
+            onChanged: (voice) async {
+              await _speechService.selectVoice(
+                voice,
+                languageCode: languageCode,
+              );
+              if (sheetContext.mounted) Navigator.pop(sheetContext);
+            },
+            child: ListView(
+              shrinkWrap: true,
+              children: [
+                const ListTile(
+                  title: Text('أصوات النظام المتاحة'),
+                  subtitle: Text('تظهر أصوات جهازك فقط؛ لا يُرفع النص أو يُنسخ صوتك.'),
+                ),
+                ListTile(
+                  title: const Text('صوت النظام الافتراضي'),
+                  trailing: Icon(
+                    _speechService.selectedVoice == null
+                        ? Icons.check_circle
+                        : Icons.settings_voice_outlined,
+                    color: _speechService.selectedVoice == null
+                        ? RoyalColors.gold
+                        : RoyalColors.muted,
+                  ),
+                  onTap: () async {
                     await _speechService.selectVoice(
-                      voice,
+                      null,
                       languageCode: languageCode,
                     );
                     if (sheetContext.mounted) Navigator.pop(sheetContext);
                   },
                 ),
-              ),
-            ],
+                ...voices.map(
+                  (voice) => RadioListTile<SystemTtsVoice>(
+                    value: voice,
+                    title: Text(voice.name),
+                    subtitle: Text(voice.locale),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
