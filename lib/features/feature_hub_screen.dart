@@ -1930,9 +1930,105 @@ class _ProActivationPageState extends State<_ProActivationPage> {
               ),
               if (_notice != null) Padding(padding: const EdgeInsets.only(top: 12), child: Text(_notice!, style: const TextStyle(color: RoyalColors.gold, height: 1.5))),
               const SizedBox(height: 24),
-              const Text('التواصل لتفعيل الاشتراك', style: TextStyle(fontWeight: FontWeight.w800)),
-              const SizedBox(height: 8),
-              const Text('WhatsApp: 01017341250\nWhatsApp: 01031680816\nWhatsApp: 01558203456\nالبريد: dosoky.server@gmail.com', style: TextStyle(color: RoyalColors.muted, height: 1.6)),
+              const Text(
+                'التواصل لتفعيل الاشتراك',
+                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 20),
+              ),
+              const SizedBox(height: 12),
+              _ContactMethodCard(
+                icon: Icons.chat_bubble,
+                iconColor: const Color(0xFF25D366),
+                label: 'WhatsApp',
+                value: '01017341250',
+              ),
+              const SizedBox(height: 10),
+              _ContactMethodCard(
+                icon: Icons.chat_bubble,
+                iconColor: const Color(0xFF25D366),
+                label: 'WhatsApp',
+                value: '01031680816',
+              ),
+              const SizedBox(height: 10),
+              _ContactMethodCard(
+                icon: Icons.chat_bubble,
+                iconColor: const Color(0xFF25D366),
+                label: 'WhatsApp',
+                value: '01558203456',
+              ),
+              const SizedBox(height: 10),
+              _ContactMethodCard(
+                icon: Icons.alternate_email,
+                iconColor: const Color(0xFFEA4335),
+                label: 'البريد الإلكتروني',
+                value: 'dosoky.server@gmail.com',
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ContactMethodCard extends StatelessWidget {
+  const _ContactMethodCard({
+    required this.icon,
+    required this.iconColor,
+    required this.label,
+    required this.value,
+  });
+
+  final IconData icon;
+  final Color iconColor;
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: '$label: $value. اضغط للنسخ',
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: () async {
+          await Clipboard.setData(ClipboardData(text: value));
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('تم نسخ $value')),
+            );
+          }
+        },
+        child: Ink(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1B2838),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: iconColor.withValues(alpha: 0.5)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(color: iconColor, shape: BoxShape.circle),
+                child: Icon(icon, color: Colors.white, size: 24),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(label, style: const TextStyle(color: RoyalColors.muted, fontSize: 14)),
+                    const SizedBox(height: 3),
+                    Text(
+                      value,
+                      textDirection: TextDirection.ltr,
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.copy_outlined, color: RoyalColors.gold),
             ],
           ),
         ),
