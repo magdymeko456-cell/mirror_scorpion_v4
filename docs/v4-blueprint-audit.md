@@ -1,4 +1,6 @@
-# تدقيق مطابقة Mirror Scorpion v4 مع الوصف المرجعي
+# أرشيف تدقيق مطابقة Mirror Scorpion v4 مع الوصف المرجعي
+
+> **حالة الوثيقة: مؤرشفة في 24 أغسطس 2026.** نطاق هذا التدقيق هو بناء Expo السابق، ولذلك لا يصف Flutter v4 الحالي أو لغة الميكروفون أو حدود ML Kit أو لوحة البداية الصادقة. يحل محله `docs/v4-full-requirements-acceptance-matrix.md` و`docs/description-vs-implementation-review-2026-08-24.md`.
 
 **مرجع التدقيق:** `pasted_content.txt` المقدم من صاحب المشروع.
 **نطاق التدقيق:** بناء Expo الحالي، وليس وعوداً بخدمات خارجية لم تُربط بعد.
