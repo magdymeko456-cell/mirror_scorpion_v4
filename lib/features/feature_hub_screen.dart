@@ -340,8 +340,20 @@ return ListView(
             _EditorAction(icon: _speechService.isSpeaking ? Icons.stop_circle_outlined : Icons.volume_up, tooltip: _speechService.isSpeaking ? 'إيقاف النطق' : 'نطق الترجمة بصوت النظام', onPressed: _speakTranslation),
             _EditorAction(icon: Icons.share, tooltip: 'مشاركة ملف صوت مترجم', onPressed: () => _beginNewInput('مشاركة الترجمة')),
             _EditorAction(icon: Icons.copy, tooltip: 'نسخ الترجمة', onPressed: () async {
-              if (_output.text.isNotEmpty) await Clipboard.setData(ClipboardData(text: _output.text));
-              if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('لا يوجد نص مترجم لنسخه بعد.')));
+              if (_output.text.isEmpty) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('لا يوجد نص مترجم لنسخه بعد.')),
+                  );
+                }
+                return;
+              }
+              await Clipboard.setData(ClipboardData(text: _output.text));
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('تم نسخ الترجمة.')),
+                );
+              }
             }),
           ],
         ),
@@ -1484,6 +1496,14 @@ class _GamesPanelState extends State<_GamesPanel> {
       setState(() {});
       return;
     }
+    if (_chess.gameOver || _whiteSeconds == 0 || _blackSeconds == 0) {
+      setState(() {
+        _gameNotice = _chess.gameOver
+            ? _outcomeMessage()
+            : 'انتهت المباراة بالوقت. ابدأ مباراة جديدة أولاً.';
+      });
+      return;
+    }
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       setState(() {
         if (_whiteTurn && _whiteSeconds > 0) _whiteSeconds--;
@@ -1502,6 +1522,10 @@ class _GamesPanelState extends State<_GamesPanel> {
 
   Future<void> _tapSquare(String square) async {
     if (_computerThinking || _chess.gameOver || !_chess.isWhiteTurn) return;
+    if (_whiteSeconds == 0 || _blackSeconds == 0) {
+      setState(() => _gameNotice = 'انتهت المباراة بالوقت. ابدأ مباراة جديدة أولاً.');
+      return;
+    }
     final piece = _chess.pieceAt(square);
     if (_selectedSquare == null) {
       if (piece == null || piece.color.name != 'WHITE') return;
@@ -1532,6 +1556,17 @@ class _GamesPanelState extends State<_GamesPanel> {
 
     final moved = _chess.movePlayer(_selectedSquare!, square);
     if (!moved) return;
+    if (_chess.gameOver) {
+      _timer?.cancel();
+      setState(() {
+        _timer = null;
+        _selectedSquare = null;
+        _legalTargets = const [];
+        _computerThinking = false;
+        _gameNotice = _outcomeMessage();
+      });
+      return;
+    }
     setState(() {
       _selectedSquare = null;
       _legalTargets = const [];
@@ -1544,8 +1579,12 @@ class _GamesPanelState extends State<_GamesPanel> {
     _chess.moveComputer();
     if (!mounted) return;
     setState(() {
-      _whiteTurn = true;
+      _whiteTurn = _chess.isWhiteTurn;
       _computerThinking = false;
+      if (_chess.gameOver) {
+        _timer?.cancel();
+        _timer = null;
+      }
       _gameNotice = _outcomeMessage();
     });
   }
@@ -1896,19 +1935,33 @@ class _ProActivationPageState extends State<_ProActivationPage> {
               const SizedBox(height: 18),
               const Text('معرّف التثبيت', style: TextStyle(fontWeight: FontWeight.w800)),
               const SizedBox(height: 8),
-              TextField(
-                controller: TextEditingController(text: premium.installationId),
-                readOnly: true,
-                maxLines: 2,
-                decoration: InputDecoration(
-                  suffixIcon: IconButton(
-                    tooltip: 'نسخ المعرّف',
-                    icon: const Icon(Icons.copy, color: RoyalColors.gold),
-                    onPressed: () async {
-                      await Clipboard.setData(ClipboardData(text: premium.installationId));
-                      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم نسخ معرّف التثبيت.')));
-                    },
-                  ),
+              Container(
+                padding: const EdgeInsetsDirectional.only(start: 12, end: 4, top: 8, bottom: 8),
+                decoration: BoxDecoration(
+                  border: Border.all(color: RoyalColors.border),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: SelectableText(
+                        premium.installationId,
+                        textDirection: TextDirection.ltr,
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: 'نسخ المعرّف',
+                      icon: const Icon(Icons.copy, color: RoyalColors.gold),
+                      onPressed: () async {
+                        await Clipboard.setData(ClipboardData(text: premium.installationId));
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('تم نسخ معرّف التثبيت.')),
+                          );
+                        }
+                      },
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 16),
