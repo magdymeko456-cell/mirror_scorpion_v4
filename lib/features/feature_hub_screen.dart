@@ -1220,6 +1220,67 @@ class _StoriesPanelState extends State<_StoriesPanel> {
     }
   }
 
+  Future<void> _chooseStoryVoice() async {
+    final languageCode = context.read<LanguagePreferences>().storyLanguageCode;
+    final voices = await _speechService.voicesForLanguage(languageCode);
+    if (!mounted) return;
+    if (voices.isEmpty) {
+      setState(() {
+        _notice = _speechService.message ??
+            'لا توجد أصوات نظام متاحة للغة القصة على هذا الجهاز.';
+      });
+      return;
+    }
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: const Color(0xFF0D1623),
+      builder: (sheetContext) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: SafeArea(
+          child: ListView(
+            shrinkWrap: true,
+            children: [
+              const ListTile(
+                title: Text('أصوات النظام المتاحة'),
+                subtitle: Text('تظهر أصوات جهازك فقط؛ لا يُرفع النص أو يُنسخ صوتك.'),
+              ),
+              RadioListTile<SystemTtsVoice?>(
+                value: null,
+                groupValue: _speechService.selectedVoice,
+                title: const Text('صوت النظام الافتراضي'),
+                onChanged: (_) async {
+                  await _speechService.selectVoice(
+                    null,
+                    languageCode: languageCode,
+                  );
+                  if (sheetContext.mounted) Navigator.pop(sheetContext);
+                },
+              ),
+              ...voices.map(
+                (voice) => RadioListTile<SystemTtsVoice?>(
+                  value: voice,
+                  groupValue: _speechService.selectedVoice,
+                  title: Text(voice.name),
+                  subtitle: Text(voice.locale),
+                  onChanged: (_) async {
+                    await _speechService.selectVoice(
+                      voice,
+                      languageCode: languageCode,
+                    );
+                    if (sheetContext.mounted) Navigator.pop(sheetContext);
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (mounted && _speechService.message != null) {
+      setState(() => _notice = _speechService.message);
+    }
+  }
+
   void _openReader(_StoryEntry story) {
     showModalBottomSheet<void>(
       context: context,
@@ -1425,6 +1486,14 @@ class _StoriesPanelState extends State<_StoriesPanel> {
                                 }
                               },
                               icon: Icon(_speechService.isSpeaking ? Icons.stop_circle_outlined : Icons.volume_up, color: RoyalColors.gold),
+                            ),
+                            IconButton(
+                              tooltip: 'اختيار صوت النظام للقصة',
+                              onPressed: _chooseStoryVoice,
+                              icon: const Icon(
+                                Icons.record_voice_over_outlined,
+                                color: RoyalColors.cyan,
+                              ),
                             ),
                             const Text('المزيد', style: TextStyle(color: RoyalColors.purple)),
                           ],
