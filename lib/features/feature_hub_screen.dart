@@ -1180,11 +1180,17 @@ class _StoriesPanelState extends State<_StoriesPanel> {
   }
 
   Future<List<_StoryEntry>> _loadBundledStories() async {
-    final decoded = jsonDecode(
-      await rootBundle.loadString('assets/data/starter_original_ar.json'),
-    ) as Map<String, dynamic>;
-    final stories = decoded['stories'] as List<dynamic>? ?? const [];
-    return stories
+    const assets = <String>[
+      'assets/data/starter_original_ar.json',
+      'assets/data/owner_inspiration_ar.json',
+    ];
+    final packages = await Future.wait(
+      assets.map((asset) async => jsonDecode(
+            await rootBundle.loadString(asset),
+          ) as Map<String, dynamic>),
+    );
+    return packages
+        .expand((package) => package['stories'] as List<dynamic>? ?? const [])
         .whereType<Map<String, dynamic>>()
         .map(_StoryEntry.fromJson)
         .toList();
@@ -1757,10 +1763,30 @@ class _SettingsPanel extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           const Card(
-            child: ListTile(
-              leading: Icon(Icons.info_outline, color: RoyalColors.gold),
-              title: Text('حول Mirror Scorpion'),
-              subtitle: Text('ترجمة محلية عندما تدعمها نماذج الجهاز، محتوى أوفلاين اختياري، وخصوصية قائمة على الفعل الصريح للمستخدم.'),
+            child: Padding(
+              padding: EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.info_outline, color: RoyalColors.gold),
+                      SizedBox(width: 10),
+                      Text('نبذة عن التطبيق', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
+                    ],
+                  ),
+                  SizedBox(height: 12),
+                  Text('ميرور سكربيون: حيث تُصنع البدايات', style: TextStyle(color: RoyalColors.cyan, fontWeight: FontWeight.w700, fontSize: 17)),
+                  SizedBox(height: 10),
+                  Text('الوقت هو العملة الأغلى التي مُنحت للإنسان. هنا، نحن لا نقيس أعمارنا بالسنوات، بل بكل ثانية نصنع فيها إنجازاً حقيقياً.\n\nهنا ستكتشف أن كل انكسار مررت به لم يكن إلا تمهيداً لانطلاقة أعظم؛ فالماضي ليس للمحو، بل للتعلّم، والمستقبل هو ما يستحق انتباهك الآن.\n\nتذكّر دائماً: قصتك لا تزال تُكتب، والنهاية لم يحن وقتها بعد.', style: TextStyle(color: RoyalColors.muted, height: 1.65, fontSize: 15)),
+                  SizedBox(height: 14),
+                  Divider(),
+                  SizedBox(height: 8),
+                  Text('المطور', style: TextStyle(color: RoyalColors.gold, fontWeight: FontWeight.w700)),
+                  SizedBox(height: 4),
+                  Text('Tamer Eldosoky', textDirection: TextDirection.ltr, style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
+                ],
+              ),
             ),
           ),
         ],

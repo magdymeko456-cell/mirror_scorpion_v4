@@ -13,6 +13,16 @@
       "asset": "assets/data/starter_original_ar.json"
     },
     {
+      "id": "owner-inspiration-ar",
+      "title": "تأملات ورسائل إنسانية",
+      "category": "owner_provided_inspiration",
+      "language": "ar",
+      "distribution": "bundled",
+      "license": "owner-provided-content",
+      "source": "نصوص قدمها مالك التطبيق",
+      "asset": "assets/data/owner_inspiration_ar.json"
+    },
+    {
       "id": "hadith-qudsi-verified",
       "title": "الحديث القدسي — فهرس موثق",
       "category": "hadith_qudsi",
