@@ -3,7 +3,7 @@
   "catalogId": "mirror-scorpion-content",
   "title": "فهرس محتوى Mirror Scorpion",
   "updatedAt": "2026-08-24T00:00:00Z",
-  "releaseRef": "content-v1.0.0",
+  "releaseRef": "content-v1.1.0",
   "packages": [
     {
       "packageId": "owner-inspiration-ar",
@@ -24,6 +24,29 @@
       },
       "contentPath": "content_catalog/packages/owner-inspiration-ar-1.0.0.json",
       "contentSha256": "55321d51f3264df4e0fe6fa8d78d6c1501ec2605841a6eb20fee8a1834f679cc"
+    },
+    {
+      "packageId": "ibn-al-qayyim-al-fawaid-ar",
+      "version": "1.0.0",
+      "order": 20,
+      "status": "available",
+      "title": "تأملات من كتاب الفوائد",
+      "scope": "licensed_religious_inspiration",
+      "language": "ar",
+      "estimatedBytes": 9491,
+      "sourceCitation": {
+        "name": "ويكي مصدر — كتاب الفوائد/2",
+        "work": "كتاب الفوائد",
+        "author": "ابن القيم",
+        "reference": "https://ar.wikisource.org/w/index.php?title=كتاب_الفوائد/2&oldid=281174"
+      },
+      "license": {
+        "usage": "CC-BY-SA-4.0",
+        "name": "Creative Commons Attribution-ShareAlike 4.0 International",
+        "url": "https://creativecommons.org/licenses/by-sa/4.0/"
+      },
+      "contentPath": "content_catalog/packages/ibn-al-qayyim-al-fawaid-ar-1.0.0.json",
+      "contentSha256": "2604f5dc13718ab8e1380eb5aa7b9966726a8cc23c89ba8e67cd6b75efae780c"
     },
     {
       "packageId": "jalalayn-asbab-al-nuzul",
