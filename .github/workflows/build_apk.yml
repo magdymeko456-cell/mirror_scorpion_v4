@@ -23,6 +23,12 @@ jobs:
         run: |
           npm ci
           npm run verify
+      - name: Verify ElevenLabs secret stays outside the APK
+        run: |
+          if grep -R -nE 'ELEVENLABS_API_KEY|xi-api-key|api\.elevenlabs\.io' lib test; then
+            echo "ElevenLabs credentials or direct provider calls must not be present in Flutter code."
+            exit 1
+          fi
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: "3.44.7"

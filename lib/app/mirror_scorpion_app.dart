@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../core/localization/language_preferences.dart';
+import '../core/speech/elevenlabs_voice_service.dart';
 import '../features/home/dashboard_screen.dart';
 import 'royal_dark_theme.dart';
 
@@ -12,8 +13,13 @@ class MirrorScorpionApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider<LanguagePreferences>.value(
-      value: languagePreferences ?? LanguagePreferences(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider<LanguagePreferences>.value(
+          value: languagePreferences ?? LanguagePreferences(),
+        ),
+        ChangeNotifierProvider(create: (_) => ElevenLabsVoiceService()),
+      ],
       child: Builder(
         builder: (context) {
           final preferences = context.watch<LanguagePreferences>();

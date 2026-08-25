@@ -15,6 +15,9 @@
 android/app/google-services.json
 lib/firebase_options.dart
 functions/.env
+functions/.env.*
+!functions/.env.example
+functions/elevenlabs.local.json
 serviceAccountKey.json
 private_key.pem
 test_firebase.js

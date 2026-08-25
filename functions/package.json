@@ -8,7 +8,7 @@
     "node": "22"
   },
   "scripts": {
-    "check": "node --check index.js && node --check src/health.js",
+    "check": "node --check index.js && node --check src/health.js && node --check src/elevenlabs_gateway.js",
     "test": "node --test test/*.test.js",
     "verify": "npm run check && npm run test"
   },

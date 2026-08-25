@@ -17,6 +17,7 @@ import '../core/mlkit/on_device_ocr_service.dart';
 import '../core/mlkit/on_device_translation_service.dart';
 import '../core/pro/premium_verification_service.dart';
 import '../core/speech/device_speech_recognition_service.dart';
+import '../core/speech/elevenlabs_voice_service.dart';
 import '../core/speech/system_tts_service.dart';
 
 enum FeatureKind { translation, dialogue, documents, stories, games, settings }
@@ -1840,6 +1841,26 @@ class _SettingsPanel extends StatelessWidget {
           const SizedBox(height: 12),
           Card(
             child: ListTile(
+              leading: const Icon(
+                Icons.record_voice_over_outlined,
+                color: RoyalColors.gold,
+              ),
+              title: const Text('ElevenLabs — القراءة ونسخ صوت المالك'),
+              subtitle: const Text(
+                'الربط السحابي غير مفعّل؛ أصوات النظام المحلية هي المسار العامل الآن.',
+              ),
+              trailing: const Icon(Icons.chevron_left),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute<void>(
+                  builder: (_) => const _ElevenLabsVoicePage(),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Card(
+            child: ListTile(
               leading: const Icon(Icons.download_outlined, color: RoyalColors.cyan),
               title: const Text('حزم المحتوى واللغات أوف لاين'),
               subtitle: const Text('عرض المساحة المحلية وحزم JSON المستوردة؛ نماذج ML Kit تُدار من مسار الترجمة.'),
@@ -1886,6 +1907,164 @@ class _SettingsPanel extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ElevenLabsVoicePage extends StatelessWidget {
+  const _ElevenLabsVoicePage();
+
+  void _showConsentSummary(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: const Color(0xFF0D1623),
+      builder: (sheetContext) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Text(
+                    'ملخص الموافقة قبل نسخ الصوت',
+                    style: TextStyle(
+                      color: RoyalColors.gold,
+                      fontSize: 19,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'لن تكون ميزة النسخ متاحة إلا لمن عمره 18 عاماً أو أكثر، '
+                    'ولصوت المالك أو صاحب تفويض صريح فقط. لا يقرأ التطبيق '
+                    'رسائلك أو مكالماتك، ولا يرفع تسجيلاً تلقائياً. عند التفعيل '
+                    'سيظهر عقد موافقة مستقل وخيار حذف واضح قبل إرسال عينة.',
+                    style: TextStyle(height: 1.7),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'المرجع داخل المشروع: ${ElevenLabsVoiceService.consentDocumentPath}',
+                    style: const TextStyle(
+                      color: RoyalColors.muted,
+                      height: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  FilledButton(
+                    onPressed: () => Navigator.pop(sheetContext),
+                    child: const Text('فهمت'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final service = context.watch<ElevenLabsVoiceService>();
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Scaffold(
+        appBar: AppBar(title: const Text('إعداد ElevenLabs')),
+        body: ListView(
+          padding: const EdgeInsets.all(18),
+          children: [
+            const _SectionNotice(
+              title: 'حالة صوت صادقة',
+              detail:
+                  'تعمل القراءة الحالية بصوت النظام المثبت على جهازك. لا يعمل ElevenLabs في هذه النسخة بعد، ولا يرسل التطبيق نصاً أو عينة أو مفتاحاً إلى أي مزود.',
+            ),
+            const SizedBox(height: 14),
+            Card(
+              child: ListTile(
+                leading: const Icon(
+                  Icons.phonelink_lock_outlined,
+                  color: RoyalColors.cyan,
+                ),
+                title: const Text('حالة الخادم الوسيط'),
+                subtitle: Text(service.statusMessage),
+                trailing: const Icon(
+                  Icons.cloud_off_outlined,
+                  color: RoyalColors.muted,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Text(
+                      'قراءة سحابية اختيارية',
+                      style: TextStyle(fontWeight: FontWeight.w800),
+                    ),
+                    const SizedBox(height: 6),
+                    const Text(
+                      'ستُستخدم لاحقاً لقراءة نص تختاره فقط. لا تعد بديلاً عن أصوات النظام ولا تعمل قبل اعتماد الخطة والخادم وحد الاستخدام.',
+                      style: TextStyle(
+                        color: RoyalColors.muted,
+                        height: 1.5,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    FilledButton.icon(
+                      onPressed: null,
+                      icon: Icon(Icons.cloud_off_outlined),
+                      label: Text('الخادم غير مفعّل'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Text(
+                      'نسخ صوت المالك',
+                      style: TextStyle(
+                        color: RoyalColors.gold,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    const Text(
+                      'مغلق الآن. عند إطلاقه سيطلب موافقة منفصلة، تأكيد العمر وملكية الصوت، ثم يسمح بعينة يختارها المستخدم يدوياً. لا يدعم نسخ أصوات الغير أو تشغيل التسجيل في الخلفية.',
+                      style: TextStyle(
+                        color: RoyalColors.muted,
+                        height: 1.5,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    OutlinedButton.icon(
+                      onPressed: () => _showConsentSummary(context),
+                      icon: const Icon(Icons.privacy_tip_outlined),
+                      label: const Text('اطلع على ملخص الموافقة والحذف'),
+                    ),
+                    const SizedBox(height: 8),
+                    FilledButton.icon(
+                      onPressed: null,
+                      icon: Icon(Icons.lock_outline),
+                      label: Text('لا يمكن رفع عينة الآن'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -3,6 +3,7 @@ const { logger } = require("firebase-functions");
 const { initializeApp } = require("firebase-admin/app");
 
 const { buildHealthResponse } = require("./src/health");
+const { buildElevenLabsGatewayStatus } = require("./src/elevenlabs_gateway");
 
 // تعتمد Cloud Functions على هوية بيئة التشغيل الافتراضية.
 // لا تُضف serviceAccountKey.json أو أي مفتاح خاص إلى المشروع.
@@ -17,6 +18,23 @@ exports.healthCheck = onCall({ region: "us-central1" }, (request) => {
   logger.info("Mirror Scorpion healthCheck completed", {
     activeProjectId: response.activeProjectId,
     authenticated: response.authenticated,
+  });
+
+  return response;
+});
+
+// لا ينفذ هذا المسار أي طلب إلى ElevenLabs. يثبت فقط أن وضع البوابة
+// يبقى مغلقاً إلى أن يعتمد المالك الميزانية والخادم ومفتاح الخدمة.
+exports.elevenLabsGatewayStatus = onCall({ region: "us-central1" }, (request) => {
+  const response = buildElevenLabsGatewayStatus({
+    authenticated: request.auth != null,
+    hasApiKey: Boolean(process.env.ELEVENLABS_API_KEY),
+    budgetApproved: false,
+  });
+
+  logger.info("Mirror Scorpion ElevenLabs gateway status checked", {
+    authenticated: response.authenticated,
+    enabled: response.enabled,
   });
 
   return response;
