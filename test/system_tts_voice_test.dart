@@ -23,4 +23,27 @@ void main() {
       throwsFormatException,
     );
   });
+
+  test('defines the four named local voice performance profiles', () {
+    expect(SystemVoiceProfile.values, hasLength(4));
+    expect(
+      SystemVoiceProfile.values.map((profile) => profile.label),
+      <String>['سلمى', 'سيف', 'سما', 'ساره'],
+    );
+    expect(SystemVoiceProfile.salma.styleDescription, contains('هادئ'));
+    expect(SystemVoiceProfile.saif.styleDescription, contains('جاد'));
+    expect(SystemVoiceProfile.sama.styleDescription, contains('نشط'));
+    expect(SystemVoiceProfile.sara.styleDescription, contains('مبهج'));
+  });
+
+  test('local performance profiles keep distinct rate and pitch settings', () {
+    final profiles = SystemVoiceProfile.values;
+    final rates = profiles.map((profile) => profile.speechRate).toSet();
+    final pitches = profiles.map((profile) => profile.pitch).toSet();
+
+    expect(rates, hasLength(4));
+    expect(pitches, hasLength(4));
+    expect(SystemVoiceProfile.saif.pitch, lessThan(1));
+    expect(SystemVoiceProfile.sama.speechRate, greaterThan(0.5));
+  });
 }

@@ -13,6 +13,7 @@ import '../core/content/offline_content_storage.dart';
 import '../core/content/github_content_catalog_service.dart';
 import '../core/games/chess_game_controller.dart';
 import '../core/inspiration/inspiration_safety.dart';
+import '../core/documents/local_document_text_service.dart';
 import '../core/mlkit/on_device_ocr_service.dart';
 import '../core/mlkit/on_device_translation_service.dart';
 import '../core/pro/premium_verification_service.dart';
@@ -926,27 +927,15 @@ class _DocumentsPanel extends StatefulWidget {
 class _DocumentsPanelState extends State<_DocumentsPanel> {
   final _picker = ImagePicker();
   final _ocrService = const OnDeviceOcrService();
+  final _documentTextService = const LocalDocumentTextService();
   final _translationService = const OnDeviceTranslationService();
   bool _isScanning = false;
   bool _isTranslating = false;
   String? _selectedFileName;
-  PlatformFile? _selectedPdf;
+  String? _selectedDocumentName;
   String? _extractedText;
   String? _translatedText;
   String? _notice;
-  String _targetLanguage = 'en';
-  bool _loadedLanguagePreference = false;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (_loadedLanguagePreference) return;
-    final saved = context.read<LanguagePreferences>().translationTargetLanguage;
-    if (TranslationLanguageCatalog.labels.containsKey(saved)) {
-      _targetLanguage = saved;
-    }
-    _loadedLanguagePreference = true;
-  }
 
   Future<void> _scanImage(ImageSource source) async {
     final image = await _picker.pickImage(
@@ -983,11 +972,14 @@ class _DocumentsPanelState extends State<_DocumentsPanel> {
 
   Future<void> _translateExtractedText(String text) async {
     if (!mounted) return;
-    final targetLanguage = _targetLanguage;
+    final targetLanguage = DocumentTranslationPolicy.targetForDevice(
+      context.read<LanguagePreferences>().deviceLanguageCode,
+    );
     setState(() {
       _isTranslating = true;
       _translatedText = null;
-      _notice = 'جارٍ ترجمة النص المستخرج إلى ${TranslationLanguageCatalog.labels[targetLanguage] ?? targetLanguage}…';
+      _notice = 'جارٍ اكتشاف لغة المستند وترجمته إلى لغة جهازك: '
+          '${TranslationLanguageCatalog.labels[targetLanguage] ?? targetLanguage}…';
     });
     final result = await _translationService.translate(
       text: text,
@@ -1006,27 +998,41 @@ class _DocumentsPanelState extends State<_DocumentsPanel> {
     });
   }
 
-  Future<void> _selectTargetLanguage(String code) async {
-    setState(() => _targetLanguage = code);
-    await context.read<LanguagePreferences>().setTranslationTargetLanguage(code);
-    final extractedText = _extractedText;
-    if (extractedText != null && extractedText.trim().isNotEmpty) {
-      await _translateExtractedText(extractedText);
-    }
-  }
-
-  Future<void> _pickPdf() async {
+  Future<void> _pickLocalDocument() async {
     final file = await FilePicker.pickFile(
       type: FileType.custom,
-      allowedExtensions: const ['pdf'],
+      allowedExtensions: const ['pdf', 'txt'],
+    );
+    if (!mounted) return;
+    if (file == null) {
+      setState(() => _notice = 'لم يتم اختيار مستند.');
+      return;
+    }
+    final path = file.path;
+    if (path == null || path.isEmpty) {
+      setState(() => _notice = 'تعذر الوصول إلى المستند محلياً من هذا الموفر.');
+      return;
+    }
+    setState(() {
+      _isScanning = true;
+      _selectedDocumentName = file.name;
+      _extractedText = null;
+      _translatedText = null;
+      _notice = 'جارٍ قراءة «${file.name}» محلياً…';
+    });
+    final result = await _documentTextService.extract(
+      path: path,
+      fileName: file.name,
     );
     if (!mounted) return;
     setState(() {
-      _selectedPdf = file;
-      _notice = file == null
-          ? 'لم يتم اختيار PDF.'
-          : 'تم اختيار «${file.name}» محلياً. استخراج صفحات PDF وترجمتها مسار مستقل لم يُفعّل بعد؛ لن يعرض التطبيق نتيجة مصطنعة.';
+      _isScanning = false;
+      _extractedText = result.isSuccess ? result.text : null;
+      _notice = result.message;
     });
+    if (result.isSuccess && result.text != null && result.text!.trim().isNotEmpty) {
+      await _translateExtractedText(result.text!);
+    }
   }
 
   @override
@@ -1034,31 +1040,11 @@ class _DocumentsPanelState extends State<_DocumentsPanel> {
     return ListView(
       padding: const EdgeInsets.all(18),
       children: [
-        const _SectionNotice(title: 'عدسة OCR وترجمة محلية', detail: 'تفحص العدسة الصورة المختارة محلياً ثم تمرر النص المستخرج إلى ML Kit للترجمة نحو اللغة المختارة. الإصدار المحلي الحالي يقرأ النص اللاتيني فقط؛ العربية وPDF يتطلبان محركاً مناسباً أو خدمة خادم لاحقاً.'),
+        const _SectionNotice(title: 'عدسة وPDF ومستندات محلية', detail: 'تستخرج العدسة أو المستند النص محلياً، ثم تكتشف لغته وتترجمه دائماً إلى لغة جهازك. لا توجد لغة هدف قابلة للتغيير في هذا القسم.'),
         const SizedBox(height: 20),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-          decoration: BoxDecoration(
-            color: const Color(0xFF1B2838),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: Colors.blueAccent.withValues(alpha: 0.4)),
-          ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              value: _targetLanguage,
-              isExpanded: true,
-              dropdownColor: const Color(0xFF1B2838),
-              icon: const Icon(Icons.translate, color: Colors.cyanAccent),
-              items: TranslationLanguageCatalog.labels.entries
-                  .map((entry) => DropdownMenuItem(value: entry.key, child: Text('ترجمة إلى: ${entry.value}')))
-                  .toList(),
-              onChanged: _isScanning || _isTranslating
-                  ? null
-                  : (code) {
-                      if (code != null) _selectTargetLanguage(code);
-                    },
-            ),
-          ),
+        _DeviceSpeechLanguageLabel(
+          languageCode: context.watch<LanguagePreferences>().deviceLanguageCode,
+          label: 'الترجمة إلى لغة جهازك',
         ),
         const SizedBox(height: 12),
         Card(
@@ -1075,7 +1061,7 @@ class _DocumentsPanelState extends State<_DocumentsPanel> {
           child: ListTile(
             leading: const Icon(Icons.photo_library_outlined, color: RoyalColors.gold),
             title: const Text('اختيار صورة من الجهاز'),
-            subtitle: const Text('OCR محلي للصورة؛ PDF مؤجل لمسار مستقل'),
+            subtitle: const Text('OCR محلي ثم ترجمة إلى لغة جهازك'),
             trailing: const Icon(Icons.chevron_left),
             onTap: _isScanning ? null : () => _scanImage(ImageSource.gallery),
           ),
@@ -1084,10 +1070,10 @@ class _DocumentsPanelState extends State<_DocumentsPanel> {
         Card(
           child: ListTile(
             leading: const Icon(Icons.picture_as_pdf_outlined, color: RoyalColors.gold),
-            title: const Text('اختيار مستند PDF'),
-            subtitle: Text(_selectedPdf == null ? 'اختيار محلي أولاً؛ الترجمة متعددة الصفحات لم تُفعّل بعد' : 'المستند المختار: ${_selectedPdf!.name}'),
+            title: const Text('اختيار PDF أو ملف نصي محلي'),
+            subtitle: Text(_selectedDocumentName == null ? 'PDF نصي أو TXT: استخراج محلي ثم ترجمة إلى لغة جهازك' : 'المستند المختار: $_selectedDocumentName'),
             trailing: const Icon(Icons.chevron_left),
-            onTap: _isScanning || _isTranslating ? null : _pickPdf,
+            onTap: _isScanning || _isTranslating ? null : _pickLocalDocument,
           ),
         ),
         if (_selectedFileName != null)
@@ -1129,7 +1115,7 @@ class _DocumentsPanelState extends State<_DocumentsPanel> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text('الترجمة إلى: ${TranslationLanguageCatalog.labels[_targetLanguage] ?? _targetLanguage}', style: const TextStyle(color: RoyalColors.gold)),
+                  Text('الترجمة إلى لغة جهازك: ${TranslationLanguageCatalog.labels[context.read<LanguagePreferences>().deviceLanguageCode] ?? context.read<LanguagePreferences>().deviceLanguageCode}', style: const TextStyle(color: RoyalColors.gold)),
                   const SizedBox(height: 8),
                   SelectableText(_translatedText!, style: const TextStyle(height: 1.6)),
                 ],
@@ -1225,13 +1211,6 @@ class _StoriesPanelState extends State<_StoriesPanel> {
     final languageCode = context.read<LanguagePreferences>().storyLanguageCode;
     final voices = await _speechService.voicesForLanguage(languageCode);
     if (!mounted) return;
-    if (voices.isEmpty) {
-      setState(() {
-        _notice = _speechService.message ??
-            'لا توجد أصوات نظام متاحة للغة القصة على هذا الجهاز.';
-      });
-      return;
-    }
     await showModalBottomSheet<void>(
       context: context,
       backgroundColor: const Color(0xFF0D1623),
@@ -1251,9 +1230,48 @@ class _StoriesPanelState extends State<_StoriesPanel> {
               shrinkWrap: true,
               children: [
                 const ListTile(
-                  title: Text('أصوات النظام المتاحة'),
-                  subtitle: Text('تظهر أصوات جهازك فقط؛ لا يُرفع النص أو يُنسخ صوتك.'),
+                  title: Text('ملفات الأداء المحلية'),
+                  subtitle: Text(
+                    'تضبط سرعة وطبقة صوت Android؛ لا تمثل أصواتاً بشرية ثابتة ولا ترفع نصاً أو تسجيلاً.',
+                  ),
                 ),
+                ...SystemVoiceProfile.values.map(
+                  (profile) => ListTile(
+                    leading: Icon(
+                      profile == SystemVoiceProfile.saif
+                          ? Icons.record_voice_over_outlined
+                          : Icons.volume_up_outlined,
+                      color: profile == _speechService.selectedProfile
+                          ? RoyalColors.gold
+                          : RoyalColors.cyan,
+                    ),
+                    title: Text(profile.label),
+                    subtitle: Text('${profile.styleDescription} • صوت Android المحلي'),
+                    trailing: Icon(
+                      profile == _speechService.selectedProfile
+                          ? Icons.check_circle
+                          : Icons.tune_outlined,
+                      color: profile == _speechService.selectedProfile
+                          ? RoyalColors.gold
+                          : RoyalColors.muted,
+                    ),
+                    onTap: () async {
+                      await _speechService.selectProfile(profile);
+                      if (sheetContext.mounted) Navigator.pop(sheetContext);
+                    },
+                  ),
+                ),
+                const Divider(),
+                const ListTile(
+                  title: Text('أصوات النظام المتاحة'),
+                  subtitle: Text('يمكنك اختيار صوت Android المثبت المتوافق مع لغة القصة.'),
+                ),
+                if (voices.isEmpty)
+                  const ListTile(
+                    leading: Icon(Icons.volume_off_outlined),
+                    title: Text('لا يوجد صوت نظام متاح لهذه اللغة'),
+                    subtitle: Text('ثبت صوتاً مناسباً من إعدادات Android، ثم أعد المحاولة.'),
+                  ),
                 ListTile(
                   title: const Text('صوت النظام الافتراضي'),
                   trailing: Icon(

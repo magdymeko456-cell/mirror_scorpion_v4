@@ -3,6 +3,45 @@ import 'package:flutter_tts/flutter_tts.dart';
 
 enum SystemSpeechState { idle, speaking, unavailable, failed }
 
+/// ملفات أداء محلية تضبط سرعة وطبقة صوت Android المختار.
+///
+/// لا تمثل هذه الملفات أصواتاً بشرية مستقلة ولا تضمن جنساً أو نبرة ثابتة؛
+/// فالنتيجة تعتمد على صوت النظام المثبت والمتوافق مع لغة النص في الجهاز.
+enum SystemVoiceProfile {
+  salma,
+  saif,
+  sama,
+  sara;
+
+  String get label => switch (this) {
+        SystemVoiceProfile.salma => 'سلمى',
+        SystemVoiceProfile.saif => 'سيف',
+        SystemVoiceProfile.sama => 'سما',
+        SystemVoiceProfile.sara => 'ساره',
+      };
+
+  String get styleDescription => switch (this) {
+        SystemVoiceProfile.salma => 'أداء هادئ ولطيف',
+        SystemVoiceProfile.saif => 'أداء جاد ومتزن',
+        SystemVoiceProfile.sama => 'أداء نشط وحيوي',
+        SystemVoiceProfile.sara => 'أداء مبهج ودافئ',
+      };
+
+  double get speechRate => switch (this) {
+        SystemVoiceProfile.salma => 0.42,
+        SystemVoiceProfile.saif => 0.40,
+        SystemVoiceProfile.sama => 0.52,
+        SystemVoiceProfile.sara => 0.48,
+      };
+
+  double get pitch => switch (this) {
+        SystemVoiceProfile.salma => 1.02,
+        SystemVoiceProfile.saif => 0.90,
+        SystemVoiceProfile.sama => 1.12,
+        SystemVoiceProfile.sara => 1.08,
+      };
+}
+
 class SystemTtsVoice {
   const SystemTtsVoice({required this.name, required this.locale});
 
@@ -45,11 +84,13 @@ class SystemTtsService extends ChangeNotifier {
   SystemSpeechState _state = SystemSpeechState.idle;
   String? _message;
   SystemTtsVoice? _selectedVoice;
+  SystemVoiceProfile _selectedProfile = SystemVoiceProfile.salma;
 
   SystemSpeechState get state => _state;
   String? get message => _message;
   bool get isSpeaking => _state == SystemSpeechState.speaking;
   SystemTtsVoice? get selectedVoice => _selectedVoice;
+  SystemVoiceProfile get selectedProfile => _selectedProfile;
 
   Future<void> initialize() async {
     _tts.setStartHandler(() {
@@ -64,8 +105,7 @@ class SystemTtsService extends ChangeNotifier {
       _message = 'تعذر تشغيل صوت النظام للنص المحدد.';
       notifyListeners();
     });
-    await _tts.setSpeechRate(0.45);
-    await _tts.setPitch(1.0);
+    await _applyProfile();
   }
 
   Future<bool> speak({required String text, required String languageCode}) async {
@@ -87,6 +127,7 @@ class SystemTtsService extends ChangeNotifier {
       }
       await _tts.stop();
       await _tts.setLanguage(locale);
+      await _applyProfile();
       final voice = _selectedVoice;
       if (voice != null && voice.supportsLocale(locale)) {
         await _tts.setVoice(voice.toPlatformMap());
@@ -168,10 +209,30 @@ class SystemTtsService extends ChangeNotifier {
     }
   }
 
+  Future<void> selectProfile(SystemVoiceProfile profile) async {
+    _selectedProfile = profile;
+    try {
+      await _applyProfile();
+      _state = SystemSpeechState.idle;
+      _message = 'تم اختيار ملف الأداء المحلي: ${profile.label} — '
+          '${profile.styleDescription}. يعتمد الصوت الفعلي على صوت Android '
+          'المثبت في جهازك.';
+    } catch (_) {
+      _state = SystemSpeechState.failed;
+      _message = 'تعذر تطبيق ملف الأداء المحلي المطلوب على صوت النظام.';
+    }
+    notifyListeners();
+  }
+
   void _markIdle() {
     _state = SystemSpeechState.idle;
     _message = null;
     notifyListeners();
+  }
+
+  Future<void> _applyProfile() async {
+    await _tts.setSpeechRate(_selectedProfile.speechRate);
+    await _tts.setPitch(_selectedProfile.pitch);
   }
 
   String _localeFor(String languageCode) {

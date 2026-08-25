@@ -13,7 +13,7 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
   static const _features = <_FeatureSpec>[
     _FeatureSpec(FeatureKind.translation, 'ترجمة نصية', 'ترجمة محلية + مايك', Icons.translate, Colors.blueAccent),
     _FeatureSpec(FeatureKind.dialogue, 'حوار مترجم', 'محرران + مايك الجهاز', Icons.forum, Colors.cyanAccent),
-    _FeatureSpec(FeatureKind.documents, 'مستندات وعدسة', 'OCR صور + PDF قيد الإعداد', Icons.document_scanner, Colors.tealAccent),
+    _FeatureSpec(FeatureKind.documents, 'مستندات وعدسة', 'OCR صور + PDF وTXT محلي', Icons.document_scanner, Colors.tealAccent),
     _FeatureSpec(FeatureKind.stories, 'قصص وإلهام', 'قصص وإلهام محلي', Icons.auto_stories, Colors.orangeAccent),
     _FeatureSpec(FeatureKind.games, 'ألعاب وتفكير', 'شطرنج قانوني + روبيك قريباً', Icons.sports_esports, Colors.purpleAccent),
     _FeatureSpec(FeatureKind.settings, 'الإعدادات', 'خصوصية وحزم وPRO', Icons.settings, Colors.blueGrey),

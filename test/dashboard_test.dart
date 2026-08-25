@@ -14,6 +14,8 @@ void main() {
 
     await tester.scrollUntilVisible(find.text('مستندات وعدسة'), 300);
     expect(find.text('مستندات وعدسة'), findsOneWidget);
+    expect(find.text('OCR صور + PDF وTXT محلي'), findsOneWidget);
+    expect(find.text('OCR صور + PDF قيد الإعداد'), findsNothing);
     expect(find.text('قصص وإلهام'), findsOneWidget);
 
     await tester.scrollUntilVisible(find.text('ألعاب وتفكير'), 300);
