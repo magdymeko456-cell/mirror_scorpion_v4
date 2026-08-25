@@ -104,6 +104,8 @@ jobs:
           fi
       - name: Install dependencies
         run: flutter pub get
+      - name: Generate scorpion Android launcher icon
+        run: dart run flutter_launcher_icons
       - name: Static analysis
         run: flutter analyze
       - name: Unit and widget tests
