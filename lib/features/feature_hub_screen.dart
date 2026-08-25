@@ -14,6 +14,7 @@ import '../core/content/github_content_catalog_service.dart';
 import '../core/games/chess_game_controller.dart';
 import '../core/inspiration/inspiration_safety.dart';
 import '../core/documents/local_document_text_service.dart';
+import '../core/media/fal_video_service.dart';
 import '../core/mlkit/on_device_ocr_service.dart';
 import '../core/mlkit/on_device_translation_service.dart';
 import '../core/pro/premium_verification_service.dart';
@@ -1143,6 +1144,7 @@ class _StoriesPanelState extends State<_StoriesPanel> {
   late Future<List<OfflinePackageRecord>> _packagesFuture;
   String? _notice;
   bool _consentToAi = false;
+  bool _consentToFalVideo = false;
   bool _threeHourReminder = false;
 
   @override
@@ -1355,6 +1357,19 @@ class _StoriesPanelState extends State<_StoriesPanel> {
     setState(() => _notice = result.message);
   }
 
+  void _prepareFalVideo() {
+    final safety = InspirationSafety.assessStoryDraft(_storyDraftController.text);
+    if (safety.level != InspirationSafetyLevel.safe) {
+      setState(() => _notice = safety.message);
+      return;
+    }
+    final preflight = context.read<FalVideoService>().prepareStoryVideo(
+          draft: _storyDraftController.text,
+          hasExplicitConsent: _consentToFalVideo,
+        );
+    setState(() => _notice = preflight.message);
+  }
+
   @override
   void dispose() {
     _speechService.removeListener(_onSpeechChanged);
@@ -1426,7 +1441,7 @@ class _StoriesPanelState extends State<_StoriesPanel> {
               children: [
                 const Text('قصة المستخدم إلى فيديو', style: TextStyle(color: RoyalColors.teal, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
-                const Text('الفحص التالي لا ينشئ فيديو. يرفض محلياً مؤشرات الكراهية والتنمر والإهانة والمحتوى الجنسي والألفاظ البذيئة قبل أي خدمة فيديو مستقبلية.'),
+                const Text('تفحص المسودة محلياً أولاً. Fal مُعد لتجربة فيديو نصي قصيرة، لكنه لا ينشئ فيديو ولا يرسل نصاً قبل اعتماد المفتاح والحصة المالية والخادم.'),
                 const SizedBox(height: 10),
                 TextField(
                   controller: _storyDraftController,
@@ -1439,6 +1454,31 @@ class _StoriesPanelState extends State<_StoriesPanel> {
                   onPressed: _checkStoryDraft,
                   icon: const Icon(Icons.verified_user_outlined),
                   label: const Text('فحص مسودة القصة'),
+                ),
+                CheckboxListTile(
+                  value: _consentToFalVideo,
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('أوافق على إرسال مسودة القصة المختارة فقط إلى Fal مستقبلاً بعد تفعيل الخدمة.'),
+                  subtitle: const Text('لا يشمل ذلك صوراً أو أصواتاً أو قصصاً أخرى، ولا يرسل شيئاً الآن.'),
+                  onChanged: (value) => setState(() => _consentToFalVideo = value ?? false),
+                ),
+                Consumer<FalVideoService>(
+                  builder: (context, falVideo, _) => Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: const Icon(Icons.lock_outline, color: RoyalColors.gold),
+                        title: const Text('Fal: فيديو قصير تجريبي — مغلق'),
+                        subtitle: Text(falVideo.statusMessage),
+                      ),
+                      FilledButton.icon(
+                        onPressed: _prepareFalVideo,
+                        icon: const Icon(Icons.video_settings_outlined),
+                        label: const Text('تحقق من جاهزية Fal'),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
