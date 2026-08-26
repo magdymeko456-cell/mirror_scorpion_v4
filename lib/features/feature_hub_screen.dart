@@ -85,7 +85,10 @@ class FeatureHubScreen extends StatelessWidget {
     };
     return Directionality(
       textDirection: TextDirection.rtl,
-      child: Scaffold(appBar: AppBar(title: Text(_titleFor(kind))), body: child),
+      child: Scaffold(
+        appBar: kind == FeatureKind.games ? null : AppBar(title: Text(_titleFor(kind))),
+        body: child,
+      ),
     );
   }
 
@@ -1908,6 +1911,18 @@ class _GamesPanelState extends State<_GamesPanel> {
   final _capturedByWhite = <String>[];
   final _capturedByBlack = <String>[];
 
+  @override
+  void initState() {
+    super.initState();
+    SystemChrome.setPreferredOrientations(const [DeviceOrientation.portraitUp]);
+  }
+
+  @override
+  void dispose() {
+    SystemChrome.setPreferredOrientations(DeviceOrientation.values);
+    super.dispose();
+  }
+
   void _recordLastCapture() {
     final move = _chess.lastMove;
     if (move == null || !move.isCapture) return;
@@ -2219,79 +2234,108 @@ class _GamesPanelState extends State<_GamesPanel> {
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(4, 12, 4, 24),
-      children: [
-        const _SectionNotice(
-          title: 'الشطرنج الملكي',
-          detail: 'لعبة شطرنج ثنائية الأبعاد بقطع واضحة وقواعد قانونية: العب ضد الكمبيوتر أو تناوب مع لاعب ثانٍ على الجهاز نفسه.',
-        ),
-        const SizedBox(height: 10),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(8, 12, 8, 12),
-            child: Column(
+    return SafeArea(
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(6, 6, 6, 18),
+        children: [
+          Row(
+            children: [
+              IconButton(
+                tooltip: 'رجوع',
+                onPressed: () => Navigator.maybePop(context),
+                icon: const Icon(Icons.arrow_forward_ios_rounded, color: RoyalColors.gold, size: 20),
+              ),
+              const SizedBox(width: 2),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('الشطرنج الملكي', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
+                    Text('مباراة سريعة في وضع عمودي', style: TextStyle(fontSize: 12, color: RoyalColors.muted)),
+                  ],
+                ),
+              ),
+              IconButton(
+                tooltip: 'مباراة جديدة',
+                onPressed: _resetGame,
+                icon: const Icon(Icons.restart_alt, color: RoyalColors.gold),
+              ),
+            ],
+          ),
+          const SizedBox(height: 5),
+          Wrap(
+            spacing: 8,
+            runSpacing: 6,
+            alignment: WrapAlignment.center,
+            children: [
+              ChoiceChip(
+                label: const Text('ضد الكمبيوتر'),
+                selected: _playAgainstComputer,
+                onSelected: (selected) { if (selected) _setPlayMode(true); },
+              ),
+              ChoiceChip(
+                label: const Text('لاعبان محلياً'),
+                selected: !_playAgainstComputer,
+                onSelected: (selected) { if (selected) _setPlayMode(false); },
+              ),
+            ],
+          ),
+          if (_playAgainstComputer) ...[
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 7,
+              runSpacing: 5,
+              alignment: WrapAlignment.center,
+              children: ChessComputerLevel.values.map((level) => ChoiceChip(
+                label: Text(level.label),
+                selected: _computerLevel == level,
+                onSelected: (selected) { if (selected) _setComputerLevel(level); },
+              )).toList(),
+            ),
+          ],
+          const SizedBox(height: 9),
+          _buildMatchStatus(),
+          const SizedBox(height: 10),
+          Center(child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 520), child: _buildChessBoard())),
+          const SizedBox(height: 9),
+          _buildCapturedPieces(),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  _gameNotice,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: RoyalColors.gold, height: 1.35, fontSize: 12),
+                ),
+              ),
+              IconButton(
+                tooltip: 'مباراة جديدة',
+                onPressed: _resetGame,
+                icon: const Icon(Icons.refresh_rounded, color: RoyalColors.gold),
+              ),
+            ],
+          ),
+          Theme(
+            data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+            child: ExpansionTile(
+              tilePadding: const EdgeInsets.symmetric(horizontal: 6),
+              title: const Text('سجل النقلات PGN', style: TextStyle(color: RoyalColors.muted, fontSize: 12)),
               children: [
-                Row(
-                  children: [
-                    const Icon(Icons.psychology_alt_outlined, color: RoyalColors.gold),
-                    const SizedBox(width: 8),
-                    const Expanded(child: Text('اختر طريقة اللعب', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17))),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  alignment: WrapAlignment.center,
-                  children: [
-                    ChoiceChip(
-                      label: const Text('ضد الكمبيوتر'),
-                      selected: _playAgainstComputer,
-                      onSelected: (selected) { if (selected) _setPlayMode(true); },
-                    ),
-                    ChoiceChip(
-                      label: const Text('لاعبان محلياً'),
-                      selected: !_playAgainstComputer,
-                      onSelected: (selected) { if (selected) _setPlayMode(false); },
-                    ),
-                  ],
-                ),
-                if (_playAgainstComputer) ...[
-                  const SizedBox(height: 12),
-                  const Align(
-                    alignment: Alignment.centerRight,
-                    child: Text('مستوى الكمبيوتر', style: TextStyle(color: RoyalColors.muted, fontWeight: FontWeight.w700)),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(10, 0, 10, 8),
+                  child: SelectableText(
+                    _chess.pgn.isEmpty ? 'ستظهر النقلات هنا بعد بدء المباراة.' : _chess.pgn,
+                    textDirection: TextDirection.ltr,
+                    style: const TextStyle(color: RoyalColors.muted, fontSize: 11),
                   ),
-                  const SizedBox(height: 7),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    alignment: WrapAlignment.center,
-                    children: ChessComputerLevel.values.map((level) => ChoiceChip(
-                      label: Text(level.label),
-                      selected: _computerLevel == level,
-                      onSelected: (selected) { if (selected) _setComputerLevel(level); },
-                    )).toList(),
-                  ),
-                ],
-                const SizedBox(height: 14),
-                _buildMatchStatus(),
-                const SizedBox(height: 12),
-                Center(child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 440), child: _buildChessBoard())),
-                const SizedBox(height: 12),
-                _buildCapturedPieces(),
-                const SizedBox(height: 12),
-                Text(_gameNotice, textAlign: TextAlign.center, style: const TextStyle(color: RoyalColors.gold, height: 1.5)),
-                const SizedBox(height: 10),
-                OutlinedButton.icon(onPressed: _resetGame, icon: const Icon(Icons.restart_alt), label: const Text('مباراة جديدة')),
-                const SizedBox(height: 8),
-                SelectableText('PGN: ${_chess.pgn}', style: const TextStyle(color: RoyalColors.muted, fontSize: 11)),
+                ),
               ],
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
