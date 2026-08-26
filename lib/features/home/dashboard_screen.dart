@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import 'package:provider/provider.dart';
+
+import '../../core/platform/shared_text_inbox.dart';
 import '../feature_hub_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -21,6 +24,8 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
 
   late final AnimationController _pulseController;
   late final Animation<double> _pulseAnimation;
+  SharedTextInbox? _sharedTextInbox;
+  bool _openingSharedText = false;
 
   @override
   void initState() {
@@ -32,9 +37,44 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final inbox = context.read<SharedTextInbox>();
+    if (_sharedTextInbox == inbox) return;
+    _sharedTextInbox?.removeListener(_openPendingSharedText);
+    _sharedTextInbox = inbox..addListener(_openPendingSharedText);
+    _openPendingSharedText();
+  }
+
+  @override
   void dispose() {
+    _sharedTextInbox?.removeListener(_openPendingSharedText);
     _pulseController.dispose();
     super.dispose();
+  }
+
+  void _openPendingSharedText() {
+    if (!mounted || _openingSharedText) return;
+    final inbox = _sharedTextInbox;
+    if (inbox?.pendingText == null) return;
+    _openingSharedText = true;
+    final text = inbox!.takePendingText();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted || text == null) return;
+      await Navigator.push(
+        context,
+        MaterialPageRoute<void>(
+          builder: (_) => FeatureHubScreen(
+            kind: FeatureKind.translation,
+            initialTranslationText: text,
+          ),
+        ),
+      );
+      if (mounted) {
+        _openingSharedText = false;
+        _openPendingSharedText();
+      }
+    });
   }
 
   void _showInspirationPreview() {

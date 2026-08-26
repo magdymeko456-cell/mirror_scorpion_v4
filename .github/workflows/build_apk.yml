@@ -35,6 +35,12 @@ jobs:
             echo "Runware credentials or direct provider calls must not be present in Flutter code."
             exit 1
           fi
+      - name: Verify shared-text privacy boundary
+        run: |
+          if grep -R -nE 'addPrimaryClipChangedListener|AccessibilityService|NotificationListenerService|BIND_ACCESSIBILITY_SERVICE|BIND_NOTIFICATION_LISTENER_SERVICE' lib test; then
+            echo "Shared text must not monitor the clipboard or read other applications."
+            exit 1
+          fi
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: "3.44.7"
@@ -125,6 +131,25 @@ jobs:
                 print "        <service android:name=\"flutter.overlay.window.flutter_overlay_window.OverlayService\" android:exported=\"false\" android:foregroundServiceType=\"specialUse\">"
                 print "            <property android:name=\"android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE\" android:value=\"User initiated translation shortcut overlay.\" />"
                 print "        </service>"
+              }
+              { print }
+            ' "$MANIFEST" > "$MANIFEST.tmp"
+            mv "$MANIFEST.tmp" "$MANIFEST"
+          fi
+      - name: Configure Android shared text intent
+        run: |
+          MANIFEST=android/app/src/main/AndroidManifest.xml
+          if grep -q 'android:launchMode="singleTop"' "$MANIFEST"; then
+            sed -i 's/android:launchMode="singleTop"/android:launchMode="singleTask"/' "$MANIFEST"
+          fi
+          if ! grep -q 'android.intent.action.SEND' "$MANIFEST"; then
+            awk '
+              /<\/activity>/ {
+                print "            <intent-filter>"
+                print "                <action android:name=\"android.intent.action.SEND\" />"
+                print "                <category android:name=\"android.intent.category.DEFAULT\" />"
+                print "                <data android:mimeType=\"text/*\" />"
+                print "            </intent-filter>"
               }
               { print }
             ' "$MANIFEST" > "$MANIFEST.tmp"

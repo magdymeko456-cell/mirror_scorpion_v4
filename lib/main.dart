@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'app/mirror_scorpion_app.dart';
 import 'core/localization/language_preferences.dart';
 import 'core/platform/android_overlay_service.dart';
+import 'core/platform/shared_text_inbox.dart';
 import 'core/pro/premium_verification_service.dart';
 
 Future<void> main() async {
@@ -17,12 +18,17 @@ Future<void> main() async {
   await premiumService.initialize();
   final languagePreferences = LanguagePreferences();
   await languagePreferences.initialize();
+  final sharedTextInbox = SharedTextInbox();
+  await sharedTextInbox.initialize();
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider.value(value: premiumService),
       ],
-      child: MirrorScorpionApp(languagePreferences: languagePreferences),
+      child: MirrorScorpionApp(
+        languagePreferences: languagePreferences,
+        sharedTextInbox: sharedTextInbox,
+      ),
     ),
   );
 }

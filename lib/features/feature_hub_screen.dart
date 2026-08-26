@@ -18,6 +18,7 @@ import '../core/media/runware_video_service.dart';
 import '../core/mlkit/on_device_ocr_service.dart';
 import '../core/mlkit/on_device_translation_service.dart';
 import '../core/platform/android_overlay_service.dart';
+import '../core/platform/shared_text_inbox.dart';
 import '../core/pro/premium_verification_service.dart';
 import '../core/speech/device_speech_recognition_service.dart';
 import '../core/speech/elevenlabs_voice_service.dart';
@@ -62,14 +63,20 @@ String _translationProgressMessage(OnDeviceTranslationProgress progress) =>
     };
 
 class FeatureHubScreen extends StatelessWidget {
-  const FeatureHubScreen({required this.kind, super.key});
+  const FeatureHubScreen({
+    required this.kind,
+    this.initialTranslationText,
+    super.key,
+  });
 
   final FeatureKind kind;
+  final String? initialTranslationText;
 
   @override
   Widget build(BuildContext context) {
     final child = switch (kind) {
-      FeatureKind.translation => const _TranslationPanel(),
+      FeatureKind.translation =>
+        _TranslationPanel(initialText: initialTranslationText),
       FeatureKind.dialogue => const _DialoguePanel(),
       FeatureKind.documents => const _DocumentsPanel(),
       FeatureKind.stories => const _StoriesPanel(),
@@ -93,7 +100,9 @@ class FeatureHubScreen extends StatelessWidget {
 }
 
 class _TranslationPanel extends StatefulWidget {
-  const _TranslationPanel();
+  const _TranslationPanel({this.initialText});
+
+  final String? initialText;
 
   @override
   State<_TranslationPanel> createState() => _TranslationPanelState();
@@ -110,6 +119,7 @@ class _TranslationPanelState extends State<_TranslationPanel> {
   bool _hasCompletedTranslation = false;
   bool _isTranslating = false;
   bool _loadedLanguagePreference = false;
+  bool _processedInitialText = false;
   Timer? _translationDebounce;
   @override
   void initState() {
@@ -130,6 +140,72 @@ class _TranslationPanelState extends State<_TranslationPanel> {
       }
       _loadedLanguagePreference = true;
     }
+    if (!_processedInitialText && widget.initialText?.trim().isNotEmpty == true) {
+      _processedInitialText = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _processSharedText(widget.initialText!.trim());
+      });
+    }
+  }
+
+  Future<void> _processSharedText(String text) async {
+    final inbox = context.read<SharedTextInbox>();
+    if (!inbox.hasTranslationConsent) {
+      final accepted = await _requestSharedTextConsent();
+      if (!accepted || !mounted) {
+        setState(() => _notice = 'لم تترجم الرسالة المشتركة لأنك لم توافق على معالجتها محلياً.');
+        return;
+      }
+    }
+    _beginFreshTranslationIfNeeded();
+    _input.text = text;
+    setState(() => _notice = 'وصل نص اخترت مشاركته. جارٍ تحديد لغته محلياً…');
+    _queueTranslation(text);
+  }
+
+  Future<bool> _requestSharedTextConsent() async {
+    final accepted = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('ترجمة النص الذي تشاركه أنت'),
+        content: const Text(
+          'سيعالج Mirror Scorpion هذا النص محلياً لتحديد لغته وترجمته إلى لغة جهازك. لا يراقب الحافظة، ولا يقرأ التطبيقات الأخرى، ولا يرسل النص إلى خدمة سحابية.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('ليس الآن'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('أوافق وأترجم محلياً'),
+          ),
+        ],
+      ),
+    );
+    if (accepted == true) {
+      await context.read<SharedTextInbox>().setTranslationConsent(true);
+      return true;
+    }
+    return false;
+  }
+
+  Future<void> _translateClipboardOnce() async {
+    final inbox = context.read<SharedTextInbox>();
+    if (!inbox.hasTranslationConsent && !await _requestSharedTextConsent()) {
+      return;
+    }
+    final data = await Clipboard.getData(Clipboard.kTextPlain);
+    final text = data?.text?.trim() ?? '';
+    if (!mounted) return;
+    if (text.length < 3) {
+      setState(() => _notice = 'لا يوجد نص كافٍ في الحافظة لترجمته.');
+      return;
+    }
+    final boundedText = text.length > SharedTextInbox.maxTextLength
+        ? text.substring(0, SharedTextInbox.maxTextLength)
+        : text;
+    await _processSharedText(boundedText);
   }
 
   Future<void> _selectLanguage(String code) async {
@@ -317,6 +393,11 @@ return ListView(
               icon: Icons.attach_file,
               tooltip: 'اختيار ملف صوتي لترجمته',
               onPressed: _pickAudioFile,
+            ),
+            _EditorAction(
+              icon: Icons.content_paste_go_outlined,
+              tooltip: 'ترجم آخر نص نسخته بعد موافقتك',
+              onPressed: _translateClipboardOnce,
             ),
           ],
         ),
