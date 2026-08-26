@@ -12,6 +12,22 @@ extension ChessComputerLevelLabel on ChessComputerLevel {
       };
 }
 
+class ChessMoveSummary {
+  const ChessMoveSummary({
+    required this.from,
+    required this.to,
+    required this.movedByWhite,
+    this.capturedSymbol = '',
+  });
+
+  final String from;
+  final String to;
+  final bool movedByWhite;
+  final String capturedSymbol;
+
+  bool get isCapture => capturedSymbol.isNotEmpty;
+}
+
 /// قواعد شطرنج قانونية محلية وخصم مادي بسيط. لا يمثل هذا الملف مشهداً 3D؛
 /// يبقى عرض القطع ثلاثي الأبعاد مرحلة منفصلة بعد نموذج توافق المحرك.
 class ChessGameController {
@@ -19,6 +35,7 @@ class ChessGameController {
 
   chess.Chess _game;
   final Random _random = Random();
+  ChessMoveSummary? _lastMove;
 
   chess.Piece? pieceAt(String square) => _game.get(square);
   static String pieceSymbol(chess.Piece? piece) {
@@ -48,6 +65,7 @@ class ChessGameController {
   bool get isCheckmate => _game.in_checkmate;
   bool get isDraw => _game.in_draw;
   String get pgn => _game.pgn();
+  ChessMoveSummary? get lastMove => _lastMove;
 
   List<String> legalMovesFrom(String square) {
     final legalTargets = <String>[];
@@ -61,23 +79,23 @@ class ChessGameController {
 
   bool moveHuman(String from, String to) {
     if (gameOver) return false;
-    return _game.move({'from': from, 'to': to, 'promotion': 'q'});
+    return _applyMove({'from': from, 'to': to, 'promotion': 'q'});
   }
 
   bool moveComputer({ChessComputerLevel level = ChessComputerLevel.medium}) {
     if (isWhiteTurn || gameOver) return false;
-    final moves = _game.moves().whereType<String>().toList();
+    final moves = _verboseMoves();
     if (moves.isEmpty) return false;
 
     if (level == ChessComputerLevel.normal) {
-      return _game.move(moves[_random.nextInt(moves.length)]);
+      return _applyMove(moves[_random.nextInt(moves.length)]);
     }
 
     var bestScore = 1 << 30;
-    final bestMoves = <String>[];
+    final bestMoves = <Map<String, dynamic>>[];
     for (final move in moves) {
       final candidate = _game.copy();
-      if (!candidate.move(move)) continue;
+      if (!_applyMoveTo(candidate, move)) continue;
       final score = level == ChessComputerLevel.skilled
           ? _scoreAfterBestWhiteReply(candidate)
           : _materialScore(candidate);
@@ -91,16 +109,16 @@ class ChessGameController {
       }
     }
     if (bestMoves.isEmpty) return false;
-    return _game.move(bestMoves[_random.nextInt(bestMoves.length)]);
+    return _applyMove(bestMoves[_random.nextInt(bestMoves.length)]);
   }
 
   int _scoreAfterBestWhiteReply(chess.Chess position) {
-    final replies = position.moves().whereType<String>().toList();
+    final replies = _verboseMoves(position);
     if (replies.isEmpty) return _materialScore(position);
     var whiteBestScore = -(1 << 30);
     for (final reply in replies) {
       final afterReply = position.copy();
-      if (!afterReply.move(reply)) continue;
+      if (!_applyMoveTo(afterReply, reply)) continue;
       whiteBestScore = max(whiteBestScore, _materialScore(afterReply));
     }
     return whiteBestScore == -(1 << 30)
@@ -108,7 +126,49 @@ class ChessGameController {
         : whiteBestScore;
   }
 
-  void reset() => _game = chess.Chess();
+  List<Map<String, dynamic>> _verboseMoves([chess.Chess? position]) {
+    final activeGame = position ?? _game;
+    return activeGame
+        .moves({'verbose': true})
+        .whereType<Map>()
+        .map((move) => Map<String, dynamic>.from(move))
+        .where((move) => move['from'] is String && move['to'] is String)
+        .toList();
+  }
+
+  bool _applyMove(Map<String, dynamic> move) {
+    final from = move['from'] as String;
+    final to = move['to'] as String;
+    final movingPiece = _game.get(from);
+    var capturedPiece = _game.get(to);
+    if (capturedPiece == null &&
+        movingPiece?.type == chess.Chess.PAWN &&
+        from.substring(0, 1) != to.substring(0, 1)) {
+      capturedPiece = _game.get('${to.substring(0, 1)}${from.substring(1, 2)}');
+    }
+    final movedByWhite = isWhiteTurn;
+    if (!_applyMoveTo(_game, move)) return false;
+    _lastMove = ChessMoveSummary(
+      from: from,
+      to: to,
+      movedByWhite: movedByWhite,
+      capturedSymbol: pieceSymbol(capturedPiece),
+    );
+    return true;
+  }
+
+  bool _applyMoveTo(chess.Chess position, Map<String, dynamic> move) {
+    return position.move({
+      'from': move['from'],
+      'to': move['to'],
+      'promotion': move['promotion'] ?? 'q',
+    });
+  }
+
+  void reset() {
+    _game = chess.Chess();
+    _lastMove = null;
+  }
 
   int _materialScore(chess.Chess position) {
     final values = {

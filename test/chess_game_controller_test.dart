@@ -40,6 +40,19 @@ void main() {
     expect(game.moveComputer(level: ChessComputerLevel.skilled), isFalse);
   });
 
+  test('records the last move and its captured piece for the board UI', () {
+    final game = ChessGameController();
+
+    expect(game.moveHuman('e2', 'e4'), isTrue);
+    expect(game.moveHuman('d7', 'd5'), isTrue);
+    expect(game.moveHuman('e4', 'd5'), isTrue);
+
+    expect(game.lastMove?.from, 'e4');
+    expect(game.lastMove?.to, 'd5');
+    expect(game.lastMove?.movedByWhite, isTrue);
+    expect(game.lastMove?.capturedSymbol, '♟');
+  });
+
   test('maps starting pieces to visible Unicode chess symbols', () {
     final game = ChessGameController();
 

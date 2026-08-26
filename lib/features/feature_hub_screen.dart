@@ -1905,6 +1905,15 @@ class _GamesPanelState extends State<_GamesPanel> {
   bool _playAgainstComputer = true;
   ChessComputerLevel _computerLevel = ChessComputerLevel.normal;
   String _gameNotice = 'اختر وضع اللعب ثم انقل قطعة بيضاء لبدء المباراة.';
+  final _capturedByWhite = <String>[];
+  final _capturedByBlack = <String>[];
+
+  void _recordLastCapture() {
+    final move = _chess.lastMove;
+    if (move == null || !move.isCapture) return;
+    (move.movedByWhite ? _capturedByWhite : _capturedByBlack)
+        .add(move.capturedSymbol);
+  }
 
   Future<void> _tapSquare(String square) async {
     if (_computerThinking || _chess.gameOver) return;
@@ -1940,6 +1949,7 @@ class _GamesPanelState extends State<_GamesPanel> {
 
     final moved = _chess.moveHuman(_selectedSquare!, square);
     if (!moved) return;
+    _recordLastCapture();
     if (_chess.gameOver) {
       setState(() {
         _selectedSquare = null;
@@ -1961,7 +1971,8 @@ class _GamesPanelState extends State<_GamesPanel> {
     });
     await Future<void>.delayed(const Duration(milliseconds: 450));
     if (!mounted) return;
-    _chess.moveComputer(level: _computerLevel);
+    final computerMoved = _chess.moveComputer(level: _computerLevel);
+    if (computerMoved) _recordLastCapture();
     if (!mounted) return;
     setState(() {
       _computerThinking = false;
@@ -1984,6 +1995,8 @@ class _GamesPanelState extends State<_GamesPanel> {
       _selectedSquare = null;
       _legalTargets = const [];
       _computerThinking = false;
+      _capturedByWhite.clear();
+      _capturedByBlack.clear();
       _gameNotice = 'بدأت مباراة جديدة. دور الأبيض.';
     });
   }
@@ -1995,6 +2008,8 @@ class _GamesPanelState extends State<_GamesPanel> {
       _selectedSquare = null;
       _legalTargets = const [];
       _computerThinking = false;
+      _capturedByWhite.clear();
+      _capturedByBlack.clear();
       _gameNotice = againstComputer
           ? 'وضع لاعب واحد: أنت بالأبيض والكمبيوتر بالأسود.'
           : 'وضع لاعبين محليين: يتبادل اللاعبان الجهاز.';
@@ -2008,8 +2023,74 @@ class _GamesPanelState extends State<_GamesPanel> {
       _selectedSquare = null;
       _legalTargets = const [];
       _computerThinking = false;
+      _capturedByWhite.clear();
+      _capturedByBlack.clear();
       _gameNotice = 'مستوى الكمبيوتر: ${level.label}. بدأت مباراة جديدة.';
     });
+  }
+
+  Widget _buildMatchStatus() {
+    final isWhiteTurn = _chess.isWhiteTurn;
+    final title = _chess.isCheckmate
+        ? 'كش مات — فاز ${isWhiteTurn ? 'الأسود' : 'الأبيض'}'
+        : _chess.isDraw
+            ? 'تعادل وفق قواعد الشطرنج'
+            : _computerThinking
+                ? 'الكمبيوتر يفكر — ${_computerLevel.label}'
+                : isWhiteTurn
+                    ? 'دور الأبيض'
+                    : _playAgainstComputer
+                        ? 'دور الكمبيوتر الأسود'
+                        : 'دور الأسود';
+    final subtitle = _playAgainstComputer
+        ? 'أنت بالأبيض • الكمبيوتر بالأسود'
+        : 'تناوب الجهاز بين اللاعب الأبيض والأسود';
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [const Color(0xFF172938), const Color(0xFF0E1A24).withValues(alpha: 0.86)],
+        ),
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: RoyalColors.gold.withValues(alpha: 0.42)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 31,
+            height: 31,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: isWhiteTurn ? const Color(0xFFFFF8E6) : const Color(0xFF14222B),
+              border: Border.all(color: RoyalColors.gold, width: 1.5),
+              boxShadow: [BoxShadow(color: RoyalColors.gold.withValues(alpha: 0.22), blurRadius: 8)],
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: RoyalColors.gold)),
+                const SizedBox(height: 2),
+                Text(subtitle, style: const TextStyle(fontSize: 12, color: RoyalColors.muted)),
+              ],
+            ),
+          ),
+          const Icon(Icons.auto_awesome, color: RoyalColors.gold, size: 19),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCapturedPieces() {
+    return Row(
+      children: [
+        Expanded(child: _CapturedPiecesPane(label: 'أسر الأبيض', symbols: _capturedByWhite, isWhiteSide: true)),
+        const SizedBox(width: 8),
+        Expanded(child: _CapturedPiecesPane(label: 'أسر الأسود', symbols: _capturedByBlack, isWhiteSide: false)),
+      ],
+    );
   }
 
   Widget _buildChessBoard() {
@@ -2050,18 +2131,23 @@ class _GamesPanelState extends State<_GamesPanel> {
                       final isLight = (index ~/ 8 + index % 8).isEven;
                       final isSelected = _selectedSquare == square;
                       final isTarget = _legalTargets.contains(square);
+                      final lastMove = _chess.lastMove;
+                      final isLastMove = lastMove?.from == square || lastMove?.to == square;
+                      final squareColor = isSelected
+                          ? const Color(0xFFE6B948)
+                          : isTarget
+                              ? const Color(0xFF77AE80)
+                              : isLastMove
+                                  ? (isLight ? const Color(0xFFE9C96E) : const Color(0xFF567866))
+                                  : isLight
+                                      ? const Color(0xFFE4D5B4)
+                                      : const Color(0xFF3C5A67);
                       return GestureDetector(
                         onTap: () => _tapSquare(square),
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 130),
                           decoration: BoxDecoration(
-                            color: isSelected
-                                ? const Color(0xFFE6B948)
-                                : isTarget
-                                    ? const Color(0xFF77AE80)
-                                    : isLight
-                                        ? const Color(0xFFE4D5B4)
-                                        : const Color(0xFF3C5A67),
+                            color: squareColor,
                             border: Border.all(
                               color: Colors.black.withValues(alpha: isLight ? 0.035 : 0.10),
                               width: 0.3,
@@ -2070,13 +2156,21 @@ class _GamesPanelState extends State<_GamesPanel> {
                           child: Stack(
                             alignment: Alignment.center,
                             children: [
-                              if (isTarget && piece == null)
+                              if (isTarget)
                                 Container(
-                                  width: 12,
-                                  height: 12,
+                                  width: piece == null ? 12 : 35,
+                                  height: piece == null ? 12 : 35,
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFF133B2B).withValues(alpha: 0.72),
+                                    color: piece == null
+                                        ? const Color(0xFF133B2B).withValues(alpha: 0.72)
+                                        : Colors.transparent,
                                     shape: BoxShape.circle,
+                                    border: piece == null
+                                        ? null
+                                        : Border.all(
+                                            color: const Color(0xFFB63737).withValues(alpha: 0.86),
+                                            width: 2.4,
+                                          ),
                                   ),
                                 ),
                               AnimatedScale(
@@ -2182,7 +2276,11 @@ class _GamesPanelState extends State<_GamesPanel> {
                   ),
                 ],
                 const SizedBox(height: 14),
+                _buildMatchStatus(),
+                const SizedBox(height: 12),
                 Center(child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 440), child: _buildChessBoard())),
+                const SizedBox(height: 12),
+                _buildCapturedPieces(),
                 const SizedBox(height: 12),
                 Text(_gameNotice, textAlign: TextAlign.center, style: const TextStyle(color: RoyalColors.gold, height: 1.5)),
                 const SizedBox(height: 10),
@@ -2250,6 +2348,50 @@ class _ChessPieceToken extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _CapturedPiecesPane extends StatelessWidget {
+  const _CapturedPiecesPane({
+    required this.label,
+    required this.symbols,
+    required this.isWhiteSide,
+  });
+
+  final String label;
+  final List<String> symbols;
+  final bool isWhiteSide;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(minHeight: 54),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: RoyalColors.border.withValues(alpha: 0.7)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: const TextStyle(fontSize: 11, color: RoyalColors.muted, fontWeight: FontWeight.w700)),
+          const SizedBox(height: 3),
+          Text(
+            symbols.isEmpty ? '—' : symbols.join(' '),
+            textDirection: TextDirection.ltr,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 18,
+              height: 1,
+              color: isWhiteSide ? const Color(0xFFFFF1C9) : const Color(0xFF9DB9C5),
+              shadows: [Shadow(color: Colors.black.withValues(alpha: 0.58), blurRadius: 2, offset: const Offset(1, 1))],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
