@@ -4,7 +4,7 @@ const { initializeApp } = require("firebase-admin/app");
 
 const { buildHealthResponse } = require("./src/health");
 const { buildElevenLabsGatewayStatus } = require("./src/elevenlabs_gateway");
-const { buildFalVideoGatewayStatus } = require("./src/fal_video_gateway");
+const { buildRunwareVideoGatewayStatus } = require("./src/runware_video_gateway");
 
 // تعتمد Cloud Functions على هوية بيئة التشغيل الافتراضية.
 // لا تُضف serviceAccountKey.json أو أي مفتاح خاص إلى المشروع.
@@ -41,17 +41,17 @@ exports.elevenLabsGatewayStatus = onCall({ region: "us-central1" }, (request) =>
   return response;
 });
 
-// لا ينفذ هذا المسار أي طلب فيديو. لا يُفعل Fal إلا بعد سقف مالي صريح
+// لا ينفذ هذا المسار أي طلب فيديو. لا يُفعل Runware إلا بعد سقف مالي صريح
 // ومفتاح مخزن في الخادم وموافقة مرئية قابلة للتدقيق لكل طلب.
-exports.falVideoGatewayStatus = onCall({ region: "us-central1" }, (request) => {
-  const response = buildFalVideoGatewayStatus({
+exports.runwareVideoGatewayStatus = onCall({ region: "us-central1" }, (request) => {
+  const response = buildRunwareVideoGatewayStatus({
     authenticated: request.auth != null,
-    hasApiKey: Boolean(process.env.FAL_API_KEY),
+    hasApiKey: Boolean(process.env.RUNWARE_API_KEY),
     monthlyCapUsd: 0,
     dailyJobLimit: 0,
   });
 
-  logger.info("Mirror Scorpion Fal video gateway status checked", {
+  logger.info("Mirror Scorpion Runware video gateway status checked", {
     authenticated: response.authenticated,
     enabled: response.enabled,
   });

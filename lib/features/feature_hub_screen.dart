@@ -14,13 +14,14 @@ import '../core/content/github_content_catalog_service.dart';
 import '../core/games/chess_game_controller.dart';
 import '../core/inspiration/inspiration_safety.dart';
 import '../core/documents/local_document_text_service.dart';
-import '../core/media/fal_video_service.dart';
+import '../core/media/runware_video_service.dart';
 import '../core/mlkit/on_device_ocr_service.dart';
 import '../core/mlkit/on_device_translation_service.dart';
 import '../core/pro/premium_verification_service.dart';
 import '../core/speech/device_speech_recognition_service.dart';
 import '../core/speech/elevenlabs_voice_service.dart';
 import '../core/speech/system_tts_service.dart';
+import 'subscription_boundaries_card.dart';
 
 enum FeatureKind { translation, dialogue, documents, stories, games, settings }
 
@@ -1144,7 +1145,7 @@ class _StoriesPanelState extends State<_StoriesPanel> {
   late Future<List<OfflinePackageRecord>> _packagesFuture;
   String? _notice;
   bool _consentToAi = false;
-  bool _consentToFalVideo = false;
+  bool _consentToRunwareVideo = false;
   bool _threeHourReminder = false;
 
   @override
@@ -1357,15 +1358,15 @@ class _StoriesPanelState extends State<_StoriesPanel> {
     setState(() => _notice = result.message);
   }
 
-  void _prepareFalVideo() {
+  void _prepareRunwareVideo() {
     final safety = InspirationSafety.assessStoryDraft(_storyDraftController.text);
-    if (safety.level != InspirationSafetyLevel.safe) {
+    if (!safety.allowedForDraft) {
       setState(() => _notice = safety.message);
       return;
     }
-    final preflight = context.read<FalVideoService>().prepareStoryVideo(
+    final preflight = context.read<RunwareVideoService>().prepareStoryVideo(
           draft: _storyDraftController.text,
-          hasExplicitConsent: _consentToFalVideo,
+          hasExplicitConsent: _consentToRunwareVideo,
         );
     setState(() => _notice = preflight.message);
   }
@@ -1441,7 +1442,7 @@ class _StoriesPanelState extends State<_StoriesPanel> {
               children: [
                 const Text('قصة المستخدم إلى فيديو', style: TextStyle(color: RoyalColors.teal, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
-                const Text('تفحص المسودة محلياً أولاً. Fal مُعد لتجربة فيديو نصي قصيرة، لكنه لا ينشئ فيديو ولا يرسل نصاً قبل اعتماد المفتاح والحصة المالية والخادم.'),
+                const Text('تفحص المسودة محلياً أولاً. Runware مختار لمسار فيديو سحابي مستقبلي، لكنه لا ينشئ فيديو ولا يرسل نصاً قبل اعتماد الرصيد والحصة والمفتاح الخادمي.'),
                 const SizedBox(height: 10),
                 TextField(
                   controller: _storyDraftController,
@@ -1456,26 +1457,26 @@ class _StoriesPanelState extends State<_StoriesPanel> {
                   label: const Text('فحص مسودة القصة'),
                 ),
                 CheckboxListTile(
-                  value: _consentToFalVideo,
+                  value: _consentToRunwareVideo,
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('أوافق على إرسال مسودة القصة المختارة فقط إلى Fal مستقبلاً بعد تفعيل الخدمة.'),
+                  title: const Text('أوافق على إرسال مسودة القصة المختارة فقط إلى Runware مستقبلاً بعد تفعيل الخدمة.'),
                   subtitle: const Text('لا يشمل ذلك صوراً أو أصواتاً أو قصصاً أخرى، ولا يرسل شيئاً الآن.'),
-                  onChanged: (value) => setState(() => _consentToFalVideo = value ?? false),
+                  onChanged: (value) => setState(() => _consentToRunwareVideo = value ?? false),
                 ),
-                Consumer<FalVideoService>(
-                  builder: (context, falVideo, _) => Column(
+                Consumer<RunwareVideoService>(
+                  builder: (context, runwareVideo, _) => Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       ListTile(
                         contentPadding: EdgeInsets.zero,
                         leading: const Icon(Icons.lock_outline, color: RoyalColors.gold),
-                        title: const Text('Fal: فيديو قصير تجريبي — مغلق'),
-                        subtitle: Text(falVideo.statusMessage),
+                        title: const Text('Runware: فيديو سحابي — مغلق'),
+                        subtitle: Text(runwareVideo.statusMessage),
                       ),
                       FilledButton.icon(
-                        onPressed: _prepareFalVideo,
+                        onPressed: _prepareRunwareVideo,
                         icon: const Icon(Icons.video_settings_outlined),
-                        label: const Text('تحقق من جاهزية Fal'),
+                        label: const Text('تحقق من جاهزية Runware'),
                       ),
                     ],
                   ),
@@ -1873,6 +1874,8 @@ class _SettingsPanel extends StatelessWidget {
         children: [
           const _SectionNotice(title: 'PRO بتوقيع خادمي', detail: 'لا يصدر التطبيق كود تفعيل ولا يحمل مفتاحاً خاصاً. يعرض معرّف تثبيت محلياً ويرسل الباتش الموقّع إلى الخادم عند ربط API.'),
           const SizedBox(height: 16),
+          const SubscriptionBoundariesCard(),
+          const SizedBox(height: 12),
           Card(
             child: ListTile(
               title: const Text('معرّف التثبيت'),

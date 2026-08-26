@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../core/localization/language_preferences.dart';
-import '../core/media/fal_video_service.dart';
+import '../core/media/runware_video_service.dart';
 import '../core/speech/elevenlabs_voice_service.dart';
 import '../features/home/dashboard_screen.dart';
 import 'royal_dark_theme.dart';
@@ -20,7 +20,7 @@ class MirrorScorpionApp extends StatelessWidget {
           value: languagePreferences ?? LanguagePreferences(),
         ),
         ChangeNotifierProvider(create: (_) => ElevenLabsVoiceService()),
-        ChangeNotifierProvider(create: (_) => FalVideoService()),
+        ChangeNotifierProvider(create: (_) => RunwareVideoService()),
       ],
       child: Builder(
         builder: (context) {

@@ -29,10 +29,10 @@ jobs:
             echo "ElevenLabs credentials or direct provider calls must not be present in Flutter code."
             exit 1
           fi
-      - name: Verify Fal secret stays outside the APK
+      - name: Verify Runware secret stays outside the APK
         run: |
-          if grep -R -nE 'FAL_API_KEY|queue\.fal\.run|api\.fal\.ai|fal\.run' lib test; then
-            echo "Fal credentials or direct provider calls must not be present in Flutter code."
+          if grep -R -nE 'RUNWARE_API_KEY|api\.runware\.ai|runware\.ai/v1|videoInference' lib test; then
+            echo "Runware credentials or direct provider calls must not be present in Flutter code."
             exit 1
           fi
       - uses: subosito/flutter-action@v2

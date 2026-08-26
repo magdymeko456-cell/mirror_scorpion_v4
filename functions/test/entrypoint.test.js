@@ -6,5 +6,5 @@ test("Functions entrypoint loads safe callables without a service-account file",
 
   assert.equal(typeof functions.healthCheck, "function");
   assert.equal(typeof functions.elevenLabsGatewayStatus, "function");
-  assert.equal(typeof functions.falVideoGatewayStatus, "function");
+  assert.equal(typeof functions.runwareVideoGatewayStatus, "function");
 });
