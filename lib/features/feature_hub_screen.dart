@@ -106,7 +106,7 @@ class _TranslationPanelState extends State<_TranslationPanel> {
   final _recognitionService = DeviceSpeechRecognitionService();
   String _selectedLanguage = 'ar';
   String? _notice;
-  bool _clearOnNextInput = false;
+  bool _hasCompletedTranslation = false;
   bool _isTranslating = false;
   bool _loadedLanguagePreference = false;
   Timer? _translationDebounce;
@@ -141,6 +141,16 @@ class _TranslationPanelState extends State<_TranslationPanel> {
     if (mounted) setState(() {});
   }
 
+  void _beginFreshTranslationIfNeeded() {
+    if (!_hasCompletedTranslation) return;
+    setState(() {
+      _input.clear();
+      _output.clear();
+      _notice = 'بدأت جلسة ترجمة جديدة.';
+      _hasCompletedTranslation = false;
+    });
+  }
+
   Future<void> _speakTranslation() async {
     if (_speechService.isSpeaking) {
       await _speechService.stop();
@@ -165,15 +175,12 @@ class _TranslationPanelState extends State<_TranslationPanel> {
     }
     final sourceLanguage = context.read<LanguagePreferences>().deviceLanguageCode;
     await _speechService.stop();
+    if (!mounted) return;
+    _beginFreshTranslationIfNeeded();
     await _recognitionService.start(
       languageCode: sourceLanguage,
       onText: (recognizedText) {
         if (!mounted) return;
-        if (_clearOnNextInput) {
-          _input.clear();
-          _output.clear();
-          _clearOnNextInput = false;
-        }
         _input.text = recognizedText;
         _queueTranslation(
           recognizedText,
@@ -198,13 +205,7 @@ class _TranslationPanelState extends State<_TranslationPanel> {
     });
   }
 
-  void _beginNewInput(String action) {
-    if (_clearOnNextInput) {
-      _input.clear();
-      _output.clear();
-      _notice = null;
-      _clearOnNextInput = false;
-    }
+  void _showUnavailableAction(String action) {
     setState(() => _notice = '$action يحتاج خدمة صوت أو ملفات منفصلة؛ لم يتم إنشاء ناتج بديل.');
   }
 
@@ -249,6 +250,8 @@ class _TranslationPanelState extends State<_TranslationPanel> {
       _isTranslating = false;
       if (result.isSuccess) _output.text = result.text ?? '';
       if (!result.isSuccess) _output.clear();
+      _hasCompletedTranslation =
+          result.isSuccess && _output.text.trim().isNotEmpty;
       _notice = result.message;
     });
   }
@@ -271,25 +274,26 @@ Widget build(BuildContext context) {
 return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
       children: [
-        Row(
-          textDirection: TextDirection.ltr,
-          children: [
-            Expanded(
-              child: _TranslationLanguageMenu(
-                value: _selectedLanguage,
-                label: 'لغة الترجمة',
-                icon: Icons.translate,
-                onChanged: _selectLanguage,
-              ),
+        Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 280),
+            child: _TranslationLanguageMenu(
+              value: _selectedLanguage,
+              label: 'لغة الترجمة',
+              icon: Icons.translate,
+              onChanged: _selectLanguage,
             ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: _DeviceSpeechLanguageLabel(
-                languageCode: deviceLanguage,
-                label: 'لغة المايك — من الجهاز',
-              ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 280),
+            child: _DeviceSpeechLanguageLabel(
+              languageCode: deviceLanguage,
+              label: 'لغة المايك — من الجهاز',
             ),
-          ],
+          ),
         ),
         const SizedBox(height: 10),
         _TranslationEditor(
@@ -297,9 +301,7 @@ return ListView(
           hint: 'ابدأ بالكتابة أو اضغط المايك للتحدث...',
           readOnly: false,
           actionsOnRight: false,
-          onTap: () {
-            if (_clearOnNextInput) _beginNewInput('جلسة ترجمة جديدة');
-          },
+          onTap: _beginFreshTranslationIfNeeded,
           onChanged: (value) => _queueTranslation(
             value,
             sourceLanguageCode: deviceLanguage,
@@ -343,7 +345,7 @@ return ListView(
           actionsOnRight: true,
           actions: [
             _EditorAction(icon: _speechService.isSpeaking ? Icons.stop_circle_outlined : Icons.volume_up, tooltip: _speechService.isSpeaking ? 'إيقاف النطق' : 'نطق الترجمة بصوت النظام', onPressed: _speakTranslation),
-            _EditorAction(icon: Icons.share, tooltip: 'مشاركة ملف صوت مترجم', onPressed: () => _beginNewInput('مشاركة الترجمة')),
+            _EditorAction(icon: Icons.share, tooltip: 'مشاركة ملف صوت مترجم', onPressed: () => _showUnavailableAction('مشاركة ملف صوت مترجم')),
             _EditorAction(icon: Icons.copy, tooltip: 'نسخ الترجمة', onPressed: () async {
               if (_output.text.isEmpty) {
                 if (context.mounted) {
@@ -562,6 +564,7 @@ class _DialoguePanelState extends State<_DialoguePanel> {
   Timer? _translationDebounce;
   String _leftTargetLanguage = 'en';
   String? _notice;
+  bool _hasCompletedDialogueTranslation = false;
   bool _isTranslating = false;
   bool _loadedLanguagePreferences = false;
 
@@ -584,6 +587,16 @@ class _DialoguePanelState extends State<_DialoguePanel> {
 
   void _onServiceChanged() {
     if (mounted) setState(() {});
+  }
+
+  void _beginFreshDialogueIfNeeded() {
+    if (!_hasCompletedDialogueTranslation) return;
+    setState(() {
+      _source.clear();
+      _translated.clear();
+      _notice = 'بدأت جلسة حوار جديدة.';
+      _hasCompletedDialogueTranslation = false;
+    });
   }
 
   Future<void> _selectLeftTargetLanguage(String code) async {
@@ -609,6 +622,7 @@ class _DialoguePanelState extends State<_DialoguePanel> {
     final sourceLanguage = context.read<LanguagePreferences>().deviceLanguageCode;
     await _speechService.stop();
     if (!mounted) return;
+    _beginFreshDialogueIfNeeded();
     await _recognitionService.start(
       languageCode: sourceLanguage,
       onText: (recognizedText) {
@@ -665,6 +679,8 @@ class _DialoguePanelState extends State<_DialoguePanel> {
     setState(() {
       _isTranslating = false;
       _translated.text = result.isSuccess ? result.text ?? '' : '';
+      _hasCompletedDialogueTranslation =
+          result.isSuccess && _translated.text.trim().isNotEmpty;
       _notice = result.message;
     });
   }
@@ -722,6 +738,7 @@ class _DialoguePanelState extends State<_DialoguePanel> {
               onPressed: _pickDialogueAudioFile,
             ),
           ],
+          onTap: _beginFreshDialogueIfNeeded,
           onChanged: (value) => _queueTranslation(
             value,
             sourceLanguageCode: deviceLanguage,
@@ -859,6 +876,7 @@ class _DialogueEditor extends StatelessWidget {
     required this.hint,
     required this.actions,
     this.readOnly = false,
+    this.onTap,
     this.onChanged,
   });
 
@@ -867,12 +885,13 @@ class _DialogueEditor extends StatelessWidget {
   final String hint;
   final List<_EditorAction> actions;
   final bool readOnly;
+  final GestureTapCallback? onTap;
   final ValueChanged<String>? onChanged;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 270,
+      height: 300,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.04),
@@ -899,6 +918,7 @@ class _DialogueEditor extends StatelessWidget {
                 border: InputBorder.none,
                 contentPadding: const EdgeInsets.only(bottom: 12),
               ),
+              onTap: onTap,
               onChanged: onChanged,
             ),
           ),
@@ -1120,11 +1140,181 @@ class _DocumentsPanelState extends State<_DocumentsPanel> {
                   Text('الترجمة إلى لغة جهازك: ${TranslationLanguageCatalog.labels[context.read<LanguagePreferences>().deviceLanguageCode] ?? context.read<LanguagePreferences>().deviceLanguageCode}', style: const TextStyle(color: RoyalColors.gold)),
                   const SizedBox(height: 8),
                   SelectableText(_translatedText!, style: const TextStyle(height: 1.6)),
+                  const SizedBox(height: 12),
+                  FilledButton.icon(
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute<void>(
+                        builder: (_) => _TranslatedTextPreviewPage(
+                          originalText: _extractedText ?? '',
+                          translatedText: _translatedText!,
+                          documentName: _selectedDocumentName ?? _selectedFileName ?? 'نص مستخرج',
+                        ),
+                      ),
+                    ),
+                    icon: const Icon(Icons.fullscreen_outlined),
+                    label: const Text('معاينة الترجمة ملء الشاشة'),
+                  ),
                 ],
               ),
             ),
           ),
       ],
+    );
+  }
+}
+
+class _TranslatedTextPreviewPage extends StatefulWidget {
+  const _TranslatedTextPreviewPage({
+    required this.originalText,
+    required this.translatedText,
+    required this.documentName,
+  });
+
+  final String originalText;
+  final String translatedText;
+  final String documentName;
+
+  @override
+  State<_TranslatedTextPreviewPage> createState() =>
+      _TranslatedTextPreviewPageState();
+}
+
+class _TranslatedTextPreviewPageState
+    extends State<_TranslatedTextPreviewPage> {
+  bool _translationVisible = false;
+  bool _initialDelayComplete = false;
+
+  @override
+  void initState() {
+    super.initState();
+    Future<void>.delayed(const Duration(seconds: 3), () {
+      if (mounted) {
+        setState(() {
+          _initialDelayComplete = true;
+          _translationVisible = true;
+        });
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Scaffold(
+        appBar: AppBar(title: Text(widget.documentName)),
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Text(
+                  'معاينة نص محلي: ليست ملف PDF جديداً ولا تحفظ أو تشارك ملفاً في هذا الإصدار.',
+                  style: TextStyle(color: RoyalColors.muted, height: 1.45),
+                ),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: GestureDetector(
+                    onLongPressStart: (_) =>
+                        setState(() => _translationVisible = false),
+                    onLongPressEnd: (_) =>
+                        setState(() => _translationVisible = _initialDelayComplete),
+                    child: Stack(
+                      children: [
+                        _PreviewTextSheet(
+                          heading: 'النص الأصلي المستخرج',
+                          text: widget.originalText,
+                          color: const Color(0xFF172334),
+                        ),
+                        if (_translationVisible)
+                          Positioned.fill(
+                            child: _PreviewTextSheet(
+                              heading: 'الترجمة إلى لغة الجهاز',
+                              text: widget.translatedText,
+                              color: const Color(0xFF23364F),
+                              showSignature: true,
+                            ),
+                          )
+                        else
+                          const Positioned.fill(
+                            child: ColoredBox(
+                              color: Color(0x550D1623),
+                              child: Center(child: CircularProgressIndicator()),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                const Text(
+                  'اضغط مطولاً لرؤية النص الأصلي، ثم ارفع إصبعك للعودة إلى الترجمة.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: RoyalColors.gold, height: 1.4),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PreviewTextSheet extends StatelessWidget {
+  const _PreviewTextSheet({
+    required this.heading,
+    required this.text,
+    required this.color,
+    this.showSignature = false,
+  });
+
+  final String heading;
+  final String text;
+  final Color color;
+  final bool showSignature;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white24),
+      ),
+      child: Stack(
+        children: [
+          SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(heading, style: const TextStyle(color: RoyalColors.gold, fontWeight: FontWeight.w700)),
+                const SizedBox(height: 12),
+                SelectableText(text, style: const TextStyle(fontSize: 17, height: 1.7)),
+              ],
+            ),
+          ),
+          if (showSignature)
+            Center(
+              child: IgnorePointer(
+                child: Transform.rotate(
+                  angle: -0.48,
+                  child: const Opacity(
+                    opacity: 0.16,
+                    child: Text(
+                      'تُرجِم بواسطة ميرور سكربيون',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
