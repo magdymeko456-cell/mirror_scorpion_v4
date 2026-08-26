@@ -32,7 +32,7 @@ class AndroidOverlayService {
     try {
       var permitted = await FlutterOverlayWindow.isPermissionGranted();
       if (!permitted) {
-        permitted = await FlutterOverlayWindow.requestPermission();
+        permitted = await FlutterOverlayWindow.requestPermission() ?? false;
       }
       if (!permitted) {
         return const AndroidOverlayResult(
