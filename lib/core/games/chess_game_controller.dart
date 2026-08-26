@@ -2,6 +2,16 @@ import 'dart:math';
 
 import 'package:chess/chess.dart' as chess;
 
+enum ChessComputerLevel { normal, medium, skilled }
+
+extension ChessComputerLevelLabel on ChessComputerLevel {
+  String get label => switch (this) {
+        ChessComputerLevel.normal => 'عادي',
+        ChessComputerLevel.medium => 'متوسط',
+        ChessComputerLevel.skilled => 'ماهر',
+      };
+}
+
 /// قواعد شطرنج قانونية محلية وخصم مادي بسيط. لا يمثل هذا الملف مشهداً 3D؛
 /// يبقى عرض القطع ثلاثي الأبعاد مرحلة منفصلة بعد نموذج توافق المحرك.
 class ChessGameController {
@@ -49,22 +59,28 @@ class ChessGameController {
     return legalTargets;
   }
 
-  bool movePlayer(String from, String to) {
-    if (!isWhiteTurn || gameOver) return false;
+  bool moveHuman(String from, String to) {
+    if (gameOver) return false;
     return _game.move({'from': from, 'to': to, 'promotion': 'q'});
   }
 
-  bool moveComputer() {
+  bool moveComputer({ChessComputerLevel level = ChessComputerLevel.medium}) {
     if (isWhiteTurn || gameOver) return false;
     final moves = _game.moves().whereType<String>().toList();
     if (moves.isEmpty) return false;
+
+    if (level == ChessComputerLevel.normal) {
+      return _game.move(moves[_random.nextInt(moves.length)]);
+    }
 
     var bestScore = 1 << 30;
     final bestMoves = <String>[];
     for (final move in moves) {
       final candidate = _game.copy();
       if (!candidate.move(move)) continue;
-      final score = _materialScore(candidate);
+      final score = level == ChessComputerLevel.skilled
+          ? _scoreAfterBestWhiteReply(candidate)
+          : _materialScore(candidate);
       if (score < bestScore) {
         bestScore = score;
         bestMoves
@@ -76,6 +92,20 @@ class ChessGameController {
     }
     if (bestMoves.isEmpty) return false;
     return _game.move(bestMoves[_random.nextInt(bestMoves.length)]);
+  }
+
+  int _scoreAfterBestWhiteReply(chess.Chess position) {
+    final replies = position.moves().whereType<String>().toList();
+    if (replies.isEmpty) return _materialScore(position);
+    var whiteBestScore = -(1 << 30);
+    for (final reply in replies) {
+      final afterReply = position.copy();
+      if (!afterReply.move(reply)) continue;
+      whiteBestScore = max(whiteBestScore, _materialScore(afterReply));
+    }
+    return whiteBestScore == -(1 << 30)
+        ? _materialScore(position)
+        : whiteBestScore;
   }
 
   void reset() => _game = chess.Chess();

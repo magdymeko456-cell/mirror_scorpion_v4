@@ -18,7 +18,7 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
     _FeatureSpec(FeatureKind.dialogue, 'حوار مترجم', 'محرران + مايك الجهاز', Icons.forum, Colors.cyanAccent),
     _FeatureSpec(FeatureKind.documents, 'مستندات وعدسة', 'OCR صور + PDF وTXT محلي', Icons.document_scanner, Colors.tealAccent),
     _FeatureSpec(FeatureKind.stories, 'قصص وإلهام', 'قصص وإلهام محلي', Icons.auto_stories, Colors.orangeAccent),
-    _FeatureSpec(FeatureKind.games, 'ألعاب وتفكير', 'شطرنج قانوني + روبيك قريباً', Icons.sports_esports, Colors.purpleAccent),
+    _FeatureSpec(FeatureKind.games, 'الشطرنج', 'لعب محلي أو ضد الكمبيوتر', Icons.castle, Colors.purpleAccent),
     _FeatureSpec(FeatureKind.settings, 'الإعدادات', 'خصوصية وحزم وPRO', Icons.settings, Colors.blueGrey),
   ];
 
@@ -93,46 +93,6 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
     Navigator.push(context, MaterialPageRoute<void>(builder: (_) => FeatureHubScreen(kind: kind)));
   }
 
-  void _showGamesSelection() {
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: const Color(0xFF1B2838),
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (sheetContext) => Directionality(
-        textDirection: TextDirection.rtl,
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text('اختر اللعبة', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 20),
-              ListTile(
-                leading: const Icon(Icons.grid_view, color: Colors.purpleAccent, size: 32),
-                title: const Text('مكعب روبيك'),
-                subtitle: const Text('قيد التطوير: حركات وحل تعليمي لاحقاً', style: TextStyle(color: Colors.white54)),
-                onTap: () {
-                  Navigator.pop(sheetContext);
-                  _openFeature(FeatureKind.games);
-                },
-              ),
-              const Divider(color: Colors.white24),
-              ListTile(
-                leading: const Icon(Icons.castle, color: Colors.purpleAccent, size: 32),
-                title: const Text('شطرنج قانوني'),
-                subtitle: const Text('ساعة وخصم محلي؛ 3D قيد البحث', style: TextStyle(color: Colors.white54)),
-                onTap: () {
-                  Navigator.pop(sheetContext);
-                  _openFeature(FeatureKind.games);
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Directionality(
@@ -162,7 +122,7 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
                     delegate: SliverChildBuilderDelegate(
                       (context, index) => _FeatureCard(
                         feature: _features[index],
-                        onTap: _features[index].kind == FeatureKind.games ? _showGamesSelection : () => _openFeature(_features[index].kind),
+                        onTap: () => _openFeature(_features[index].kind),
                       ),
                       childCount: _features.length,
                     ),
