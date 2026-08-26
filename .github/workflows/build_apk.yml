@@ -108,6 +108,22 @@ jobs:
           if ! grep -q 'android.speech.RecognitionService' android/app/src/main/AndroidManifest.xml; then
             sed -i '/<application/i\    <queries><intent><action android:name="android.speech.RecognitionService" /></intent></queries>' android/app/src/main/AndroidManifest.xml
           fi
+      - name: Configure Android translation overlay permission
+        run: |
+          MANIFEST=android/app/src/main/AndroidManifest.xml
+          for permission in \
+            android.permission.SYSTEM_ALERT_WINDOW \
+            android.permission.FOREGROUND_SERVICE \
+            android.permission.FOREGROUND_SERVICE_SPECIAL_USE; do
+            if ! grep -q "$permission" "$MANIFEST"; then
+              sed -i "/<application/i\    <uses-permission android:name=\"$permission\" />" "$MANIFEST"
+            fi
+          done
+          if ! grep -q 'flutter.overlay.window.flutter_overlay_window.OverlayService' "$MANIFEST"; then
+            sed -i '/<\/application>/i\        <service android:name="flutter.overlay.window.flutter_overlay_window.OverlayService" android:exported="false" android:foregroundServiceType="specialUse">\
+            <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="User initiated translation shortcut overlay." />\
+        </service>' "$MANIFEST"
+          fi
       - name: Configure PDF text extraction R8 rule
         run: |
           cat > android/app/mirror-scorpion-pdf-r8.pro <<'EOF'

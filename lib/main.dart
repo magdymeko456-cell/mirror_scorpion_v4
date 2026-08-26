@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import 'app/mirror_scorpion_app.dart';
 import 'core/localization/language_preferences.dart';
+import 'core/platform/android_overlay_service.dart';
 import 'core/pro/premium_verification_service.dart';
 
 Future<void> main() async {
@@ -24,4 +25,10 @@ Future<void> main() async {
       child: MirrorScorpionApp(languagePreferences: languagePreferences),
     ),
   );
+}
+
+@pragma('vm:entry-point')
+void overlayMain() {
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(const MirrorScorpionOverlayApp());
 }

@@ -17,6 +17,7 @@ import '../core/documents/local_document_text_service.dart';
 import '../core/media/runware_video_service.dart';
 import '../core/mlkit/on_device_ocr_service.dart';
 import '../core/mlkit/on_device_translation_service.dart';
+import '../core/platform/android_overlay_service.dart';
 import '../core/pro/premium_verification_service.dart';
 import '../core/speech/device_speech_recognition_service.dart';
 import '../core/speech/elevenlabs_voice_service.dart';
@@ -2124,7 +2125,7 @@ class _SettingsPanel extends StatelessWidget {
             child: ListTile(
               leading: const Icon(Icons.bubble_chart_outlined, color: RoyalColors.teal),
               title: const Text('الفقاعة العائمة والخصوصية'),
-              subtitle: const Text('غير مفعلة حتى يكتمل إذن Android وخدمة foreground واختبار الهاتف.'),
+              subtitle: const Text('Android فقط: إذن صريح وفقاعة قابلة للسحب، بلا قراءة للتطبيقات الأخرى.'),
               trailing: const Icon(Icons.chevron_left),
               onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const _BubblePrivacyPage())),
             ),
@@ -2536,8 +2537,37 @@ class _OfflinePackagesPageState extends State<_OfflinePackagesPage> {
   }
 }
 
-class _BubblePrivacyPage extends StatelessWidget {
+class _BubblePrivacyPage extends StatefulWidget {
   const _BubblePrivacyPage();
+
+  @override
+  State<_BubblePrivacyPage> createState() => _BubblePrivacyPageState();
+}
+
+class _BubblePrivacyPageState extends State<_BubblePrivacyPage> {
+  final _overlayService = AndroidOverlayService();
+  String? _notice;
+  bool _isWorking = false;
+
+  Future<void> _startBubble() async {
+    setState(() => _isWorking = true);
+    final result = await _overlayService.showBubble();
+    if (!mounted) return;
+    setState(() {
+      _isWorking = false;
+      _notice = result.message;
+    });
+  }
+
+  Future<void> _stopBubble() async {
+    setState(() => _isWorking = true);
+    final result = await _overlayService.closeBubble();
+    if (!mounted) return;
+    setState(() {
+      _isWorking = false;
+      _notice = result.message;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -2547,15 +2577,40 @@ class _BubblePrivacyPage extends StatelessWidget {
         appBar: AppBar(title: const Text('الفقاعة العائمة والخصوصية')),
         body: ListView(
           padding: const EdgeInsets.all(18),
-          children: const [
-            _SectionNotice(
+          children: [
+            const _SectionNotice(
               title: 'حدود الفقاعة',
-              detail: 'عند تنفيذها ستحتاج الفقاعة إلى إذن Android صريح للظهور فوق التطبيقات وخدمة foreground. ستعمل فقط عندما يطلب المستخدم ترجمة نص عبر Share أو Process Text أو من داخل الفقاعة نفسها.',
+              detail: 'هذه هي الدفعة الأولى: فقاعة Android قابلة للسحب تظهر فقط بعد إذنك وتحت إشعار foreground. لا تستقبل بعد نص Share أو Process Text؛ لا تقرأ التطبيقات الأخرى مطلقاً.',
             ),
-            SizedBox(height: 12),
-            Card(child: ListTile(leading: Icon(Icons.block_outlined, color: Colors.redAccent), title: Text('غير مسموح'), subtitle: Text('لا خدمة Accessibility، ولا Notification Listener، ولا قراءة تلقائية لرسائل WhatsApp أو البريد أو Messenger.'))),
-            SizedBox(height: 12),
-            Card(child: ListTile(leading: Icon(Icons.check_circle_outline, color: Colors.greenAccent), title: Text('مسموح بعد الاختبار'), subtitle: Text('إظهار فقاعة قابلة للسحب، وفتح محرر الترجمة للنص الذي شاركه المستخدم بوضوح.'))),
+            const SizedBox(height: 12),
+            const Card(child: ListTile(leading: Icon(Icons.block_outlined, color: Colors.redAccent), title: Text('غير مسموح'), subtitle: Text('لا خدمة Accessibility، ولا Notification Listener، ولا قراءة تلقائية لرسائل WhatsApp أو البريد أو Messenger.'))),
+            const SizedBox(height: 12),
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.info_outline, color: RoyalColors.gold),
+                title: Text(_overlayService.isSupported ? 'Android Overlay متاح للاختبار' : 'هذه المنصة لا تدعم Overlay'),
+                subtitle: const Text('تفعيل الفقاعة يفتح صفحة الإذن الرسمية من Android عند الحاجة.'),
+              ),
+            ),
+            const SizedBox(height: 16),
+            FilledButton.icon(
+              onPressed: _isWorking || !_overlayService.isSupported ? null : _startBubble,
+              icon: _isWorking
+                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Icon(Icons.bubble_chart_outlined),
+              label: const Text('تفعيل الفقاعة فوق التطبيقات'),
+            ),
+            const SizedBox(height: 10),
+            OutlinedButton.icon(
+              onPressed: _isWorking || !_overlayService.isSupported ? null : _stopBubble,
+              icon: const Icon(Icons.close),
+              label: const Text('إيقاف الفقاعة'),
+            ),
+            if (_notice != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 14),
+                child: Text(_notice!, style: const TextStyle(color: RoyalColors.gold, height: 1.5)),
+              ),
           ],
         ),
       ),
