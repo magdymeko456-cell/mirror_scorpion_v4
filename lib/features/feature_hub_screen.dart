@@ -164,6 +164,7 @@ class _TranslationPanelState extends State<_TranslationPanel> {
   }
 
   Future<bool> _requestSharedTextConsent() async {
+    final inbox = context.read<SharedTextInbox>();
     final accepted = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -184,7 +185,7 @@ class _TranslationPanelState extends State<_TranslationPanel> {
       ),
     );
     if (accepted == true) {
-      await context.read<SharedTextInbox>().setTranslationConsent(true);
+      await inbox.setTranslationConsent(true);
       return true;
     }
     return false;
