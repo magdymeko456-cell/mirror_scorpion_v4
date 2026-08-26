@@ -2313,37 +2313,40 @@ class _ChessPieceToken extends StatelessWidget {
       clipBehavior: Clip.none,
       children: [
         Positioned(
-          bottom: -4,
+          bottom: -2,
           child: Container(
-            width: 26,
-            height: 7,
+            width: 22,
+            height: 5,
             decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.35),
+              color: Colors.black.withValues(alpha: 0.28),
               borderRadius: BorderRadius.circular(99),
-              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.38), blurRadius: 5, offset: const Offset(0, 2))],
+              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.30), blurRadius: 3.5, offset: const Offset(0, 1.5))],
             ),
           ),
         ),
-        ShaderMask(
-          blendMode: BlendMode.srcIn,
-          shaderCallback: (bounds) => LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: colors,
-            stops: const [0, 0.30, 0.72, 1],
-          ).createShader(bounds),
-          child: Text(
-            symbol,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 43,
-              height: 1,
-              fontWeight: FontWeight.w600,
-              shadows: [
-                Shadow(color: Colors.black.withValues(alpha: 0.78), blurRadius: 2.8, offset: const Offset(1.4, 2)),
-                Shadow(color: Colors.white.withValues(alpha: isWhite ? 0.40 : 0.12), blurRadius: 0.7, offset: const Offset(-0.6, -0.8)),
-              ],
+        Transform.translate(
+          offset: const Offset(0, -1),
+          child: ShaderMask(
+            blendMode: BlendMode.srcIn,
+            shaderCallback: (bounds) => LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: colors,
+              stops: const [0, 0.30, 0.72, 1],
+            ).createShader(bounds),
+            child: Text(
+              symbol,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 38,
+                height: 1,
+                fontWeight: FontWeight.w600,
+                shadows: [
+                  Shadow(color: Colors.black.withValues(alpha: 0.64), blurRadius: 1.8, offset: const Offset(1, 1.2)),
+                  Shadow(color: Colors.white.withValues(alpha: isWhite ? 0.32 : 0.09), blurRadius: 0.45, offset: const Offset(-0.4, -0.5)),
+                ],
+              ),
             ),
           ),
         ),
