@@ -115,6 +115,7 @@ class _TranslationPanelState extends State<_TranslationPanel> {
   final _speechService = SystemTtsService();
   final _recognitionService = DeviceSpeechRecognitionService();
   String _selectedLanguage = 'ar';
+  String _lastOutputLanguage = 'ar';
   String? _notice;
   bool _hasCompletedTranslation = false;
   bool _isTranslating = false;
@@ -150,6 +151,7 @@ class _TranslationPanelState extends State<_TranslationPanel> {
 
   Future<void> _processSharedText(String text) async {
     final inbox = context.read<SharedTextInbox>();
+    final deviceLanguage = context.read<LanguagePreferences>().deviceLanguageCode;
     if (!inbox.hasTranslationConsent) {
       final accepted = await _requestSharedTextConsent();
       if (!accepted || !mounted) {
@@ -159,8 +161,10 @@ class _TranslationPanelState extends State<_TranslationPanel> {
     }
     _beginFreshTranslationIfNeeded();
     _input.text = text;
-    setState(() => _notice = 'وصل نص اخترت مشاركته. جارٍ تحديد لغته محلياً…');
-    _queueTranslation(text);
+    setState(() {
+      _notice = 'وصل نص اخترت مشاركته. جارٍ تحديد لغته محلياً ثم ترجمته إلى لغة جهازك…';
+    });
+    _queueTranslation(text, targetLanguageCode: deviceLanguage);
   }
 
   Future<bool> _requestSharedTextConsent() async {
@@ -236,7 +240,7 @@ class _TranslationPanelState extends State<_TranslationPanel> {
     }
     await _speechService.speak(
       text: _output.text,
-      languageCode: _selectedLanguage,
+      languageCode: _lastOutputLanguage,
     );
     if (mounted && _speechService.message != null) {
       setState(() => _notice = _speechService.message);
@@ -287,7 +291,11 @@ class _TranslationPanelState extends State<_TranslationPanel> {
     setState(() => _notice = '$action يحتاج خدمة صوت أو ملفات منفصلة؛ لم يتم إنشاء ناتج بديل.');
   }
 
-  void _queueTranslation(String value, {String? sourceLanguageCode}) {
+  void _queueTranslation(
+    String value, {
+    String? sourceLanguageCode,
+    String? targetLanguageCode,
+  }) {
     _translationDebounce?.cancel();
     if (value.trim().isEmpty) {
       setState(() {
@@ -298,13 +306,18 @@ class _TranslationPanelState extends State<_TranslationPanel> {
       return;
     }
     _translationDebounce = Timer(const Duration(milliseconds: 650), () {
-      _translateLocally(value, sourceLanguageCode: sourceLanguageCode);
+      _translateLocally(
+        value,
+        sourceLanguageCode: sourceLanguageCode,
+        targetLanguageCode: targetLanguageCode,
+      );
     });
   }
 
   Future<void> _translateLocally(
     String value, {
     String? sourceLanguageCode,
+    String? targetLanguageCode,
   }) async {
     if (!mounted || value.trim() != _input.text.trim()) return;
     setState(() {
@@ -313,9 +326,10 @@ class _TranslationPanelState extends State<_TranslationPanel> {
           ? 'جارٍ تحديد لغة النص وتجهيز نموذج الترجمة المحلي…'
           : 'جارٍ تجهيز نموذج الترجمة المحلي للغة الميكروفون…';
     });
+    final targetLanguage = targetLanguageCode ?? _selectedLanguage;
     final result = await _translationService.translate(
       text: value,
-      targetLanguageCode: _selectedLanguage,
+      targetLanguageCode: targetLanguage,
       sourceLanguageCode: sourceLanguageCode,
       onProgress: (progress) {
         if (mounted && value.trim() == _input.text.trim()) {
@@ -327,6 +341,7 @@ class _TranslationPanelState extends State<_TranslationPanel> {
     setState(() {
       _isTranslating = false;
       if (result.isSuccess) _output.text = result.text ?? '';
+      if (result.isSuccess) _lastOutputLanguage = targetLanguage;
       if (!result.isSuccess) _output.clear();
       _hasCompletedTranslation =
           result.isSuccess && _output.text.trim().isNotEmpty;
