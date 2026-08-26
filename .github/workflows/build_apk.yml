@@ -190,6 +190,19 @@ jobs:
           grep -q -- '-dontwarn com.gemalto.jp2.\*\*' android/app/mirror-scorpion-pdf-r8.pro
       - name: Install dependencies
         run: flutter pub get
+      - name: Align shared text plugin JVM target
+        run: |
+          PLUGIN_DIR=$(find "${PUB_CACHE:-$HOME/.pub-cache}/hosted/pub.dev" -maxdepth 1 -type d -name 'receive_sharing_intent-1.8.1' -print -quit)
+          test -n "$PLUGIN_DIR" || { echo "receive_sharing_intent 1.8.1 was not installed."; exit 1; }
+          PLUGIN_GRADLE="$PLUGIN_DIR/android/build.gradle"
+          test -f "$PLUGIN_GRADLE" || { echo "Expected Groovy Gradle file for receive_sharing_intent was not found."; exit 1; }
+          cat >> "$PLUGIN_GRADLE" <<'EOF'
+
+          // Keep the plugin Kotlin task aligned with its Java 11 compile task.
+          tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+              kotlinOptions.jvmTarget = "11"
+          }
+          EOF
       - name: Generate scorpion Android launcher icon
         run: dart run flutter_launcher_icons
       - name: Static analysis
