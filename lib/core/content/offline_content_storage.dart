@@ -4,6 +4,8 @@ import 'dart:typed_data';
 
 import 'package:path_provider/path_provider.dart';
 
+import 'content_package_validator.dart';
+
 /// مساحة دائمة لحزم المحتوى التي يختار المستخدم تنزيلها أو استيرادها.
 /// لا تقوم هذه الخدمة بتنزيل أي شيء في الخلفية، ولا تُخزّن محتوى دينياً
 /// أو صوتياً من دون إجراء صريح من المستخدم.
@@ -29,6 +31,7 @@ class OfflineContentStorage {
       try {
         final decoded = jsonDecode(await file.readAsString());
         if (decoded is! Map<String, dynamic>) continue;
+        ContentPackageValidator.validate(decoded);
         records.add(OfflinePackageRecord.fromJson(decoded, path: file.path));
       } on FormatException {
         // ملف غير متوافق لا يُعرض كحزمة صالحة.
@@ -59,6 +62,11 @@ class OfflineContentStorage {
     required Uint8List bytes,
   }) async {
     _validateId(id);
+    final decoded = jsonDecode(utf8.decode(bytes));
+    if (decoded is! Map<String, dynamic>) {
+      throw const FormatException('Content package must be a JSON object.');
+    }
+    ContentPackageValidator.validate(decoded, expectedId: id);
     final directory = await packagesDirectory();
     final target = File('${directory.path}/$id.json');
     final temporary = File('${target.path}.tmp');
@@ -66,8 +74,21 @@ class OfflineContentStorage {
     try {
       await temporary.rename(target.path);
     } on FileSystemException {
-      if (await target.exists()) await target.delete();
-      await temporary.rename(target.path);
+      final backup = File('${target.path}.backup');
+      if (await backup.exists()) await backup.delete();
+      if (await target.exists()) await target.rename(backup.path);
+      try {
+        await temporary.rename(target.path);
+      } on FileSystemException {
+        if (!await target.exists() && await backup.exists()) {
+          await backup.rename(target.path);
+        }
+        rethrow;
+      } finally {
+        if (await target.exists() && await backup.exists()) {
+          await backup.delete();
+        }
+      }
     }
     return target;
   }
@@ -77,8 +98,18 @@ class OfflineContentStorage {
     final directory = await packagesDirectory();
     final target = File('${directory.path}/$id.json');
     if (!await target.exists()) return false;
-    await target.delete();
-    return true;
+    final pendingDeletion = File('${target.path}.deleting');
+    if (await pendingDeletion.exists()) await pendingDeletion.delete();
+    await target.rename(pendingDeletion.path);
+    try {
+      await pendingDeletion.delete();
+      return true;
+    } on FileSystemException {
+      if (await pendingDeletion.exists() && !await target.exists()) {
+        await pendingDeletion.rename(target.path);
+      }
+      rethrow;
+    }
   }
 
   void _validateId(String id) {

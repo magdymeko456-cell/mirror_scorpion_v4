@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
 import 'package:http/http.dart' as http;
 
+import 'content_package_validator.dart';
 import 'offline_content_storage.dart';
 
 class ContentCatalog {
@@ -219,13 +220,16 @@ class GitHubContentCatalogService {
         );
       }
       final decoded = jsonDecode(utf8.decode(bytes));
-      if (decoded is! Map<String, dynamic> ||
-          decoded['packageId'] != package.id ||
-          decoded['version'] != package.version) {
+      if (decoded is! Map<String, dynamic>) {
         return const ContentPackageDownloadResult.failure(
-          'رُفضت الحزمة لأن هويتها أو إصدارها لا يطابق الفهرس.',
+          'رُفضت الحزمة لأن ملف JSON لا يمثل حزمة محتوى.',
         );
       }
+      ContentPackageValidator.validate(
+        decoded,
+        expectedId: package.id,
+        expectedVersion: package.version,
+      );
       final existing = await storage.packageById(package.id);
       if (existing != null &&
           ContentVersion.compare(existing.version, package.version!) > 0) {
