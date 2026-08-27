@@ -19,11 +19,15 @@ import '../core/documents/translated_document_export_service.dart';
 import '../core/mlkit/on_device_ocr_service.dart';
 import '../core/mlkit/on_device_translation_service.dart';
 import '../core/platform/android_overlay_service.dart';
+import '../core/platform/device_capability_service.dart';
 import '../core/platform/shared_text_inbox.dart';
 import '../core/pro/premium_verification_service.dart';
 import '../core/speech/device_speech_recognition_service.dart';
 import '../core/speech/elevenlabs_voice_service.dart';
+import '../core/speech/audio_transcriber_service.dart';
 import '../core/speech/system_tts_service.dart';
+import '../core/speech/translated_audio_export_service.dart';
+import '../core/speech/whisper_model_installer.dart';
 import 'subscription_boundaries_card.dart';
 
 enum FeatureKind { translation, dialogue, documents, stories, games, settings }
@@ -118,11 +122,20 @@ class _TranslationPanelState extends State<_TranslationPanel> {
   final _translationService = const OnDeviceTranslationService();
   final _speechService = SystemTtsService();
   final _recognitionService = DeviceSpeechRecognitionService();
+  final _capabilityService = DeviceCapabilityService();
+  final _modelInstaller = WhisperModelInstaller();
+  final _audioTranscriber = AudioTranscriberService();
+  final _audioExporter = TranslatedAudioExportService();
   String _selectedLanguage = 'ar';
   String _lastOutputLanguage = 'ar';
   String? _notice;
+  TranslatedAudioFile? _translatedAudioFile;
   bool _hasCompletedTranslation = false;
   bool _isTranslating = false;
+  bool _isInstallingAudioModel = false;
+  bool _isTranscribingAudio = false;
+  int? _audioModelDownloadPercent;
+  int? _audioTranscriptionPercent;
   bool _loadedLanguagePreference = false;
   bool _processedInitialText = false;
   Timer? _translationDebounce;
@@ -251,6 +264,142 @@ class _TranslationPanelState extends State<_TranslationPanel> {
     }
   }
 
+  Future<void> _pickAudioFileForLocalTranslation() async {
+    if (_isInstallingAudioModel || _isTranscribingAudio) return;
+    final selection = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: AudioTranscriberService.supportedExtensions.toList()..sort(),
+      withData: false,
+    );
+    if (selection == null || selection.files.isEmpty || !mounted) return;
+    final file = selection.files.first;
+    final path = file.path;
+    if (path == null || path.isEmpty) return;
+    if (!AudioTranscriberService.allowsFileSize(file.size)) {
+      setState(() => _notice = 'حجم الملف غير مناسب. الحد الأقصى للتفريغ المحلي هو 128 MB.');
+      return;
+    }
+    final accepted = await _confirmLocalAudioTranscription(file);
+    if (accepted != true || !mounted) return;
+    await _transcribeAndTranslateLocalAudio(path);
+  }
+
+  Future<bool?> _confirmLocalAudioTranscription(PlatformFile file) async {
+    final installed = await _modelInstaller.verifiedInstalledModel(WhisperModelDescriptor.baseMultilingual);
+    if (!mounted) return false;
+    final sizeInMb = (file.size / (1024 * 1024)).toStringAsFixed(1);
+    return showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('تفريغ ملف صوت محلياً'),
+        content: Text(
+          'الملف: ${file.name}\nالحجم: $sizeInMb MB\n\n'
+          'سيبقى الملف داخل هاتفك ولن يُرفع إلى خادم. '
+          '${installed == null ? 'يتطلب التفريغ تنزيل نموذج متعدد اللغات بحجم 142 MB مرة واحدة ثم التحقق من بصمته.' : 'نموذج التفريغ المتحقق منه موجود في الهاتف.'}\n\n'
+          'يوصى بهاتف بذاكرة RAM قدرها 8 GB أو أكثر؛ تعتمد السرعة أيضاً على المعالج وطول التسجيل.',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('إلغاء')),
+          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: Text(installed == null ? 'نزّل النموذج وتابع' : 'ابدأ التفريغ المحلي')),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _transcribeAndTranslateLocalAudio(String filePath) async {
+    final capability = await _capabilityService.inspect();
+    if (!mounted) return;
+    if (capability == null) {
+      setState(() => _notice = 'تعذر قراءة مواصفات الهاتف؛ لن يبدأ تفريغ الملف محلياً.');
+      return;
+    }
+    final compatibility = LocalAudioCompatibilityPolicy.evaluate(capability);
+    if (compatibility != LocalAudioCompatibility.supported) {
+      setState(() => _notice = LocalAudioCompatibilityPolicy.messageFor(compatibility));
+      return;
+    }
+    var model = await _modelInstaller.verifiedInstalledModel(WhisperModelDescriptor.baseMultilingual);
+    if (model == null) {
+      setState(() {
+        _isInstallingAudioModel = true;
+        _audioModelDownloadPercent = 0;
+        _notice = 'جارٍ تنزيل نموذج التفريغ المحلي بعد موافقتك…';
+      });
+      final installed = await _modelInstaller.downloadAfterUserApproval(
+        descriptor: WhisperModelDescriptor.baseMultilingual,
+        onProgress: (received, expected) {
+          if (!mounted) return;
+          setState(() => _audioModelDownloadPercent = ((received * 100) / expected).floor().clamp(0, 100).toInt());
+        },
+      );
+      if (!mounted) return;
+      setState(() => _isInstallingAudioModel = false);
+      model = installed.file;
+      if (!installed.isSuccess || model == null) {
+        setState(() => _notice = installed.message);
+        return;
+      }
+    }
+    setState(() {
+      _isTranscribingAudio = true;
+      _audioTranscriptionPercent = 0;
+      _notice = 'جارٍ تجهيز الملف للتفريغ المحلي…';
+    });
+    final transcription = await _audioTranscriber.transcribeAudioFile(
+      filePath: filePath,
+      verifiedModelFile: model,
+      onProgress: (stage, percentage) {
+        if (!mounted) return;
+        final message = switch (stage) {
+          AudioTranscriptionStage.preparing => 'جارٍ تجهيز نسخة عمل محلية من الملف…',
+          AudioTranscriptionStage.transcribing => 'جارٍ تفريغ الصوت محلياً${percentage == null ? '…' : ' ($percentage%)'}',
+          AudioTranscriptionStage.cleaning => 'جارٍ تنظيف ملفات المعالجة المؤقتة…',
+        };
+        setState(() {
+          _notice = message;
+          _audioTranscriptionPercent = percentage;
+        });
+      },
+    );
+    if (!mounted) return;
+    setState(() => _isTranscribingAudio = false);
+    if (!transcription.isSuccess) {
+      setState(() => _notice = transcription.message);
+      return;
+    }
+    _beginFreshTranslationIfNeeded();
+    _input.text = transcription.text!;
+    final deviceLanguage = context.read<LanguagePreferences>().deviceLanguageCode;
+    setState(() => _notice = 'اكتمل تفريغ الصوت. جارٍ تحديد لغة النص وترجمته إلى لغة جهازك…');
+    _queueTranslation(transcription.text!, targetLanguageCode: deviceLanguage);
+  }
+
+  Future<void> _exportAndShareTranslatedAudio() async {
+    if (_output.text.trim().isEmpty) {
+      setState(() => _notice = 'لا يوجد نص مترجم لإنشاء ملف صوتي.');
+      return;
+    }
+    var audioFile = _translatedAudioFile;
+    if (audioFile == null) {
+      setState(() => _notice = 'جارٍ إنشاء ملف WAV محلياً من النص المترجم…');
+      final exported = await _audioExporter.createWav(
+        text: _output.text,
+        languageCode: _lastOutputLanguage,
+        profile: _speechService.selectedProfile,
+        selectedVoice: _speechService.selectedVoice,
+      );
+      if (!mounted) return;
+      audioFile = exported.audioFile;
+      if (!exported.isSuccess || audioFile == null) {
+        setState(() => _notice = exported.message);
+        return;
+      }
+      setState(() => _translatedAudioFile = audioFile);
+    }
+    final result = await _audioExporter.share(audioFile);
+    if (mounted) setState(() => _notice = result.message);
+  }
+
   Future<void> _toggleMicrophone() async {
     if (_recognitionService.isListening) {
       await _recognitionService.stop();
@@ -285,6 +434,11 @@ class _TranslationPanelState extends State<_TranslationPanel> {
     String? targetLanguageCode,
   }) {
     _translationDebounce?.cancel();
+    if (_translatedAudioFile != null) {
+      final staleFile = _translatedAudioFile;
+      _translatedAudioFile = null;
+      unawaited(_audioExporter.delete(staleFile));
+    }
     if (value.trim().isEmpty) {
       setState(() {
         _output.clear();
@@ -344,10 +498,12 @@ class _TranslationPanelState extends State<_TranslationPanel> {
     _speechService.stop();
     _recognitionService.removeListener(_onSpeechChanged);
     _recognitionService.dispose();
-  _input.dispose();
-  _output.dispose();
-  super.dispose();
-}
+    _modelInstaller.dispose();
+    unawaited(_audioExporter.delete(_translatedAudioFile));
+    _input.dispose();
+    _output.dispose();
+    super.dispose();
+  }
 
 @override
 Widget build(BuildContext context) {
@@ -394,6 +550,11 @@ return ListView(
               onPressed: _toggleMicrophone,
             ),
             _EditorAction(
+              icon: Icons.attach_file_rounded,
+              tooltip: 'اختيار ملف صوت لتفريغه وترجمته محلياً',
+              onPressed: _pickAudioFileForLocalTranslation,
+            ),
+            _EditorAction(
               icon: Icons.content_paste_go_outlined,
               tooltip: 'ترجم آخر نص نسخته بعد موافقتك',
               onPressed: _translateClipboardOnce,
@@ -418,6 +579,16 @@ return ListView(
               ],
             ),
           ),
+        if (_isInstallingAudioModel && _audioModelDownloadPercent != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: LinearProgressIndicator(value: _audioModelDownloadPercent! / 100),
+          ),
+        if (_isTranscribingAudio && _audioTranscriptionPercent != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: LinearProgressIndicator(value: _audioTranscriptionPercent! / 100),
+          ),
         const SizedBox(height: 10),
         _TranslationEditor(
           controller: _output,
@@ -426,6 +597,7 @@ return ListView(
           actionsOnRight: true,
           actions: [
             _EditorAction(icon: _speechService.isSpeaking ? Icons.stop_circle_outlined : Icons.volume_up, tooltip: _speechService.isSpeaking ? 'إيقاف النطق' : 'نطق الترجمة بصوت النظام', onPressed: _speakTranslation),
+            _EditorAction(icon: Icons.ios_share, tooltip: 'إنشاء ومشاركة ملف WAV للنص المترجم', onPressed: _exportAndShareTranslatedAudio),
             _EditorAction(icon: Icons.copy, tooltip: 'نسخ الترجمة', onPressed: () async {
               if (_output.text.isEmpty) {
                 if (context.mounted) {
@@ -683,6 +855,9 @@ class _DialoguePanelState extends State<_DialoguePanel> {
   Future<void> _selectLeftTargetLanguage(String code) async {
     final preferences = context.read<LanguagePreferences>();
     final sourceLanguage = preferences.deviceLanguageCode;
+    if (!_sourceUsesDeviceLanguage) {
+      await _recognitionService.stopAndWait();
+    }
     setState(() => _leftTargetLanguage = code);
     await preferences.setTranslationTargetLanguage(code);
     if (!mounted) return;
@@ -694,7 +869,7 @@ class _DialoguePanelState extends State<_DialoguePanel> {
   }
 
   Future<void> _swapDialogueSpeaker() async {
-    await _recognitionService.stop();
+    await _recognitionService.stopAndWait();
     await _speechService.stop();
     if (!mounted) return;
     final deviceLanguage = context.read<LanguagePreferences>().deviceLanguageCode;
@@ -720,6 +895,7 @@ class _DialoguePanelState extends State<_DialoguePanel> {
       }
       return;
     }
+    await _recognitionService.stopAndWait();
     final deviceLanguage = context.read<LanguagePreferences>().deviceLanguageCode;
     final sourceLanguage = _sourceUsesDeviceLanguage
         ? deviceLanguage

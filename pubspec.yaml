@@ -1,7 +1,7 @@
 name: mirror_scorpion_v4
 description: Royal Dark mobile utility for translation, inspiration, games, and secure PRO activation.
 publish_to: "none"
-version: 4.0.3+4
+version: 4.0.4+5
 
 environment:
   sdk: ">=3.9.0 <4.0.0"
@@ -29,6 +29,8 @@ dependencies:
   flutter_overlay_window: ^0.5.0
   receive_sharing_intent: 1.8.1
   flutter_svg: ^2.2.3
+  share_plus: ^10.1.4
+  whisper_ggml: ^2.6.0
 
 dev_dependencies:
   flutter_test:

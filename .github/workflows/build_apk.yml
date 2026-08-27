@@ -257,6 +257,8 @@ jobs:
           grep -q -- '-dontwarn com.gemalto.jp2.\*\*' android/app/mirror-scorpion-pdf-r8.pro
       - name: Install dependencies
         run: flutter pub get
+      - name: Add local-audio device capability bridge
+        run: bash scripts/patch_device_capabilities_bridge.sh
       - name: Add user-triggered overlay clipboard bridge
         run: bash scripts/patch_overlay_clipboard_bridge.sh
       - name: Align shared text plugin JVM target

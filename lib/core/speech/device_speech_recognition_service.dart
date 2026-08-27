@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:speech_to_text/speech_recognition_error.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
@@ -27,6 +29,9 @@ class DeviceSpeechRecognitionService extends ChangeNotifier {
     _onText = onText;
     _requestedLanguageCode = languageCode.toLowerCase();
     try {
+      if (_speechToText.isListening) {
+        await stopAndWait();
+      }
       if (!_isReady) {
         _isReady = await _speechToText.initialize(
           onStatus: _handleStatus,
@@ -74,6 +79,18 @@ class DeviceSpeechRecognitionService extends ChangeNotifier {
     } catch (_) {
       _message = 'تعذر إيقاف تعرف الكلام بشكل سليم.';
       notifyListeners();
+    }
+  }
+
+  /// يحسم الجلسة القائمة ضمن مهلة صغيرة قبل اختيار locale جديد. لا تبدأ
+  /// الواجهة الاستماع بلغة مقابلة فوق جلسة ما زالت Android توقفها.
+  Future<void> stopAndWait({
+    Duration timeout = const Duration(milliseconds: 800),
+  }) async {
+    await stop();
+    final deadline = DateTime.now().add(timeout);
+    while (_speechToText.isListening && DateTime.now().isBefore(deadline)) {
+      await Future<void>.delayed(const Duration(milliseconds: 40));
     }
   }
 
