@@ -14,6 +14,7 @@ import '../core/content/github_content_catalog_service.dart';
 import '../core/games/chess_game_controller.dart';
 import '../core/inspiration/inspiration_safety.dart';
 import '../core/documents/local_document_text_service.dart';
+import '../core/documents/translated_document_export_service.dart';
 import '../core/media/runware_video_service.dart';
 import '../core/mlkit/on_device_ocr_service.dart';
 import '../core/mlkit/on_device_translation_service.dart';
@@ -1072,8 +1073,10 @@ class _DocumentsPanelState extends State<_DocumentsPanel> {
   final _ocrService = const OnDeviceOcrService();
   final _documentTextService = const LocalDocumentTextService();
   final _translationService = const OnDeviceTranslationService();
+  final _documentExportService = const TranslatedDocumentExportService();
   bool _isScanning = false;
   bool _isTranslating = false;
+  bool _isExporting = false;
   String? _selectedFileName;
   String? _selectedDocumentName;
   String? _extractedText;
@@ -1164,6 +1167,65 @@ class _DocumentsPanelState extends State<_DocumentsPanel> {
     );
   }
 
+  String get _exportDocumentName =>
+      _selectedDocumentName ?? _selectedFileName ?? 'mirror_scorpion_translation';
+
+  Future<void> _shareTranslatedDocument() async {
+    final translatedText = _translatedText;
+    if (translatedText == null || translatedText.trim().isEmpty) return;
+    final deviceLanguage = context.read<LanguagePreferences>().deviceLanguageCode;
+    final languageLabel =
+        TranslationLanguageCatalog.labels[deviceLanguage] ?? deviceLanguage;
+    setState(() {
+      _isExporting = true;
+      _notice = 'جارٍ إنشاء PDF مترجم محلياً للمشاركة…';
+    });
+    try {
+      await _documentExportService.sharePdf(
+        documentName: _exportDocumentName,
+        translatedText: translatedText,
+        targetLanguageLabel: languageLabel,
+      );
+      if (mounted) {
+        setState(() => _notice = 'تم فتح مشاركة النظام لملف PDF المترجم.');
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _notice = 'تعذر إنشاء أو مشاركة ملف PDF المترجم.');
+      }
+    } finally {
+      if (mounted) setState(() => _isExporting = false);
+    }
+  }
+
+  Future<void> _printTranslatedDocument() async {
+    final translatedText = _translatedText;
+    if (translatedText == null || translatedText.trim().isEmpty) return;
+    final deviceLanguage = context.read<LanguagePreferences>().deviceLanguageCode;
+    final languageLabel =
+        TranslationLanguageCatalog.labels[deviceLanguage] ?? deviceLanguage;
+    setState(() {
+      _isExporting = true;
+      _notice = 'جارٍ إنشاء PDF مترجم محلياً للطباعة…';
+    });
+    try {
+      await _documentExportService.printPdf(
+        documentName: _exportDocumentName,
+        translatedText: translatedText,
+        targetLanguageLabel: languageLabel,
+      );
+      if (mounted) {
+        setState(() => _notice = 'تم فتح خدمة الطباعة لملف PDF المترجم.');
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _notice = 'تعذر إنشاء أو طباعة ملف PDF المترجم.');
+      }
+    } finally {
+      if (mounted) setState(() => _isExporting = false);
+    }
+  }
+
   Future<void> _pickLocalDocument() async {
     final file = await FilePicker.pickFile(
       type: FileType.custom,
@@ -1239,7 +1301,9 @@ class _DocumentsPanelState extends State<_DocumentsPanel> {
             title: const Text('اختيار PDF أو ملف نصي محلي'),
             subtitle: Text(_selectedDocumentName == null ? 'PDF نصي أو TXT: استخراج محلي ثم ترجمة إلى لغة جهازك' : 'المستند المختار: $_selectedDocumentName'),
             trailing: const Icon(Icons.chevron_left),
-            onTap: _isScanning || _isTranslating ? null : _pickLocalDocument,
+            onTap: _isScanning || _isTranslating || _isExporting
+                ? null
+                : _pickLocalDocument,
           ),
         ),
         if (_selectedFileName != null)
@@ -1247,7 +1311,7 @@ class _DocumentsPanelState extends State<_DocumentsPanel> {
             padding: const EdgeInsets.only(top: 18),
             child: Text('الصورة المختارة: $_selectedFileName', style: const TextStyle(color: RoyalColors.muted)),
           ),
-        if (_isScanning || _isTranslating)
+        if (_isScanning || _isTranslating || _isExporting)
           const Padding(
             padding: EdgeInsets.only(top: 18),
             child: LinearProgressIndicator(),
@@ -1277,6 +1341,30 @@ class _DocumentsPanelState extends State<_DocumentsPanel> {
                     ),
                     icon: const Icon(Icons.fullscreen_outlined),
                     label: const Text('فتح شاشة الترجمة'),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: _isExporting
+                              ? null
+                              : _shareTranslatedDocument,
+                          icon: const Icon(Icons.share_outlined),
+                          label: const Text('مشاركة PDF'),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: _isExporting
+                              ? null
+                              : _printTranslatedDocument,
+                          icon: const Icon(Icons.print_outlined),
+                          label: const Text('طباعة PDF'),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
