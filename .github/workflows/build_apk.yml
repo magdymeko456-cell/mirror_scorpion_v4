@@ -100,6 +100,73 @@ jobs:
               "    implementation 'com.google.mlkit:text-recognition-korean:16.0.1'" \
               '}' >> android/app/build.gradle
           fi
+      - name: Configure stable Android release signing
+        env:
+          ANDROID_RELEASE_KEYSTORE_BASE64: ${{ secrets.ANDROID_RELEASE_KEYSTORE_BASE64 }}
+          ANDROID_RELEASE_STORE_PASSWORD: ${{ secrets.ANDROID_RELEASE_STORE_PASSWORD }}
+          ANDROID_RELEASE_KEY_PASSWORD: ${{ secrets.ANDROID_RELEASE_KEY_PASSWORD }}
+          ANDROID_RELEASE_KEY_ALIAS: ${{ secrets.ANDROID_RELEASE_KEY_ALIAS }}
+        run: |
+          set -euo pipefail
+          for secret_name in \
+            ANDROID_RELEASE_KEYSTORE_BASE64 \
+            ANDROID_RELEASE_STORE_PASSWORD \
+            ANDROID_RELEASE_KEY_PASSWORD \
+            ANDROID_RELEASE_KEY_ALIAS; do
+            test -n "${!secret_name:-}" || {
+              echo "$secret_name is required to sign the release APK."
+              exit 1
+            }
+          done
+          umask 077
+          KEYSTORE=android/app/mirror-scorpion-release.jks
+          printf '%s' "$ANDROID_RELEASE_KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE"
+          keytool -list \
+            -keystore "$KEYSTORE" \
+            -storepass "$ANDROID_RELEASE_STORE_PASSWORD" \
+            -alias "$ANDROID_RELEASE_KEY_ALIAS" > /dev/null
+          if [ -f android/app/build.gradle.kts ]; then
+            cat >> android/app/build.gradle.kts <<'EOF'
+
+          android {
+              signingConfigs {
+                  create("mirrorScorpionRelease") {
+                      storeFile = file("mirror-scorpion-release.jks")
+                      storePassword = System.getenv("ANDROID_RELEASE_STORE_PASSWORD")
+                      keyAlias = System.getenv("ANDROID_RELEASE_KEY_ALIAS")
+                      keyPassword = System.getenv("ANDROID_RELEASE_KEY_PASSWORD")
+                  }
+              }
+              buildTypes {
+                  getByName("release") {
+                      signingConfig = signingConfigs.getByName("mirrorScorpionRelease")
+                  }
+              }
+          }
+          EOF
+          elif [ -f android/app/build.gradle ]; then
+            cat >> android/app/build.gradle <<'EOF'
+
+          android {
+              signingConfigs {
+                  mirrorScorpionRelease {
+                      storeFile file('mirror-scorpion-release.jks')
+                      storePassword System.getenv('ANDROID_RELEASE_STORE_PASSWORD')
+                      keyAlias System.getenv('ANDROID_RELEASE_KEY_ALIAS')
+                      keyPassword System.getenv('ANDROID_RELEASE_KEY_PASSWORD')
+                  }
+              }
+              buildTypes {
+                  release {
+                      signingConfig signingConfigs.mirrorScorpionRelease
+                  }
+              }
+          }
+          EOF
+          else
+            echo "Android app Gradle file was not generated."
+            exit 1
+          fi
       - name: Configure Android speech visibility and microphone permission
         run: |
           if ! grep -q 'android.permission.RECORD_AUDIO' android/app/src/main/AndroidManifest.xml; then
@@ -211,9 +278,16 @@ jobs:
         run: flutter test
       - name: Build release APK
         run: flutter build apk --release
+      - name: Verify release APK signature
+        run: |
+          set -euo pipefail
+          APK=build/app/outputs/flutter-apk/app-release.apk
+          APKSIGNER=$(find "${ANDROID_HOME}"/build-tools -type f -name apksigner | sort -V | tail -n 1)
+          test -n "$APKSIGNER" || { echo "apksigner was not found in Android build tools."; exit 1; }
+          "$APKSIGNER" verify --verbose --print-certs "$APK"
       - name: Remove Firebase Android config
         if: always()
-        run: rm -f android/app/google-services.json
+        run: rm -f android/app/google-services.json android/app/mirror-scorpion-release.jks
       - uses: actions/upload-artifact@v4
         with:
           name: mirror-scorpion-v4-flutter-apk
