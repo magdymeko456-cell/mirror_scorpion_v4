@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:chess/chess.dart' as chess;
-
 import '../app/royal_dark_theme.dart';
 import '../core/games/chess_game_controller.dart';
 
@@ -23,13 +22,7 @@ class _ChessClubScreenState extends State<ChessClubScreen> {
   final List<String> _capturedByWhite = [];
   final List<String> _capturedByBlack = [];
 
-  @override
-  void dispose() {
-    super.dispose();
-  }
-
-  bool get _computerTurn =>
-      _playAgainstComputer && !_chess.isWhiteTurn;
+  bool get _computerTurn => _playAgainstComputer && !_chess.isWhiteTurn;
 
   void _setPlayMode(bool vsComputer) {
     setState(() {
@@ -81,8 +74,7 @@ class _ChessClubScreenState extends State<ChessClubScreen> {
 
     final piece = _chess.pieceAt(square);
     final isOwn = piece != null &&
-        piece.color ==
-            (_chess.isWhiteTurn ? chess.Color.WHITE : chess.Color.BLACK);
+        piece.color == (_chess.isWhiteTurn ? chess.Color.WHITE : chess.Color.BLACK);
 
     if (isOwn) {
       setState(() {
@@ -140,7 +132,7 @@ class _ChessClubScreenState extends State<ChessClubScreen> {
       textDirection: TextDirection.rtl,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('الشطرنج الملكي'),
+          title: const Text('نادي الشطرنج - Chess Club'),
           actions: [
             IconButton(
               tooltip: 'مباراة جديدة',
@@ -154,25 +146,25 @@ class _ChessClubScreenState extends State<ChessClubScreen> {
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [Color(0xFF0D1B2A), Color(0xFF1B2838)],
+              colors: [Color(0xFF18110C), Color(0xFF0F0B08)],
             ),
           ),
           child: SafeArea(
             child: ListView(
-              padding: const EdgeInsets.fromLTRB(6, 12, 6, 24),
+              padding: const EdgeInsets.fromLTRB(8, 12, 8, 24),
               children: [
                 _buildModeSelector(),
                 if (_playAgainstComputer) _buildLevelChips(),
                 const SizedBox(height: 10),
                 _buildStatusBar(),
-                const SizedBox(height: 12),
+                const SizedBox(height: 14),
                 Center(
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 440),
                     child: _buildChessBoard(),
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 14),
                 _buildCapturedRow(),
                 const SizedBox(height: 10),
                 _buildNoticeBar(),
@@ -188,6 +180,7 @@ class _ChessClubScreenState extends State<ChessClubScreen> {
 
   Widget _buildModeSelector() {
     return Card(
+      color: const Color(0xFF241B14),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(12, 14, 12, 14),
         child: Column(
@@ -195,7 +188,7 @@ class _ChessClubScreenState extends State<ChessClubScreen> {
           children: [
             const Text(
               'اختر طريقة اللعب',
-              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17),
+              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17, color: Color(0xFFEAD8C0)),
             ),
             const SizedBox(height: 10),
             Wrap(
@@ -205,11 +198,13 @@ class _ChessClubScreenState extends State<ChessClubScreen> {
                 ChoiceChip(
                   label: const Text('ضد الكمبيوتر'),
                   selected: _playAgainstComputer,
+                  selectedColor: const Color(0xFFB58863),
                   onSelected: (_) => _setPlayMode(true),
                 ),
                 ChoiceChip(
                   label: const Text('لاعبان محلياً'),
                   selected: !_playAgainstComputer,
+                  selectedColor: const Color(0xFFB58863),
                   onSelected: (_) => _setPlayMode(false),
                 ),
               ],
@@ -231,12 +226,12 @@ class _ChessClubScreenState extends State<ChessClubScreen> {
           return ChoiceChip(
             label: Text(level.label),
             selected: _computerLevel == level,
-            selectedColor: RoyalColors.gold,
+            selectedColor: const Color(0xFFD4A373),
             labelStyle: TextStyle(
               color: _computerLevel == level ? Colors.black : Colors.white70,
               fontWeight: FontWeight.w700,
             ),
-            backgroundColor: Colors.white.withValues(alpha: 0.07),
+            backgroundColor: Colors.white.withValues(alpha: 0.05),
             onSelected: (_) => _setComputerLevel(level),
           );
         }).toList(),
@@ -248,9 +243,9 @@ class _ChessClubScreenState extends State<ChessClubScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
+        color: const Color(0xFF241B14),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: RoyalColors.border),
+        border: Border.all(color: const Color(0xFF5C3A21)),
       ),
       child: Row(
         children: [
@@ -260,11 +255,9 @@ class _ChessClubScreenState extends State<ChessClubScreen> {
             height: 16,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: _chess.isWhiteTurn
-                  ? Colors.white
-                  : const Color(0xFF1A1A1A),
+              color: _chess.isWhiteTurn ? const Color(0xFFF0D9B5) : const Color(0xFF2B1E16),
               border: Border.all(
-                color: _chess.gameOver ? Colors.redAccent : RoyalColors.gold,
+                color: _chess.gameOver ? Colors.redAccent : const Color(0xFFD4A373),
                 width: 2.5,
               ),
             ),
@@ -276,16 +269,13 @@ class _ChessClubScreenState extends State<ChessClubScreen> {
               style: TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w800,
-                color: _chess.gameOver ? Colors.orangeAccent : RoyalColors.gold,
+                color: _chess.gameOver ? Colors.orangeAccent : const Color(0xFFEAD8C0),
               ),
             ),
           ),
           Text(
             _chess.isWhiteTurn ? 'الأبيض' : 'الأسود',
-            style: const TextStyle(
-              color: RoyalColors.muted,
-              fontSize: 13,
-            ),
+            style: const TextStyle(color: RoyalColors.muted, fontSize: 13),
           ),
         ],
       ),
@@ -297,36 +287,34 @@ class _ChessClubScreenState extends State<ChessClubScreen> {
       aspectRatio: 1,
       child: Container(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFF3D2314), width: 10),
           gradient: const LinearGradient(
-            colors: [Color(0xFFDEC075), Color(0xFF5C431C), Color(0xFFE7CD88)],
+            colors: [Color(0xFF5C3A21), Color(0xFF3D2314), Color(0xFF5C3A21)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.55),
-              blurRadius: 22,
-              offset: const Offset(0, 10),
+              color: Colors.black.withValues(alpha: 0.75),
+              blurRadius: 25,
+              offset: const Offset(0, 12),
             ),
           ],
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(6),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: GridView.builder(
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 8,
-              ),
-              itemCount: 64,
-              itemBuilder: (_, index) {
-                final rank = 8 - index ~/ 8;
-                final file = String.fromCharCode('a'.codeUnitAt(0) + index % 8);
-                return _buildSquare('$file$rank', index);
-              },
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: GridView.builder(
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 8,
             ),
+            itemCount: 64,
+            itemBuilder: (_, index) {
+              final rank = 8 - index ~/ 8;
+              final file = String.fromCharCode('a'.codeUnitAt(0) + index % 8);
+              return _buildSquare('$file$rank', index);
+            },
           ),
         ),
       ),
@@ -341,8 +329,9 @@ class _ChessClubScreenState extends State<ChessClubScreen> {
     final isSelected = _selectedSquare == square;
     final isTarget = _legalTargets.contains(square);
 
-    final lightColor = const Color(0xFFEDE0C8);
-    final darkColor = const Color(0xFF8B6B47);
+    // ألوان رقعة خشبية كلاسيكية احترافية (Chess Club Wood Style)
+    final lightColor = const Color(0xFFF0D9B5);
+    final darkColor = const Color(0xFFB58863);
 
     return GestureDetector(
       onTap: () => _onSquareTap(square),
@@ -352,7 +341,7 @@ class _ChessClubScreenState extends State<ChessClubScreen> {
           fit: StackFit.expand,
           children: [
             if (isSelected)
-              Container(color: const Color(0xFFCDD26A).withValues(alpha: 0.85)),
+              Container(color: const Color(0xFFBACA44).withValues(alpha: 0.75)),
             if (isTarget && piece == null)
               Center(
                 child: Container(
@@ -360,29 +349,31 @@ class _ChessClubScreenState extends State<ChessClubScreen> {
                   height: 14,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Colors.black.withValues(alpha: 0.22),
+                    color: Colors.black.withValues(alpha: 0.25),
                   ),
                 ),
               ),
             if (isTarget && piece != null)
               Center(
                 child: Container(
-                  width: 34,
-                  height: 34,
+                  width: 36,
+                  height: 36,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: Colors.redAccent.withValues(alpha: 0.8),
-                      width: 3,
+                      color: Colors.redAccent.withValues(alpha: 0.85),
+                      width: 3.5,
                     ),
                   ),
                 ),
               ),
             if (piece != null)
-              Center(child: _ChessPieceToken(
-                symbol: ChessGameController.pieceSymbol(piece),
-                isWhite: piece.color == chess.Color.WHITE,
-              )),
+              Center(
+                child: _ChessPieceToken(
+                  symbol: ChessGameController.pieceSymbol(piece),
+                  isWhite: piece.color == chess.Color.WHITE,
+                ),
+              ),
           ],
         ),
       ),
@@ -420,6 +411,7 @@ class _ChessClubScreenState extends State<ChessClubScreen> {
 
   Widget _buildPgnRow() {
     return Card(
+      color: const Color(0xFF241B14),
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
@@ -449,61 +441,43 @@ class _ChessPieceToken extends StatelessWidget {
   Widget build(BuildContext context) {
     if (symbol.isEmpty) return const SizedBox.shrink();
 
-    final colors = isWhite
-        ? const [Color(0xFFFFFFFF), Color(0xFFFFE9A5), Color(0xFFD19D45), Color(0xFFFFF9DD)]
-        : const [Color(0xFF7593A0), Color(0xFF253C48), Color(0xFF081217), Color(0xFF3F6473)];
-
     return Stack(
       alignment: Alignment.center,
       clipBehavior: Clip.none,
       children: [
+        // ظل خشب سفلي للقطعة
         Positioned(
-          bottom: -3,
+          bottom: -2,
           child: Container(
-            width: 22,
+            width: 24,
             height: 6,
             decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.35),
+              color: Colors.black.withValues(alpha: 0.4),
               borderRadius: BorderRadius.circular(99),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.38),
-                  blurRadius: 5,
-                  offset: const Offset(0, 2),
+                  color: Colors.black.withValues(alpha: 0.4),
+                  blurRadius: 6,
+                  offset: const Offset(0, 3),
                 ),
               ],
             ),
           ),
         ),
-        ShaderMask(
-          blendMode: BlendMode.srcIn,
-          shaderCallback: (bounds) => LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: colors,
-            stops: const [0, 0.30, 0.72, 1],
-          ).createShader(bounds),
-          child: Text(
-            symbol,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 38,
-              height: 1,
-              fontWeight: FontWeight.w600,
-              shadows: [
-                Shadow(
-                  color: Colors.black.withValues(alpha: 0.78),
-                  blurRadius: 2.8,
-                  offset: const Offset(1.4, 2),
-                ),
-                Shadow(
-                  color: Colors.white.withValues(alpha: isWhite ? 0.40 : 0.12),
-                  blurRadius: 0.7,
-                  offset: const Offset(-0.6, -0.8),
-                ),
-              ],
-            ),
+        Text(
+          symbol,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: isWhite ? const Color(0xFFFFFFFF) : const Color(0xFF1A1A1A),
+            fontSize: 40,
+            height: 1,
+            shadows: [
+              Shadow(
+                color: isWhite ? Colors.black.withValues(alpha: 0.6) : Colors.white.withValues(alpha: 0.2),
+                blurRadius: 3,
+                offset: const Offset(1, 2),
+              ),
+            ],
           ),
         ),
       ],
@@ -523,9 +497,9 @@ class _CapturedGroup extends StatelessWidget {
       height: 42,
       padding: const EdgeInsets.symmetric(horizontal: 10),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.04),
+        color: const Color(0xFF241B14),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: RoyalColors.border),
+        border: Border.all(color: const Color(0xFF5C3A21)),
       ),
       child: Row(
         children: [
