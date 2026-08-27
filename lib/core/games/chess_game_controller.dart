@@ -36,7 +36,8 @@ class ChessGameController {
 
   chess.Piece? pieceAt(String square) => _game.get(square);
 
-  String getPieceSymbol(chess.Piece? piece) {
+  // دالة static للواجهة القديمة والاختبارات
+  static String pieceSymbol(chess.Piece? piece) {
     if (piece == null) return '';
     const white = <String, String>{
       'p': '♙', 'n': '♘', 'b': '♗', 'r': '♖', 'q': '♕', 'k': '♔',
@@ -48,11 +49,22 @@ class ChessGameController {
     return symbols[piece.type.name] ?? '';
   }
 
+  // دالة instance للواجهة الجديدة
+  String getPieceSymbol(chess.Piece? piece) => pieceSymbol(piece);
+
   bool get isWhiteTurn => _game.turn == chess.Color.WHITE;
   bool get gameOver => _game.game_over;
+  
+  // دعم التسميتين (القديمة والجديدة)
   bool get inCheckmate => _game.in_checkmate;
+  bool get isCheckmate => _game.in_checkmate;
+
   bool get inDraw => _game.in_draw;
+  bool get isDraw => _game.in_draw;
+
   bool get inCheck => _game.in_check;
+  bool get isCheck => _game.in_check;
+
   String get pgn => _game.pgn();
   ChessMoveSummary? get lastMove => _lastMove;
 
@@ -66,10 +78,13 @@ class ChessGameController {
     return legalTargets;
   }
 
+  // دعم التسميتين للمحرك (moveHuman و makeMove)
   bool makeMove(String from, String to) {
     if (gameOver) return false;
     return _applyMove({'from': from, 'to': to, 'promotion': 'q'});
   }
+
+  bool moveHuman(String from, String to) => makeMove(from, to);
 
   String? getBestMove({ChessComputerLevel level = ChessComputerLevel.medium}) {
     final moves = _verboseMoves();
@@ -173,7 +188,7 @@ class ChessGameController {
       from: from,
       to: to,
       movedByWhite: movedByWhite,
-      capturedSymbol: getPieceSymbol(capturedPiece),
+      capturedSymbol: pieceSymbol(capturedPiece),
     );
     return true;
   }
