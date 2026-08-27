@@ -14,7 +14,7 @@ void main() {
           supportedAbis: const <String>['arm64-v8a'],
         );
 
-    test('permits audio transcription on an 8 GB phone with enough storage', () {
+    test('permits audio transcription on a 5 GB phone with enough storage', () {
       expect(
         LocalAudioCompatibilityPolicy.evaluate(device(
           ram: LocalAudioCompatibilityPolicy.minimumRamBytes,
@@ -24,7 +24,7 @@ void main() {
       );
     });
 
-    test('limits only local audio transcription when RAM is below 8 GB', () {
+    test('limits only local audio transcription when RAM is below 5 GB', () {
       expect(
         LocalAudioCompatibilityPolicy.evaluate(device(
           ram: LocalAudioCompatibilityPolicy.minimumRamBytes - 1,
