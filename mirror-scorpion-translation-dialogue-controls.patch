@@ -1,0 +1,310 @@
+From 5210604495c84de48904b45f829f26c2e875830b Mon Sep 17 00:00:00 2001
+From: magdymeko456-cell
+ <2.88837127e+08+magdymeko456-cell@users.noreply.github.com>
+Date: Wed, 26 Aug 2026 23:48:14 +0000
+Subject: [PATCH] feat(translation): clarify dialogue speaker controls
+
+---
+ lib/features/feature_hub_screen.dart | 174 +++++++++++++++------------
+ todo.md                              |   5 +
+ 2 files changed, 102 insertions(+), 77 deletions(-)
+
+diff --git a/lib/features/feature_hub_screen.dart b/lib/features/feature_hub_screen.dart
+index b510be7..05f998d 100644
+--- a/lib/features/feature_hub_screen.dart
++++ b/lib/features/feature_hub_screen.dart
+@@ -278,22 +278,6 @@ class _TranslationPanelState extends State<_TranslationPanel> {
+     }
+   }
+ 
+-  Future<void> _pickAudioFile() async {
+-    final file = await FilePicker.pickFile(type: FileType.audio);
+-    if (!mounted) return;
+-    if (file == null) {
+-      setState(() => _notice = 'لم يتم اختيار ملف صوت.');
+-      return;
+-    }
+-    setState(() {
+-      _notice = 'تم اختيار «${file.name}» محلياً. لن يُرفع أو يُفرّغ قبل تشغيل خدمة الصوت الحية وموافقتك الصريحة.';
+-    });
+-  }
+-
+-  void _showUnavailableAction(String action) {
+-    setState(() => _notice = '$action يحتاج خدمة صوت أو ملفات منفصلة؛ لم يتم إنشاء ناتج بديل.');
+-  }
+-
+   void _queueTranslation(
+     String value, {
+     String? sourceLanguageCode,
+@@ -408,11 +392,6 @@ return ListView(
+               tooltip: _recognitionService.isListening ? 'إيقاف التقاط الكلام' : 'التقاط الكلام من ميكروفون الجهاز',
+               onPressed: _toggleMicrophone,
+             ),
+-            _EditorAction(
+-              icon: Icons.attach_file,
+-              tooltip: 'اختيار ملف صوتي لترجمته',
+-              onPressed: _pickAudioFile,
+-            ),
+             _EditorAction(
+               icon: Icons.content_paste_go_outlined,
+               tooltip: 'ترجم آخر نص نسخته بعد موافقتك',
+@@ -446,7 +425,6 @@ return ListView(
+           actionsOnRight: true,
+           actions: [
+             _EditorAction(icon: _speechService.isSpeaking ? Icons.stop_circle_outlined : Icons.volume_up, tooltip: _speechService.isSpeaking ? 'إيقاف النطق' : 'نطق الترجمة بصوت النظام', onPressed: _speakTranslation),
+-            _EditorAction(icon: Icons.share, tooltip: 'مشاركة ملف صوت مترجم', onPressed: () => _showUnavailableAction('مشاركة ملف صوت مترجم')),
+             _EditorAction(icon: Icons.copy, tooltip: 'نسخ الترجمة', onPressed: () async {
+               if (_output.text.isEmpty) {
+                 if (context.mounted) {
+@@ -668,6 +646,7 @@ class _DialoguePanelState extends State<_DialoguePanel> {
+   bool _hasCompletedDialogueTranslation = false;
+   bool _isTranslating = false;
+   bool _loadedLanguagePreferences = false;
++  bool _sourceUsesDeviceLanguage = true;
+ 
+   @override
+   void initState() {
+@@ -708,10 +687,30 @@ class _DialoguePanelState extends State<_DialoguePanel> {
+     if (!mounted) return;
+     _queueTranslation(
+       _source.text,
+-      sourceLanguageCode: sourceLanguage,
++      sourceLanguageCode:
++          _sourceUsesDeviceLanguage ? sourceLanguage : code,
+     );
+   }
+ 
++  Future<void> _swapDialogueSpeaker() async {
++    await _recognitionService.stop();
++    await _speechService.stop();
++    if (!mounted) return;
++    final deviceLanguage = context.read<LanguagePreferences>().deviceLanguageCode;
++    final nextSourceLanguage = _sourceUsesDeviceLanguage
++        ? _leftTargetLanguage
++        : deviceLanguage;
++    setState(() {
++      _sourceUsesDeviceLanguage = !_sourceUsesDeviceLanguage;
++      _source.clear();
++      _translated.clear();
++      _hasCompletedDialogueTranslation = false;
++      _isTranslating = false;
++      _notice = 'تبدّل المتحدث. لغة المايك الآن: '
++          '${TranslationLanguageCatalog.labels[nextSourceLanguage] ?? nextSourceLanguage}.';
++    });
++  }
++
+   Future<void> _toggleMicrophone() async {
+     if (_recognitionService.isListening) {
+       await _recognitionService.stop();
+@@ -720,7 +719,10 @@ class _DialoguePanelState extends State<_DialoguePanel> {
+       }
+       return;
+     }
+-    final sourceLanguage = context.read<LanguagePreferences>().deviceLanguageCode;
++    final deviceLanguage = context.read<LanguagePreferences>().deviceLanguageCode;
++    final sourceLanguage = _sourceUsesDeviceLanguage
++        ? deviceLanguage
++        : _leftTargetLanguage;
+     await _speechService.stop();
+     if (!mounted) return;
+     _beginFreshDialogueIfNeeded();
+@@ -760,7 +762,10 @@ class _DialoguePanelState extends State<_DialoguePanel> {
+     String? sourceLanguageCode,
+   }) async {
+     if (!mounted || value.trim() != _source.text.trim()) return;
+-    final targetLanguage = _leftTargetLanguage;
++    final deviceLanguage = context.read<LanguagePreferences>().deviceLanguageCode;
++    final targetLanguage = _sourceUsesDeviceLanguage
++        ? _leftTargetLanguage
++        : deviceLanguage;
+     setState(() {
+       _isTranslating = true;
+       _notice = 'جارٍ تجهيز ترجمة الحوار المحلية…';
+@@ -769,14 +774,24 @@ class _DialoguePanelState extends State<_DialoguePanel> {
+       text: value,
+       targetLanguageCode: targetLanguage,
+       sourceLanguageCode:
+-          sourceLanguageCode ?? context.read<LanguagePreferences>().deviceLanguageCode,
++          sourceLanguageCode ??
++              (_sourceUsesDeviceLanguage
++                  ? deviceLanguage
++                  : _leftTargetLanguage),
+       onProgress: (progress) {
+         if (mounted && value.trim() == _source.text.trim()) {
+           setState(() => _notice = _translationProgressMessage(progress));
+         }
+       },
+     );
+-    if (!mounted || value.trim() != _source.text.trim() || targetLanguage != _leftTargetLanguage) return;
++    if (!mounted || value.trim() != _source.text.trim()) return;
++    final currentDeviceLanguage = context.read<LanguagePreferences>().deviceLanguageCode;
++    final expectedTargetLanguage = _sourceUsesDeviceLanguage
++        ? _leftTargetLanguage
++        : currentDeviceLanguage;
++    if (targetLanguage != expectedTargetLanguage) {
++      return;
++    }
+     setState(() {
+       _isTranslating = false;
+       _translated.text = result.isSuccess ? result.text ?? '' : '';
+@@ -793,23 +808,15 @@ class _DialoguePanelState extends State<_DialoguePanel> {
+     }
+     await _speechService.speak(
+       text: _translated.text,
+-      languageCode: _leftTargetLanguage,
++      languageCode: _sourceUsesDeviceLanguage
++          ? _leftTargetLanguage
++          : context.read<LanguagePreferences>().deviceLanguageCode,
+     );
+     if (mounted && _speechService.message != null) {
+       setState(() => _notice = _speechService.message);
+     }
+   }
+ 
+-  Future<void> _pickDialogueAudioFile() async {
+-    final file = await FilePicker.pickFile(type: FileType.audio);
+-    if (!mounted) return;
+-    setState(() {
+-      _notice = file == null
+-          ? 'لم يتم اختيار ملف صوت.'
+-          : 'تم اختيار «${file.name}» لمصدر الحوار. التفريغ والترجمة ينتظران خدمة صوت حية؛ لا توجد نتيجة بديلة مصطنعة.';
+-    });
+-  }
+-
+   @override
+   void dispose() {
+     _translationDebounce?.cancel();
+@@ -830,64 +837,77 @@ class _DialoguePanelState extends State<_DialoguePanel> {
+       children: [
+         _DialogueEditor(
+           controller: _source,
+-          label: 'المحرر العلوي — لغة الجهاز',
+-          hint: 'اكتب أو اضغط الميكروفون ليسمع لغة جهازك…',
+-          actions: [
+-            _EditorAction(
+-              icon: Icons.attach_file,
+-              tooltip: 'اختيار ملف صوت لمصدر الحوار',
+-              onPressed: _pickDialogueAudioFile,
+-            ),
+-          ],
++          label: _sourceUsesDeviceLanguage
++              ? 'المحرر العلوي — المتحدث بلغة الجهاز'
++              : 'المحرر العلوي — المتحدث باللغة المقابلة',
++          hint: _sourceUsesDeviceLanguage
++              ? 'اكتب أو تحدث بلغة جهازك…'
++              : 'اكتب أو تحدث باللغة المقابلة…',
++          actions: const [],
+           onTap: _beginFreshDialogueIfNeeded,
+           onChanged: (value) => _queueTranslation(
+             value,
+-            sourceLanguageCode: deviceLanguage,
++            sourceLanguageCode: _sourceUsesDeviceLanguage
++                ? deviceLanguage
++                : _leftTargetLanguage,
+           ),
+         ),
+         const SizedBox(height: 10),
+         Container(
+-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
++          padding: const EdgeInsets.all(10),
+           decoration: BoxDecoration(
+             color: const Color(0xFF1B2838),
+-            borderRadius: BorderRadius.circular(24),
++            borderRadius: BorderRadius.circular(18),
+             border: Border.all(color: Colors.blueAccent.withValues(alpha: 0.35)),
+           ),
+-          child: Row(
+-            textDirection: TextDirection.ltr,
++          child: Column(
+             children: [
+-              Expanded(
+-                child: _DialogueLanguageMenu(
+-                  value: _leftTargetLanguage,
+-                  label: 'لغة الترجمة — يسار',
+-                  onChanged: _selectLeftTargetLanguage,
+-                ),
++              Row(
++                children: [
++                  Expanded(
++                    child: _DeviceSpeechLanguageLabel(
++                      languageCode: deviceLanguage,
++                      label: _sourceUsesDeviceLanguage
++                          ? 'مصدر المايك الآن'
++                          : 'لغة الترجمة الآن',
++                    ),
++                  ),
++                  IconButton(
++                    tooltip: 'تبديل المتحدث ولغة المايك',
++                    onPressed: _swapDialogueSpeaker,
++                    icon: const Icon(Icons.swap_horiz_rounded, color: RoyalColors.gold, size: 28),
++                  ),
++                  Expanded(
++                    child: _DialogueLanguageMenu(
++                      value: _leftTargetLanguage,
++                      label: _sourceUsesDeviceLanguage
++                          ? 'لغة الترجمة الآن'
++                          : 'مصدر المايك الآن',
++                      onChanged: _selectLeftTargetLanguage,
++                    ),
++                  ),
++                ],
+               ),
+-              GestureDetector(
+-                onTap: _toggleMicrophone,
+-                child: Container(
+-                  width: 56,
+-                  height: 56,
+-                  decoration: BoxDecoration(
+-                    color: _recognitionService.isListening
++              const SizedBox(height: 8),
++              SizedBox(
++                width: double.infinity,
++                height: 48,
++                child: FilledButton.icon(
++                  style: FilledButton.styleFrom(
++                    backgroundColor: _recognitionService.isListening
+                         ? Colors.redAccent
+                         : Colors.blueAccent,
+-                    shape: BoxShape.circle,
+                   ),
+-                  child: Icon(
+-                    _recognitionService.isListening ? Icons.stop : Icons.mic,
+-                    color: Colors.white,
+-                    size: 30,
++                  onPressed: _toggleMicrophone,
++                  icon: Icon(_recognitionService.isListening ? Icons.stop_circle_outlined : Icons.mic),
++                  label: Text(
++                    _recognitionService.isListening
++                        ? 'إيقاف الاستماع'
++                        : 'تحدث بلغة المصدر الحالية',
++                    style: const TextStyle(fontWeight: FontWeight.w800),
+                   ),
+                 ),
+               ),
+-              const SizedBox(width: 8),
+-              Expanded(
+-                child: _DeviceSpeechLanguageLabel(
+-                  languageCode: deviceLanguage,
+-                  label: 'لغة المايك — من الجهاز',
+-                ),
+-              ),
+             ],
+           ),
+         ),
+diff --git a/todo.md b/todo.md
+index 813d538..4fcb12b 100644
+--- a/todo.md
++++ b/todo.md
+@@ -274,4 +274,9 @@
+ - [x] تقليل حجم القطع وظلها لضبط نسبتها داخل مربعات الرقعة بعد ملاحظة Android، مع منع تجاوز حدود المربع أو تشويش الإحداثيات.
+ - [x] معالجة حالة `git am`/`.git/rebase-apply` العالقة في Termux ثم تطبيق رقعة ضبط تناسب القطع بأمان.
+ - [x] تحويل شاشة الشطرنج إلى تجربة عمودية كاملة: رقعة أكبر داخل عرض الهاتف، عناصر تحكم مضغوطة، ومعلومات ثانوية قابلة للطي أو مختصرة دون تدوير أفقي.
++- [x] مراجعة وتصحيح كرتَي الترجمة النصية والحوار على Android قبل أي تحسين ألعاب جديد.
++- [x] إضافة تبديل متحدث واضح في الحوار: ميكروفون يعمل باتجاه لغة الجهاز أو اللغة المقابلة، مع إزالة دبوس الملف الصوتي غير الوظيفي.
++- [ ] تصحيح كرت المستندات لتجربة أصل/ترجمة طبقية ثم مخرجات مشاركة وطباعة صادقة.
++- [ ] التحقق من تراخيص مصادر المحتوى وربط التنزيل فقط بعد ثبوت حق الإسناد أو إعادة النشر.
++- [ ] تأجيل الشطرنج إلى حين اعتماد اتجاه الشاشة المطلوب وتوفير أصول قطع أصلية مرخّصة بدلاً من Unicode.
+ - [ ] التحقق من هوية المصدر والرخصة أو إذن إعادة النشر لكتاب لا تحزن عبر مكتبة عين الجامعة قبل إدراج تنزيل أو محتوى داخل ركن الإلهام.
+-- 
+2.43.0
+
