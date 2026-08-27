@@ -30,7 +30,7 @@ class DeviceSpeechRecognitionService extends ChangeNotifier {
     _requestedLanguageCode = languageCode.toLowerCase();
     try {
       if (_speechToText.isListening) {
-        await stopAndWait();
+        if (!await cancelAndWait()) return false;
       }
       if (!_isReady) {
         _isReady = await _speechToText.initialize(
@@ -84,14 +84,41 @@ class DeviceSpeechRecognitionService extends ChangeNotifier {
 
   /// يحسم الجلسة القائمة ضمن مهلة صغيرة قبل اختيار locale جديد. لا تبدأ
   /// الواجهة الاستماع بلغة مقابلة فوق جلسة ما زالت Android توقفها.
-  Future<void> stopAndWait({
-    Duration timeout = const Duration(milliseconds: 800),
+  Future<bool> stopAndWait({
+    Duration timeout = const Duration(seconds: 2),
   }) async {
     await stop();
+    return _waitUntilStopped(timeout: timeout);
+  }
+
+  /// ينهي الجلسة الحالية فوراً قبل بدء لغة مايك مختلفة. نستخدم cancel بدلاً
+  /// من stop عند تبديل المتحدث حتى لا يحاول Android إنهاء تسجيل اللغة السابقة
+  /// بالتوازي مع طلب لغة جديدة.
+  Future<bool> cancelAndWait({
+    Duration timeout = const Duration(seconds: 2),
+  }) async {
+    if (!_isReady && !_speechToText.isListening) return true;
+    try {
+      await _speechToText.cancel();
+    } catch (_) {
+      _message = 'تعذر إلغاء جلسة تعرف الكلام السابقة.';
+      notifyListeners();
+      return false;
+    }
+    return _waitUntilStopped(timeout: timeout);
+  }
+
+  Future<bool> _waitUntilStopped({required Duration timeout}) async {
     final deadline = DateTime.now().add(timeout);
     while (_speechToText.isListening && DateTime.now().isBefore(deadline)) {
       await Future<void>.delayed(const Duration(milliseconds: 40));
     }
+    if (_speechToText.isListening) {
+      _message = 'لم تنته جلسة تعرف الكلام السابقة بعد. انتظر لحظات ثم أعد تشغيل المايك.';
+      notifyListeners();
+      return false;
+    }
+    return true;
   }
 
   void _handleResult(SpeechRecognitionResult result) {

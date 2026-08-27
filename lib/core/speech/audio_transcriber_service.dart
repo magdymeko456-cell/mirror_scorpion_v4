@@ -62,13 +62,29 @@ class AudioTranscriberService {
       return text.isEmpty
           ? const AudioFileTranscriptionResult.failure('لم يعثر محرك التفريغ على كلام واضح داخل الملف. جرب تسجيلاً أوضح.')
           : AudioFileTranscriptionResult.success(text);
-    } catch (_) {
-      return const AudioFileTranscriptionResult.failure('تعذر تفريغ الملف محلياً. تحقق من صيغة التسجيل والمساحة ثم أعد المحاولة.');
+    } catch (error) {
+      return AudioFileTranscriptionResult.failure(
+        'تعذر تفريغ الملف محلياً. ${failureDetail(error)}',
+      );
     } finally {
       onProgress?.call(AudioTranscriptionStage.cleaning, null);
       if (jobDirectory != null && await jobDirectory.exists()) await jobDirectory.delete(recursive: true);
       try { await const Whisper(model: WhisperModel.base).releaseModel(); } catch (_) {}
       _isProcessing = false;
     }
+  }
+
+  /// تلخّص خطأ المحرك من دون كشف المسارات المحلية، كي يستطيع المستخدم معرفة
+  /// هل المشكلة من تحويل FFmpeg أو النموذج أو ملف الإدخال بدلاً من بقاء الواجهة
+  /// عند رسالة الموافقة فقط.
+  static String failureDetail(Object error) {
+    final detail = error
+        .toString()
+        .replaceAll(RegExp(r'/(?:[^\s/]+/)+[^\s]+'), '[مسار محلي]')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+    if (detail.isEmpty) return 'أعاد محرك الصوت خطأ غير مسمّى.';
+    final limited = detail.length > 180 ? '${detail.substring(0, 180)}…' : detail;
+    return 'تفاصيل المحرك: $limited';
   }
 }

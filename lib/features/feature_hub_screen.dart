@@ -28,6 +28,7 @@ import '../core/speech/audio_transcriber_service.dart';
 import '../core/speech/system_tts_service.dart';
 import '../core/speech/translated_audio_export_service.dart';
 import '../core/speech/whisper_model_installer.dart';
+import 'chess_club_screen.dart';
 import 'subscription_boundaries_card.dart';
 
 enum FeatureKind { translation, dialogue, documents, stories, games, settings }
@@ -80,14 +81,21 @@ class FeatureHubScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final child = switch (kind) {
-      FeatureKind.translation =>
-        _TranslationPanel(initialText: initialTranslationText),
-      FeatureKind.dialogue => const _DialoguePanel(),
+      FeatureKind.translation => _TranslationPanel(
+          initialText: initialTranslationText,
+          recognitionService: context.read<DeviceSpeechRecognitionService>(),
+        ),
+      FeatureKind.dialogue => _DialoguePanel(
+          recognitionService: context.read<DeviceSpeechRecognitionService>(),
+        ),
       FeatureKind.documents => const _DocumentsPanel(),
       FeatureKind.stories => const _StoriesPanel(),
-      FeatureKind.games => const _GamesPanel(),
+      FeatureKind.games => const ChessClubScreen(),
       FeatureKind.settings => const _SettingsPanel(),
     };
+    if (kind == FeatureKind.games) {
+      return Directionality(textDirection: TextDirection.rtl, child: child);
+    }
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
@@ -108,9 +116,10 @@ class FeatureHubScreen extends StatelessWidget {
 }
 
 class _TranslationPanel extends StatefulWidget {
-  const _TranslationPanel({this.initialText});
+  const _TranslationPanel({this.initialText, required this.recognitionService});
 
   final String? initialText;
+  final DeviceSpeechRecognitionService recognitionService;
 
   @override
   State<_TranslationPanel> createState() => _TranslationPanelState();
@@ -121,7 +130,6 @@ class _TranslationPanelState extends State<_TranslationPanel> {
   final _output = TextEditingController();
   final _translationService = const OnDeviceTranslationService();
   final _speechService = SystemTtsService();
-  final _recognitionService = DeviceSpeechRecognitionService();
   final _capabilityService = DeviceCapabilityService();
   final _modelInstaller = WhisperModelInstaller();
   final _audioTranscriber = AudioTranscriberService();
@@ -139,6 +147,9 @@ class _TranslationPanelState extends State<_TranslationPanel> {
   bool _loadedLanguagePreference = false;
   bool _processedInitialText = false;
   Timer? _translationDebounce;
+
+  DeviceSpeechRecognitionService get _recognitionService => widget.recognitionService;
+
   @override
   void initState() {
     super.initState();
@@ -266,19 +277,40 @@ class _TranslationPanelState extends State<_TranslationPanel> {
 
   Future<void> _pickAudioFileForLocalTranslation() async {
     if (_isInstallingAudioModel || _isTranscribingAudio) return;
-    final selection = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: AudioTranscriberService.supportedExtensions.toList()..sort(),
-      withData: false,
-    );
+    FilePickerResult? selection;
+    try {
+      selection = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: AudioTranscriberService.supportedExtensions.toList()..sort(),
+        withData: false,
+      );
+    } on PlatformException catch (error) {
+      if (mounted) setState(() => _notice = 'تعذر فتح منتقي ملفات Android: ${error.code}.');
+      return;
+    }
     if (selection == null || selection.files.isEmpty || !mounted) return;
     final file = selection.files.first;
     final path = file.path;
-    if (path == null || path.isEmpty) return;
+    if (path == null || path.isEmpty) {
+      setState(() => _notice = 'مدير الملفات لم يمنح التطبيق مساراً قابلاً للقراءة. انسخ الملف إلى الهاتف ثم اختره من التخزين المحلي.');
+      return;
+    }
     if (!AudioTranscriberService.allowsFileSize(file.size)) {
       setState(() => _notice = 'حجم الملف غير مناسب. الحد الأقصى للتفريغ المحلي هو 128 MB.');
       return;
     }
+    final capability = await _capabilityService.inspect();
+    if (!mounted) return;
+    if (capability == null) {
+      setState(() => _notice = 'تعذر قراءة مواصفات الهاتف؛ لن يبدأ تفريغ الملف محلياً.');
+      return;
+    }
+    final compatibility = LocalAudioCompatibilityPolicy.evaluate(capability);
+    if (compatibility != LocalAudioCompatibility.supported) {
+      setState(() => _notice = LocalAudioCompatibilityPolicy.messageFor(compatibility));
+      return;
+    }
+    setState(() => _notice = 'تم اختيار «${file.name}». أكّد التفريغ المحلي في النافذة التالية.');
     final accepted = await _confirmLocalAudioTranscription(file);
     if (accepted != true || !mounted) return;
     await _transcribeAndTranslateLocalAudio(path);
@@ -296,7 +328,7 @@ class _TranslationPanelState extends State<_TranslationPanel> {
           'الملف: ${file.name}\nالحجم: $sizeInMb MB\n\n'
           'سيبقى الملف داخل هاتفك ولن يُرفع إلى خادم. '
           '${installed == null ? 'يتطلب التفريغ تنزيل نموذج متعدد اللغات بحجم 142 MB مرة واحدة ثم التحقق من بصمته.' : 'نموذج التفريغ المتحقق منه موجود في الهاتف.'}\n\n'
-          'يوصى بهاتف بذاكرة RAM قدرها 8 GB أو أكثر؛ تعتمد السرعة أيضاً على المعالج وطول التسجيل.',
+          'لا توجد شروط استخدام إضافية هنا. بعد التأكيد يبدأ التنزيل أو التفريغ المحلي مباشرة. يوُصى بهاتف بذاكرة RAM قدرها 8 GB أو أكثر؛ تعتمد السرعة أيضاً على المعالج وطول التسجيل.',
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('إلغاء')),
@@ -497,7 +529,6 @@ class _TranslationPanelState extends State<_TranslationPanel> {
     _speechService.removeListener(_onSpeechChanged);
     _speechService.stop();
     _recognitionService.removeListener(_onSpeechChanged);
-    _recognitionService.dispose();
     _modelInstaller.dispose();
     unawaited(_audioExporter.delete(_translatedAudioFile));
     _input.dispose();
@@ -801,7 +832,9 @@ class _EditorAction {
 }
 
 class _DialoguePanel extends StatefulWidget {
-  const _DialoguePanel();
+  const _DialoguePanel({required this.recognitionService});
+
+  final DeviceSpeechRecognitionService recognitionService;
 
   @override
   State<_DialoguePanel> createState() => _DialoguePanelState();
@@ -811,7 +844,6 @@ class _DialoguePanelState extends State<_DialoguePanel> {
   final _source = TextEditingController();
   final _translated = TextEditingController();
   final _translationService = const OnDeviceTranslationService();
-  final _recognitionService = DeviceSpeechRecognitionService();
   final _speechService = SystemTtsService();
   Timer? _translationDebounce;
   String _leftTargetLanguage = 'en';
@@ -820,6 +852,8 @@ class _DialoguePanelState extends State<_DialoguePanel> {
   bool _isTranslating = false;
   bool _loadedLanguagePreferences = false;
   bool _sourceUsesDeviceLanguage = true;
+
+  DeviceSpeechRecognitionService get _recognitionService => widget.recognitionService;
 
   @override
   void initState() {
@@ -856,7 +890,7 @@ class _DialoguePanelState extends State<_DialoguePanel> {
     final preferences = context.read<LanguagePreferences>();
     final sourceLanguage = preferences.deviceLanguageCode;
     if (!_sourceUsesDeviceLanguage) {
-      await _recognitionService.stopAndWait();
+      if (!await _recognitionService.cancelAndWait()) return;
     }
     setState(() => _leftTargetLanguage = code);
     await preferences.setTranslationTargetLanguage(code);
@@ -869,7 +903,7 @@ class _DialoguePanelState extends State<_DialoguePanel> {
   }
 
   Future<void> _swapDialogueSpeaker() async {
-    await _recognitionService.stopAndWait();
+    if (!await _recognitionService.cancelAndWait()) return;
     await _speechService.stop();
     if (!mounted) return;
     final deviceLanguage = context.read<LanguagePreferences>().deviceLanguageCode;
@@ -895,7 +929,12 @@ class _DialoguePanelState extends State<_DialoguePanel> {
       }
       return;
     }
-    await _recognitionService.stopAndWait();
+    if (!await _recognitionService.cancelAndWait()) {
+      if (mounted && _recognitionService.message != null) {
+        setState(() => _notice = _recognitionService.message);
+      }
+      return;
+    }
     if (!mounted) return;
     final deviceLanguage = context.read<LanguagePreferences>().deviceLanguageCode;
     final sourceLanguage = _sourceUsesDeviceLanguage
@@ -999,7 +1038,6 @@ class _DialoguePanelState extends State<_DialoguePanel> {
   void dispose() {
     _translationDebounce?.cancel();
     _recognitionService.removeListener(_onServiceChanged);
-    _recognitionService.dispose();
     _speechService.removeListener(_onServiceChanged);
     _speechService.stop();
     _source.dispose();

@@ -54,6 +54,15 @@ void main() {
       expect(AudioTranscriberService.allowsFileSize(AudioTranscriberService.maxInputBytes), isTrue);
       expect(AudioTranscriberService.allowsFileSize(AudioTranscriberService.maxInputBytes + 1), isFalse);
     });
+
+    test('redacts local paths when exposing a Whisper engine failure', () {
+      final detail = AudioTranscriberService.failureDetail(
+        const FileSystemException('FFmpeg failed', '/data/user/0/example/cache/input.mp3'),
+      );
+      expect(detail, contains('FFmpeg failed'));
+      expect(detail, contains('[مسار محلي]'));
+      expect(detail, isNot(contains('/data/user/0')));
+    });
   });
 
   test('the model descriptor has a complete SHA-256 integrity value', () {
