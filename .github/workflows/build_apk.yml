@@ -257,6 +257,8 @@ jobs:
           grep -q -- '-dontwarn com.gemalto.jp2.\*\*' android/app/mirror-scorpion-pdf-r8.pro
       - name: Install dependencies
         run: flutter pub get
+      - name: Add user-triggered overlay clipboard bridge
+        run: bash scripts/patch_overlay_clipboard_bridge.sh
       - name: Align shared text plugin JVM target
         run: |
           PLUGIN_DIR=$(find "${PUB_CACHE:-$HOME/.pub-cache}/hosted/pub.dev" -maxdepth 1 -type d -name 'receive_sharing_intent-1.8.1' -print -quit)

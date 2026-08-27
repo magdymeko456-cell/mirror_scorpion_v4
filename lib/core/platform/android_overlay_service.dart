@@ -73,6 +73,7 @@ class AndroidOverlayService extends ChangeNotifier {
         await FlutterOverlayWindow.showOverlay(
           height: 84,
           width: 84,
+          alignment: OverlayAlignment.centerRight,
           enableDrag: true,
           flag: OverlayFlag.defaultFlag,
           positionGravity: PositionGravity.auto,
@@ -158,6 +159,9 @@ class _MirrorScorpionOverlayScreen extends StatefulWidget {
 
 class _MirrorScorpionOverlayScreenState
     extends State<_MirrorScorpionOverlayScreen> {
+  static const _clipboardBridge = MethodChannel(
+    'mirror_scorpion/overlay_clipboard',
+  );
   final _input = TextEditingController();
   final _translationService = const OnDeviceTranslationService();
   bool _expanded = false;
@@ -194,14 +198,26 @@ class _MirrorScorpionOverlayScreenState
   }
 
   Future<void> _pasteText() async {
-    final data = await Clipboard.getData(Clipboard.kTextPlain);
-    final text = data?.text?.trim() ?? '';
+    String text = '';
+    try {
+      text = (await _clipboardBridge.invokeMethod<String>(
+        'readUserRequestedText',
+      ))?.trim() ?? '';
+    } catch (_) {
+      // محرك Overlay مستقل عن Activity؛ لا نعيد الوصول إلى الحافظة تلقائياً.
+    }
     if (!mounted) return;
     setState(() {
       if (text.isEmpty) {
-        _notice = 'لا يوجد نص يمكن لصقه. انسخ النص أولاً ثم اضغط «الصق النص». ';
+        _notice =
+            'تعذر الوصول إلى نص الحافظة. انسخ نصاً عادياً ثم اضغط «الصق النص»؛ '
+            'إن قيّد Android الحافظة، ضع المؤشر في الحقل واختر «لصق» من لوحة المفاتيح.';
       } else {
-        _input.text = text.length > 1800 ? text.substring(0, 1800) : text;
+        final boundedText = text.length > 1800 ? text.substring(0, 1800) : text;
+        _input.value = TextEditingValue(
+          text: boundedText,
+          selection: TextSelection.collapsed(offset: boundedText.length),
+        );
         _notice = 'لُصق النص بطلبك. لن يُحتفظ به بعد إغلاق الفقاعة.';
       }
     });
