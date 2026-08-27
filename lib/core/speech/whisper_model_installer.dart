@@ -83,7 +83,7 @@ class WhisperModelInstaller {
         return WhisperModelInstallResult.failure('تعذر تنزيل نموذج التفريغ (HTTP ${response.statusCode}).');
       }
       var received = 0;
-      final sink = downloadFile.openWrite(flush: true);
+      final sink = downloadFile.openWrite();
       try {
         await for (final chunk in response.stream) {
           received += chunk.length;

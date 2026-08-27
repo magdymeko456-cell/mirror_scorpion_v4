@@ -266,7 +266,7 @@ class _TranslationPanelState extends State<_TranslationPanel> {
 
   Future<void> _pickAudioFileForLocalTranslation() async {
     if (_isInstallingAudioModel || _isTranscribingAudio) return;
-    final selection = await FilePicker.platform.pickFiles(
+    final selection = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: AudioTranscriberService.supportedExtensions.toList()..sort(),
       withData: false,
@@ -896,6 +896,7 @@ class _DialoguePanelState extends State<_DialoguePanel> {
       return;
     }
     await _recognitionService.stopAndWait();
+    if (!mounted) return;
     final deviceLanguage = context.read<LanguagePreferences>().deviceLanguageCode;
     final sourceLanguage = _sourceUsesDeviceLanguage
         ? deviceLanguage
