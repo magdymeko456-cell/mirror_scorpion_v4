@@ -1409,7 +1409,7 @@ class _DocumentsPanelState extends State<_DocumentsPanel> {
       allowedExtensions: const ['pdf', 'txt'],
     );
     if (!mounted) return;
-    final file = picked.isEmpty ? null : picked.first;
+    final file = (picked == null || picked.files.isEmpty) ? null : picked.files.first;
     if (file == null) {
       setState(() => _notice = 'لم يتم اختيار مستند.');
       return;
