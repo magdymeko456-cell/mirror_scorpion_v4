@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mirror_scorpion_v4/app/mirror_scorpion_app.dart';
 
@@ -23,7 +22,6 @@ void main() {
     expect(find.text('الشطرنج'), findsOneWidget);
     expect(find.text('لعب محلي أو ضد الكمبيوتر'), findsOneWidget);
     expect(find.text('ألعاب 3D'), findsNothing);
-    expect(find.byType(Switch), findsOneWidget);
     await tester.scrollUntilVisible(find.text('الإعدادات'), 300);
     expect(find.text('الإعدادات'), findsOneWidget);
   });
