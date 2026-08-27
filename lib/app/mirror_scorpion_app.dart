@@ -5,8 +5,8 @@ import '../core/localization/language_preferences.dart';
 import '../core/media/runware_video_service.dart';
 import '../core/platform/android_overlay_service.dart';
 import '../core/platform/shared_text_inbox.dart';
-import '../core/pro/premium_verification_service.dart';
 import '../core/speech/device_speech_recognition_service.dart';
+import '../core/speech/elevenlabs_voice_service.dart';
 import '../features/home/dashboard_screen.dart';
 import 'royal_dark_theme.dart';
 
