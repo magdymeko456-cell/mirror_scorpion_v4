@@ -62,4 +62,29 @@ void main() {
     expect(ChessGameController.pieceSymbol(game.pieceAt('d8')), '♛');
     expect(ChessGameController.pieceSymbol(game.pieceAt('e4')), isEmpty);
   });
+
+  test('maps board pieces to stable local SVG assets', () {
+    final game = ChessGameController();
+
+    expect(
+      ChessGameController.pieceAssetPath(game.pieceAt('e2')),
+      'assets/images/chess/meridian_shaded/wp.svg',
+    );
+    expect(
+      ChessGameController.pieceAssetPath(game.pieceAt('d8')),
+      'assets/images/chess/meridian_shaded/bq.svg',
+    );
+  });
+
+  test('undo restores the previous board position', () {
+    final game = ChessGameController();
+    expect(game.moveHuman('e2', 'e4'), isTrue);
+
+    final undone = game.undoLastMove();
+
+    expect(undone?.from, 'e2');
+    expect(game.pieceAt('e2'), isNotNull);
+    expect(game.pieceAt('e4'), isNull);
+    expect(game.isWhiteTurn, isTrue);
+  });
 }

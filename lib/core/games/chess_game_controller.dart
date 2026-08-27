@@ -33,6 +33,7 @@ class ChessGameController {
   chess.Chess _game;
   final Random _random = Random();
   ChessMoveSummary? _lastMove;
+  final List<ChessMoveSummary> _moveHistory = <ChessMoveSummary>[];
 
   chess.Piece? pieceAt(String square) => _game.get(square);
 
@@ -52,6 +53,24 @@ class ChessGameController {
   // دالة instance للواجهة الجديدة
   String getPieceSymbol(chess.Piece? piece) => pieceSymbol(piece);
 
+  /// أصل SVG محلي ثابت للقطعة، بدلاً من خط Unicode المتغير بين أجهزة Android.
+  static String? pieceAssetPath(chess.Piece? piece) {
+    if (piece == null) return null;
+    final color = piece.color == chess.Color.WHITE ? 'w' : 'b';
+    final type = switch (piece.type) {
+      chess.Chess.PAWN => 'p',
+      chess.Chess.KNIGHT => 'n',
+      chess.Chess.BISHOP => 'b',
+      chess.Chess.ROOK => 'r',
+      chess.Chess.QUEEN => 'q',
+      chess.Chess.KING => 'k',
+      _ => null,
+    };
+    return type == null
+        ? null
+        : 'assets/images/chess/meridian_shaded/$color$type.svg';
+  }
+
   bool get isWhiteTurn => _game.turn == chess.Color.WHITE;
   bool get gameOver => _game.game_over;
   
@@ -67,6 +86,7 @@ class ChessGameController {
 
   String get pgn => _game.pgn();
   ChessMoveSummary? get lastMove => _lastMove;
+  bool get canUndo => _moveHistory.isNotEmpty;
 
   List<String> legalMovesFrom(String square) {
     final legalTargets = <String>[];
@@ -150,6 +170,15 @@ class ChessGameController {
     return _applyMove(bestMoves[_random.nextInt(bestMoves.length)]);
   }
 
+  /// يرجع نقلة واحدة قانونياً ويسلّم ملخصها للواجهة لتحديث حالتها.
+  ChessMoveSummary? undoLastMove() {
+    if (_moveHistory.isEmpty || _game.history.isEmpty) return null;
+    _game.undo_move();
+    final undone = _moveHistory.removeLast();
+    _lastMove = _moveHistory.isEmpty ? null : _moveHistory.last;
+    return undone;
+  }
+
   int _scoreAfterBestWhiteReply(chess.Chess position) {
     final replies = _verboseMoves(position);
     if (replies.isEmpty) return _materialScore(position);
@@ -190,6 +219,7 @@ class ChessGameController {
       movedByWhite: movedByWhite,
       capturedSymbol: pieceSymbol(capturedPiece),
     );
+    _moveHistory.add(_lastMove!);
     return true;
   }
 
@@ -204,6 +234,7 @@ class ChessGameController {
   void reset() {
     _game = chess.Chess();
     _lastMove = null;
+    _moveHistory.clear();
   }
 
   int _materialScore(chess.Chess position) {

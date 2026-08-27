@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:chess/chess.dart' as chess;
+import 'package:flutter_svg/flutter_svg.dart';
+
 import '../core/games/chess_game_controller.dart';
 
 class ChessClubScreen extends StatefulWidget {
@@ -21,6 +23,17 @@ class _ChessClubScreenState extends State<ChessClubScreen> {
   String? _suggestedHint;
 
   bool get _computerTurn => _playAgainstComputer && !_chess.isWhiteTurn;
+
+  void _setPlayMode(bool againstComputer) {
+    setState(() {
+      _playAgainstComputer = againstComputer;
+      _chess.reset();
+      _selectedSquare = null;
+      _legalTargets = const [];
+      _suggestedHint = null;
+      _gameNotice = 'مباراة جديدة — دور الأبيض';
+    });
+  }
 
   void _resetGame() {
     setState(() {
@@ -64,6 +77,20 @@ class _ChessClubScreenState extends State<ChessClubScreen> {
     final hintMove = _chess.getBestMove(level: _computerLevel);
     setState(() {
       _suggestedHint = hintMove != null ? 'التلميح الموصى به: $hintMove' : 'لا يوجد تلميح مباشر';
+    });
+  }
+
+  void _undoMove() {
+    if (_computerThinking || !_chess.canUndo) return;
+    final undoCount = _playAgainstComputer && _chess.isWhiteTurn ? 2 : 1;
+    for (var index = 0; index < undoCount; index++) {
+      if (_chess.undoLastMove() == null) break;
+    }
+    setState(() {
+      _selectedSquare = null;
+      _legalTargets = const [];
+      _suggestedHint = null;
+      _gameNotice = _buildNotice();
     });
   }
 
@@ -111,12 +138,17 @@ class _ChessClubScreenState extends State<ChessClubScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('ركن الشطرنج 3D والألغاز'),
+        title: const Text('الشطرنج الملكي'),
         actions: [
           IconButton(
             icon: const Icon(Icons.lightbulb_outline, color: Colors.amber),
             tooltip: 'تلميح ونقلة مقترحة',
             onPressed: _getBestHint,
+          ),
+          IconButton(
+            icon: const Icon(Icons.undo_rounded),
+            tooltip: 'تراجع عن آخر نقلة',
+            onPressed: _chess.canUndo && !_computerThinking ? _undoMove : null,
           ),
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -141,7 +173,7 @@ class _ChessClubScreenState extends State<ChessClubScreen> {
                   items: ChessComputerLevel.values.map((lvl) {
                     return DropdownMenuItem(
                       value: lvl,
-                      child: Text(lvl.name.toUpperCase()),
+                      child: Text(lvl.label),
                     );
                   }).toList(),
                   onChanged: (val) {
@@ -152,7 +184,7 @@ class _ChessClubScreenState extends State<ChessClubScreen> {
                 FilterChip(
                   label: Text(_playAgainstComputer ? 'ضد الكمبيوتر' : 'لاعبان'),
                   selected: _playAgainstComputer,
-                  onSelected: (val) => setState(() => _playAgainstComputer = val),
+                  onSelected: _setPlayMode,
                 ),
               ],
             ),
@@ -183,7 +215,13 @@ class _ChessClubScreenState extends State<ChessClubScreen> {
                 child: Container(
                   margin: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(18),
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFF0C76F), Color(0xFF6A3510), Color(0xFFDDA74E)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    border: Border.all(color: const Color(0xFFFFD66B), width: 1.4),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withValues(alpha: 0.6),
@@ -192,17 +230,21 @@ class _ChessClubScreenState extends State<ChessClubScreen> {
                       ),
                     ],
                   ),
-                  child: GridView.builder(
-                    physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 8),
-                    itemCount: 64,
-                    itemBuilder: (context, index) {
+                  child: Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: GridView.builder(
+                        physics: const NeverScrollableScrollPhysics(),
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 8),
+                        itemCount: 64,
+                        itemBuilder: (context, index) {
                       final rank = 8 - (index ~/ 8);
                       final fileIndex = index % 8;
                       final fileName = String.fromCharCode('a'.codeUnitAt(0) + fileIndex);
                       final square = '$fileName$rank';
 
-                      final isDark = (rank + fileIndex) % 2 == 0;
+                      final isDark = (rank + fileIndex).isOdd;
                       final isSelected = _selectedSquare == square;
                       final isTarget = _legalTargets.contains(square);
                       final piece = _chess.pieceAt(square);
@@ -226,26 +268,20 @@ class _ChessClubScreenState extends State<ChessClubScreen> {
                           child: Center(
                             child: piece == null
                                 ? null
-                                : Text(
-                                    _chess.getPieceSymbol(piece),
-                                    style: TextStyle(
-                                      fontSize: 32,
-                                      shadows: const [
-                                        Shadow(
-                                          offset: Offset(2, 2),
-                                          blurRadius: 3,
-                                          color: Colors.black45,
-                                        ),
-                                      ],
-                                      color: piece.color == chess.Color.WHITE
-                                          ? Colors.white
-                                          : Colors.black,
+                                : Padding(
+                                    padding: const EdgeInsets.all(3),
+                                    child: SvgPicture.asset(
+                                      ChessGameController.pieceAssetPath(piece)!,
+                                      fit: BoxFit.contain,
+                                      semanticsLabel: 'قطعة شطرنج',
                                     ),
                                   ),
                           ),
                         ),
                       );
-                    },
+                        },
+                      ),
+                    ),
                   ),
                 ),
               ),
