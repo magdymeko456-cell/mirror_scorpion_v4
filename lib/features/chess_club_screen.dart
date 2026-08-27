@@ -161,7 +161,7 @@ class _ChessClubScreenState extends State<ChessClubScreen> {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(8),
-              color: Colors.amber.withOpacity(0.2),
+              color: Colors.amber.withValues(alpha: 0.2),
               child: Text(
                 _suggestedHint!,
                 textAlign: TextAlign.center,
@@ -186,7 +186,7 @@ class _ChessClubScreenState extends State<ChessClubScreen> {
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.6),
+                        color: Colors.black.withValues(alpha: 0.6),
                         blurRadius: 15,
                         offset: const Offset(0, 8),
                       ),
@@ -212,9 +212,9 @@ class _ChessClubScreenState extends State<ChessClubScreen> {
                         child: Container(
                           decoration: BoxDecoration(
                             color: isSelected
-                                ? Colors.amber.withOpacity(0.8)
+                                ? Colors.amber.withValues(alpha: 0.8)
                                 : isTarget
-                                    ? Colors.green.withOpacity(0.6)
+                                    ? Colors.green.withValues(alpha: 0.6)
                                     : isDark
                                         ? const Color(0xFFB58863)
                                         : const Color(0xFFF0D9B5),

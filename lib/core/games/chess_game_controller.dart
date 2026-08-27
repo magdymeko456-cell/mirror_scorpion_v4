@@ -1,5 +1,4 @@
 import 'dart:math';
-
 import 'package:chess/chess.dart' as chess;
 
 enum ChessComputerLevel { normal, medium, skilled }
@@ -28,8 +27,6 @@ class ChessMoveSummary {
   bool get isCapture => capturedSymbol.isNotEmpty;
 }
 
-/// قواعد شطرنج قانونية محلية وخصم مادي بسيط. لا يمثل هذا الملف مشهداً 3D؛
-/// يبقى عرض القطع ثلاثي الأبعاد مرحلة منفصلة بعد نموذج توافق المحرك.
 class ChessGameController {
   ChessGameController() : _game = chess.Chess();
 
@@ -38,23 +35,14 @@ class ChessGameController {
   ChessMoveSummary? _lastMove;
 
   chess.Piece? pieceAt(String square) => _game.get(square);
-  static String pieceSymbol(chess.Piece? piece) {
+
+  String getPieceSymbol(chess.Piece? piece) {
     if (piece == null) return '';
     const white = <String, String>{
-      'p': '♙',
-      'n': '♘',
-      'b': '♗',
-      'r': '♖',
-      'q': '♕',
-      'k': '♔',
+      'p': '♙', 'n': '♘', 'b': '♗', 'r': '♖', 'q': '♕', 'k': '♔',
     };
     const black = <String, String>{
-      'p': '♟',
-      'n': '♞',
-      'b': '♝',
-      'r': '♜',
-      'q': '♛',
-      'k': '♚',
+      'p': '♟', 'n': '♞', 'b': '♝', 'r': '♜', 'q': '♛', 'k': '♚',
     };
     final symbols = piece.color == chess.Color.WHITE ? white : black;
     return symbols[piece.type.name] ?? '';
@@ -62,8 +50,9 @@ class ChessGameController {
 
   bool get isWhiteTurn => _game.turn == chess.Color.WHITE;
   bool get gameOver => _game.game_over;
-  bool get isCheckmate => _game.in_checkmate;
-  bool get isDraw => _game.in_draw;
+  bool get inCheckmate => _game.in_checkmate;
+  bool get inDraw => _game.in_draw;
+  bool get inCheck => _game.in_check;
   String get pgn => _game.pgn();
   ChessMoveSummary? get lastMove => _lastMove;
 
@@ -77,9 +66,43 @@ class ChessGameController {
     return legalTargets;
   }
 
-  bool moveHuman(String from, String to) {
+  bool makeMove(String from, String to) {
     if (gameOver) return false;
     return _applyMove({'from': from, 'to': to, 'promotion': 'q'});
+  }
+
+  String? getBestMove({ChessComputerLevel level = ChessComputerLevel.medium}) {
+    final moves = _verboseMoves();
+    if (moves.isEmpty) return null;
+
+    if (level == ChessComputerLevel.normal) {
+      final m = moves[_random.nextInt(moves.length)];
+      return "${m['from']} ➔ ${m['to']}";
+    }
+
+    var bestScore = isWhiteTurn ? -(1 << 30) : (1 << 30);
+    Map<String, dynamic>? selectedMove;
+
+    for (final move in moves) {
+      final candidate = _game.copy();
+      if (!_applyMoveTo(candidate, move)) continue;
+      final score = _materialScore(candidate);
+
+      if (isWhiteTurn) {
+        if (score > bestScore) {
+          bestScore = score;
+          selectedMove = move;
+        }
+      } else {
+        if (score < bestScore) {
+          bestScore = score;
+          selectedMove = move;
+        }
+      }
+    }
+
+    selectedMove ??= moves[_random.nextInt(moves.length)];
+    return "${selectedMove['from']} ➔ ${selectedMove['to']}";
   }
 
   bool moveComputer({ChessComputerLevel level = ChessComputerLevel.medium}) {
@@ -121,9 +144,7 @@ class ChessGameController {
       if (!_applyMoveTo(afterReply, reply)) continue;
       whiteBestScore = max(whiteBestScore, _materialScore(afterReply));
     }
-    return whiteBestScore == -(1 << 30)
-        ? _materialScore(position)
-        : whiteBestScore;
+    return whiteBestScore == -(1 << 30) ? _materialScore(position) : whiteBestScore;
   }
 
   List<Map<String, dynamic>> _verboseMoves([chess.Chess? position]) {
@@ -152,7 +173,7 @@ class ChessGameController {
       from: from,
       to: to,
       movedByWhite: movedByWhite,
-      capturedSymbol: pieceSymbol(capturedPiece),
+      capturedSymbol: getPieceSymbol(capturedPiece),
     );
     return true;
   }
