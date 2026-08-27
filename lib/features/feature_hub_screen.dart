@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../app/royal_dark_theme.dart';
 import '../core/localization/language_preferences.dart';
@@ -15,7 +16,6 @@ import '../core/games/chess_game_controller.dart';
 import '../core/inspiration/inspiration_safety.dart';
 import '../core/documents/local_document_text_service.dart';
 import '../core/documents/translated_document_export_service.dart';
-import '../core/media/runware_video_service.dart';
 import '../core/mlkit/on_device_ocr_service.dart';
 import '../core/mlkit/on_device_translation_service.dart';
 import '../core/platform/android_overlay_service.dart';
@@ -1519,28 +1519,14 @@ class _StoriesPanel extends StatefulWidget {
 }
 
 class _StoriesPanelState extends State<_StoriesPanel> {
-  final _speechService = SystemTtsService();
-  final _contentStorage = const OfflineContentStorage();
-  final _moodController = TextEditingController();
-  final _storyDraftController = TextEditingController();
   late Future<List<_StoryEntry>> _storiesFuture;
-  late Future<List<OfflinePackageRecord>> _packagesFuture;
   String? _notice;
-  bool _consentToAi = false;
-  bool _consentToRunwareVideo = false;
   bool _threeHourReminder = false;
 
   @override
   void initState() {
     super.initState();
-    _speechService.addListener(_onSpeechChanged);
-    _speechService.initialize();
     _storiesFuture = _loadBundledStories();
-    _packagesFuture = _contentStorage.listPackages();
-  }
-
-  void _onSpeechChanged() {
-    if (mounted) setState(() {});
   }
 
   Future<List<_StoryEntry>> _loadBundledStories() async {
@@ -1560,206 +1546,36 @@ class _StoriesPanelState extends State<_StoriesPanel> {
         .toList();
   }
 
-  Future<void> _importContentPackage() async {
-    final file = await FilePicker.pickFile(
-      type: FileType.custom,
-      allowedExtensions: const ['json'],
-    );
-    if (!mounted || file == null) return;
-    try {
-      final decoded = jsonDecode(utf8.decode(await file.readAsBytes()));
-      if (decoded is! Map<String, dynamic>) {
-        throw const FormatException('Invalid root object');
-      }
-      final packageId = decoded['packageId'] as String?;
-      if (packageId == null || packageId.isEmpty) {
-        throw const FormatException('Missing packageId');
-      }
-      await _contentStorage.savePackage(id: packageId, content: decoded);
-      if (!mounted) return;
-      setState(() {
-        _packagesFuture = _contentStorage.listPackages();
-        _notice = 'تم حفظ حزمة «$packageId» في مساحة المحتوى المحلية. لا تُعرض كمصدر ديني موثوق ما لم تحمل حقول المصدر والحقوق المناسبة.';
-      });
-    } on FormatException {
-      if (mounted) {
-        setState(() => _notice = 'ملف JSON غير صالح كحزمة محتوى. يجب أن يحتوي على packageId وبنية الحزمة المعلنة.');
-      }
-    } catch (_) {
-      if (mounted) {
-        setState(() => _notice = 'تعذر قراءة أو حفظ حزمة المحتوى المختارة.');
-      }
-    }
-  }
-
-  Future<void> _chooseStoryVoice() async {
-    final languageCode = context.read<LanguagePreferences>().storyLanguageCode;
-    final voices = await _speechService.voicesForLanguage(languageCode);
+  Future<void> _openInspirationLibrary() async {
+    final stories = await _storiesFuture;
     if (!mounted) return;
-    await showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: const Color(0xFF0D1623),
-      builder: (sheetContext) => Directionality(
-        textDirection: TextDirection.rtl,
-        child: SafeArea(
-          child: RadioGroup<SystemTtsVoice>(
-            groupValue: _speechService.selectedVoice,
-            onChanged: (voice) async {
-              await _speechService.selectVoice(
-                voice,
-                languageCode: languageCode,
-              );
-              if (sheetContext.mounted) Navigator.pop(sheetContext);
-            },
-            child: ListView(
-              shrinkWrap: true,
-              children: [
-                const ListTile(
-                  title: Text('ملفات الأداء المحلية'),
-                  subtitle: Text(
-                    'تضبط سرعة وطبقة صوت Android؛ لا تمثل أصواتاً بشرية ثابتة ولا ترفع نصاً أو تسجيلاً.',
-                  ),
-                ),
-                ...SystemVoiceProfile.values.map(
-                  (profile) => ListTile(
-                    leading: Icon(
-                      profile == SystemVoiceProfile.saif
-                          ? Icons.record_voice_over_outlined
-                          : Icons.volume_up_outlined,
-                      color: profile == _speechService.selectedProfile
-                          ? RoyalColors.gold
-                          : RoyalColors.cyan,
-                    ),
-                    title: Text(profile.label),
-                    subtitle: Text('${profile.styleDescription} • صوت Android المحلي'),
-                    trailing: Icon(
-                      profile == _speechService.selectedProfile
-                          ? Icons.check_circle
-                          : Icons.tune_outlined,
-                      color: profile == _speechService.selectedProfile
-                          ? RoyalColors.gold
-                          : RoyalColors.muted,
-                    ),
-                    onTap: () async {
-                      await _speechService.selectProfile(profile);
-                      if (sheetContext.mounted) Navigator.pop(sheetContext);
-                    },
-                  ),
-                ),
-                const Divider(),
-                const ListTile(
-                  title: Text('أصوات النظام المتاحة'),
-                  subtitle: Text('يمكنك اختيار صوت Android المثبت المتوافق مع لغة القصة.'),
-                ),
-                if (voices.isEmpty)
-                  const ListTile(
-                    leading: Icon(Icons.volume_off_outlined),
-                    title: Text('لا يوجد صوت نظام متاح لهذه اللغة'),
-                    subtitle: Text('ثبت صوتاً مناسباً من إعدادات Android، ثم أعد المحاولة.'),
-                  ),
-                ListTile(
-                  title: const Text('صوت النظام الافتراضي'),
-                  trailing: Icon(
-                    _speechService.selectedVoice == null
-                        ? Icons.check_circle
-                        : Icons.settings_voice_outlined,
-                    color: _speechService.selectedVoice == null
-                        ? RoyalColors.gold
-                        : RoyalColors.muted,
-                  ),
-                  onTap: () async {
-                    await _speechService.selectVoice(
-                      null,
-                      languageCode: languageCode,
-                    );
-                    if (sheetContext.mounted) Navigator.pop(sheetContext);
-                  },
-                ),
-                ...voices.map(
-                  (voice) => RadioListTile<SystemTtsVoice>(
-                    value: voice,
-                    title: Text(voice.name),
-                    subtitle: Text(voice.locale),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-    if (mounted && _speechService.message != null) {
-      setState(() => _notice = _speechService.message);
-    }
-  }
-
-  void _openReader(_StoryEntry story) {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: const Color(0xFF0D1623),
-      builder: (sheetContext) => Directionality(
-        textDirection: TextDirection.rtl,
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(story.title, style: Theme.of(sheetContext).textTheme.headlineSmall),
-                  const SizedBox(height: 14),
-                  Text(story.body, style: const TextStyle(height: 1.8, fontSize: 17)),
-                  const SizedBox(height: 18),
-                  Text('المصدر: ${story.source}', style: const TextStyle(color: RoyalColors.muted)),
-                  Text('الإحالة: ${story.citation}', style: const TextStyle(color: RoyalColors.muted)),
-                ],
-              ),
-            ),
-          ),
-        ),
+    await Navigator.push<void>(
+      context,
+      MaterialPageRoute<void>(
+        builder: (_) => _InspirationLibraryPage(stories: stories),
       ),
     );
   }
 
-  void _requestInspiration() {
-    final result = InspirationSafety.assessMoodText(_moodController.text);
-    setState(() {
-      if (result.level == InspirationSafetyLevel.crisis) {
-        _notice = result.message;
-      } else if (!_consentToAi) {
-        _notice = 'للمتابعة إلى خدمة الإلهام الذكية مستقبلاً، فعّل موافقتك الصريحة أولاً. لا تُرسل الكتابة حالياً إلى أي خدمة.';
-      } else {
-        _notice = '${result.message}\nتم تجهيز طلب محلي فقط. تحتاج الرسالة الذكية الفعلية إلى نشر خدمة خادمية وموديل محدد وسياسة احتفاظ واضحة.';
-      }
-    });
+  Future<void> _openCatalog(_StoryCatalogDefinition catalog) async {
+    await Navigator.push<void>(
+      context,
+      MaterialPageRoute<void>(
+        builder: (_) => _StoryCatalogPage(catalog: catalog),
+      ),
+    );
   }
 
-  void _checkStoryDraft() {
-    final result = InspirationSafety.assessStoryDraft(_storyDraftController.text);
-    setState(() => _notice = result.message);
-  }
-
-  void _prepareRunwareVideo() {
-    final safety = InspirationSafety.assessStoryDraft(_storyDraftController.text);
-    if (!safety.allowedForDraft) {
-      setState(() => _notice = safety.message);
-      return;
-    }
-    final preflight = context.read<RunwareVideoService>().prepareStoryVideo(
-          draft: _storyDraftController.text,
-          hasExplicitConsent: _consentToRunwareVideo,
-        );
-    setState(() => _notice = preflight.message);
-  }
-
-  @override
-  void dispose() {
-    _speechService.removeListener(_onSpeechChanged);
-    _speechService.stop();
-    _moodController.dispose();
-    _storyDraftController.dispose();
-    super.dispose();
+  Future<void> _openCreator() async {
+    await Navigator.push<void>(
+      context,
+      MaterialPageRoute<void>(
+        builder: (_) => _CreatorPage(
+          deviceLanguageCode:
+              context.read<LanguagePreferences>().deviceLanguageCode,
+        ),
+      ),
+    );
   }
 
   @override
@@ -1767,194 +1583,78 @@ class _StoriesPanelState extends State<_StoriesPanel> {
     return ListView(
       padding: const EdgeInsets.all(18),
       children: [
-        const _SectionNotice(title: 'قصص وإلهام آمن', detail: 'تبدأ هذه النسخة بحزمة أصلية مرفقة وقارئ داخلي. الفهارس الدينية لا تعرض نصاً حتى يتحقق المصدر والحقوق. يمكن استيراد حزمة JSON محلية إلى مساحة التطبيق؛ أما التنزيل الشبكي وسيناريو الفيديو فيتطلبان خدمات منفصلة.'),
-        const SizedBox(height: 12),
-        Card(
-          color: Colors.blueAccent.withValues(alpha: 0.06),
-          child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const Text('إلهام اختياري وآمن', style: TextStyle(color: RoyalColors.gold, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 8),
-                const Text('اكتب ما ترغب في مشاركته. لا يقرأ التطبيق رسائلك أو سلوكك في التطبيقات الأخرى، ولا يشخّص حالتك.'),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: _moodController,
-                  minLines: 2,
-                  maxLines: 4,
-                  decoration: const InputDecoration(hintText: 'مثال: أشعر بتشتت وأحتاج خطوة صغيرة أبدأ بها…'),
-                ),
-                CheckboxListTile(
-                  value: _consentToAi,
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('أوافق صراحة على إرسال ما أكتبه إلى خدمة إلهام مستقبلية عندما تُنشر.'),
-                  onChanged: (value) => setState(() => _consentToAi = value ?? false),
-                ),
-                FilledButton.icon(
-                  onPressed: _requestInspiration,
-                  icon: const Icon(Icons.auto_awesome_outlined),
-                  label: const Text('فحص طلب الإلهام'),
-                ),
-                SwitchListTile(
-                  value: _threeHourReminder,
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('تذكير اختياري كل 3 ساعات'),
-                  subtitle: const Text('مغلق افتراضياً؛ يتطلب نشر إشعارات محلية واختبار Android قبل التفعيل.'),
-                  onChanged: (value) {
-                    setState(() {
-                      _threeHourReminder = false;
-                      _notice = value
-                          ? 'لا يمكن تفعيل التذكير بعد؛ سيتم ربطه بإشعارات محلية صريحة بعد اختبارها.'
-                          : 'ظل تذكير الإلهام مغلقاً.';
-                    });
-                  },
-                ),
-              ],
-            ),
-          ),
+        const _SectionNotice(
+          title: 'قصص وإلهام',
+          detail:
+              'اختر كرتاً لفتح فهرسه. لا يعرض التطبيق نصاً دينياً أو كتاباً كاملاً إلا من حزمة تحمل مصدراً ورخصة أو إذن إعادة نشر واضحاً.',
         ),
         const SizedBox(height: 12),
         Card(
-          child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const Text('قصة المستخدم إلى فيديو', style: TextStyle(color: RoyalColors.teal, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 8),
-                const Text('تفحص المسودة محلياً أولاً. Runware مختار لمسار فيديو سحابي مستقبلي، لكنه لا ينشئ فيديو ولا يرسل نصاً قبل اعتماد الرصيد والحصة والمفتاح الخادمي.'),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: _storyDraftController,
-                  minLines: 3,
-                  maxLines: 6,
-                  decoration: const InputDecoration(hintText: 'اكتب مسودة قصتك الهادفة…'),
-                ),
-                const SizedBox(height: 10),
-                OutlinedButton.icon(
-                  onPressed: _checkStoryDraft,
-                  icon: const Icon(Icons.verified_user_outlined),
-                  label: const Text('فحص مسودة القصة'),
-                ),
-                CheckboxListTile(
-                  value: _consentToRunwareVideo,
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('أوافق على إرسال مسودة القصة المختارة فقط إلى Runware مستقبلاً بعد تفعيل الخدمة.'),
-                  subtitle: const Text('لا يشمل ذلك صوراً أو أصواتاً أو قصصاً أخرى، ولا يرسل شيئاً الآن.'),
-                  onChanged: (value) => setState(() => _consentToRunwareVideo = value ?? false),
-                ),
-                Consumer<RunwareVideoService>(
-                  builder: (context, runwareVideo, _) => Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        leading: const Icon(Icons.lock_outline, color: RoyalColors.gold),
-                        title: const Text('Runware: فيديو سحابي — مغلق'),
-                        subtitle: Text(runwareVideo.statusMessage),
-                      ),
-                      FilledButton.icon(
-                        onPressed: _prepareRunwareVideo,
-                        icon: const Icon(Icons.video_settings_outlined),
-                        label: const Text('تحقق من جاهزية Runware'),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+          color: Colors.blueAccent.withValues(alpha: 0.06),
+          child: Column(
+            children: [
+              ListTile(
+                leading: const Icon(Icons.auto_awesome_outlined,
+                    color: RoyalColors.gold),
+                title: const Text('الإلهام'),
+                subtitle: const Text('رسائل إنسانية مرفقة محلياً وقابلة للقراءة بصوت الجهاز'),
+                trailing: const Icon(Icons.chevron_left),
+                onTap: _openInspirationLibrary,
+              ),
+              const Divider(height: 1),
+              SwitchListTile(
+                value: _threeHourReminder,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                title: const Text('إشعار إلهام كل 3 ساعات'),
+                subtitle: const Text('سيطلب إذن Android عند التفعيل في الدفعة التالية.'),
+                onChanged: null,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        ..._storyCatalogs.map(
+          (catalog) => Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: Card(
+              child: ListTile(
+                leading: Icon(catalog.icon, color: catalog.color),
+                title: Text(catalog.title),
+                subtitle: Text(catalog.summary),
+                trailing: const Icon(Icons.chevron_left),
+                onTap: () => _openCatalog(catalog),
+              ),
             ),
+          ),
+        ),
+        Card(
+          color: Colors.teal.withValues(alpha: 0.06),
+          child: ListTile(
+            leading: const Icon(Icons.edit_note_outlined, color: RoyalColors.teal),
+            title: const Text('الإبداع'),
+            subtitle: const Text('اكتب أو أملِ قصة من شاشة كبيرة، واستمع إلى ما كتبته'),
+            trailing: const Icon(Icons.chevron_left),
+            onTap: _openCreator,
           ),
         ),
         const SizedBox(height: 12),
         Card(
           child: ListTile(
             leading: const Icon(Icons.folder_copy_outlined, color: RoyalColors.gold),
-            title: const Text('استيراد حزمة قصص أو لغة بصيغة JSON'),
-            subtitle: const Text('يحفظ الملف في مساحة التطبيق المحلية بعد اختيارك فقط'),
-            trailing: const Icon(Icons.file_upload_outlined),
-            onTap: _importContentPackage,
+            title: const Text('الحزم والمصادر'),
+            subtitle: const Text('نزّل أو استورد حزمة بعد مراجعة المصدر والرخصة'),
+            trailing: const Icon(Icons.chevron_left),
+            onTap: () => Navigator.push<void>(
+              context,
+              MaterialPageRoute<void>(builder: (_) => const _OfflinePackagesPage()),
+            ),
           ),
-        ),
-        FutureBuilder<List<OfflinePackageRecord>>(
-          future: _packagesFuture,
-          builder: (context, snapshot) {
-            final packages = snapshot.data ?? const [];
-            return Padding(
-              padding: const EdgeInsets.only(top: 10),
-              child: Text(
-                packages.isEmpty
-                    ? 'مساحة الحزم المحلية جاهزة؛ لم تُستورد حزمة إضافية بعد.'
-                    : 'الحزم المحلية المستوردة: ${packages.map((item) => item.title).join('، ')}',
-                style: const TextStyle(color: RoyalColors.muted),
-              ),
-            );
-          },
         ),
         if (_notice != null)
           Padding(
             padding: const EdgeInsets.only(top: 12),
             child: Text(_notice!, style: const TextStyle(color: RoyalColors.gold, height: 1.5)),
           ),
-        FutureBuilder<List<_StoryEntry>>(
-          future: _storiesFuture,
-          builder: (context, snapshot) {
-            if (snapshot.hasError) {
-              return const Padding(
-                padding: EdgeInsets.only(top: 16),
-                child: Text('تعذر تحميل حزمة البداية المحلية.', style: TextStyle(color: Colors.redAccent)),
-              );
-            }
-            if (!snapshot.hasData) {
-              return const Padding(
-                padding: EdgeInsets.only(top: 16),
-                child: Center(child: CircularProgressIndicator()),
-              );
-            }
-            return Column(
-              children: snapshot.data!
-                  .map(
-                    (story) => Card(
-                      child: ListTile(
-                        title: Text(story.title),
-                        subtitle: Text(story.summary),
-                        onTap: () => _openReader(story),
-                        trailing: Wrap(
-                          crossAxisAlignment: WrapCrossAlignment.center,
-                          children: [
-                            IconButton(
-                              tooltip: _speechService.isSpeaking ? 'إيقاف القراءة' : 'قراءة النص بصوت النظام',
-                              onPressed: () async {
-                                if (_speechService.isSpeaking) {
-                                  await _speechService.stop();
-                                } else {
-                                  await _speechService.speak(
-                                    text: '${story.title}. ${story.body}',
-                                    languageCode: context.read<LanguagePreferences>().storyLanguageCode,
-                                  );
-                                }
-                              },
-                              icon: Icon(_speechService.isSpeaking ? Icons.stop_circle_outlined : Icons.volume_up, color: RoyalColors.gold),
-                            ),
-                            IconButton(
-                              tooltip: 'اختيار صوت النظام للقصة',
-                              onPressed: _chooseStoryVoice,
-                              icon: const Icon(
-                                Icons.record_voice_over_outlined,
-                                color: RoyalColors.cyan,
-                              ),
-                            ),
-                            const Text('المزيد', style: TextStyle(color: RoyalColors.purple)),
-                          ],
-                        ),
-                      ),
-                    ),
-                  )
-                  .toList(),
-            );
-          },
-        ),
       ],
     );
   }
@@ -1963,6 +1663,7 @@ class _StoriesPanelState extends State<_StoriesPanel> {
 class _StoryEntry {
   const _StoryEntry({
     required this.title,
+    required this.category,
     required this.summary,
     required this.body,
     required this.source,
@@ -1970,6 +1671,7 @@ class _StoryEntry {
   });
 
   final String title;
+  final String category;
   final String summary;
   final String body;
   final String source;
@@ -1977,12 +1679,580 @@ class _StoryEntry {
 
   factory _StoryEntry.fromJson(Map<String, dynamic> json) => _StoryEntry(
         title: json['title'] as String? ?? 'قصة بلا عنوان',
+        category: json['category'] as String? ?? '',
         summary: json['summary'] as String? ?? '',
         body: json['body'] as String? ?? '',
         source: json['source'] as String? ?? 'غير محدد',
         citation: json['citation'] as String? ?? 'غير محدد',
       );
 }
+
+class _StoryCatalogDefinition {
+  const _StoryCatalogDefinition({
+    required this.title,
+    required this.summary,
+    required this.icon,
+    required this.color,
+    required this.sourceStatus,
+    required this.entries,
+  });
+
+  final String title;
+  final String summary;
+  final IconData icon;
+  final Color color;
+  final String sourceStatus;
+  final List<_StoryCatalogEntry> entries;
+}
+
+class _StoryCatalogEntry {
+  const _StoryCatalogEntry({required this.title, required this.subtitle});
+
+  final String title;
+  final String subtitle;
+}
+
+final _storyCatalogs = <_StoryCatalogDefinition>[
+  _StoryCatalogDefinition(
+    title: 'أسباب النزول',
+    summary: 'فهرس سور القرآن الـ114. النص ينتظر حزمة مصدر مرخصة.',
+    icon: Icons.menu_book_outlined,
+    color: RoyalColors.gold,
+    sourceStatus:
+        'الفهرس متاح الآن. لا تظهر أسباب النزول لكل سورة حتى تُراجع الطبعة ورخصة إعادة النشر وتُضاف حزمة موثقة.',
+    entries: List<_StoryCatalogEntry>.generate(
+      _surahNames.length,
+      (index) => _StoryCatalogEntry(
+        title: '${index + 1}. ${_surahNames[index]}',
+        subtitle: 'أسباب النزول — المحتوى يحتاج حزمة مرخصة',
+      ),
+    ),
+  ),
+  const _StoryCatalogDefinition(
+    title: 'قصص الأنبياء',
+    summary: 'فهرس الأنبياء لتصفح القصص عند تنزيل حزمة موثقة.',
+    icon: Icons.auto_stories_outlined,
+    color: RoyalColors.cyan,
+    sourceStatus:
+        'الفهرس متاح الآن. القصص نفسها لا تظهر حتى تكتمل مراجعة الجودة وحقوق الحزمة المصدرية.',
+    entries: _prophetCatalog,
+  ),
+  const _StoryCatalogDefinition(
+    title: 'قصص النساء',
+    summary: 'فهرس شخصيات وموضوعات في انتظار حزمة مرخصة محددة المواضع.',
+    icon: Icons.diversity_1_outlined,
+    color: RoyalColors.purple,
+    sourceStatus:
+        'هذا الفهرس تنظيمي فقط. يحتاج هذا القسم تحديد المواضع والمصدر والرخصة قبل عرض أي نص.',
+    entries: _womenCatalog,
+  ),
+  const _StoryCatalogDefinition(
+    title: 'قصص الأقوام',
+    summary: 'فهرس للأقوام والموضوعات، مع فصل المحتوى قيد المراجعة.',
+    icon: Icons.account_tree_outlined,
+    color: RoyalColors.teal,
+    sourceStatus:
+        'لا تتوفر مادة للقراءة من هذا الفهرس قبل اعتماد حزمة بمصدر ورخصة واضحة.',
+    entries: _peoplesCatalog,
+  ),
+  const _StoryCatalogDefinition(
+    title: 'قصص الحيوانات',
+    summary: 'فهرس موضوعي يجهز لاستقبال مواد موثقة فقط.',
+    icon: Icons.pets_outlined,
+    color: RoyalColors.muted,
+    sourceStatus:
+        'لم تُعتمد حزمة محتوى لهذا التصنيف بعد؛ يعرض التطبيق الفهرس فقط إلى حين مراجعة المصدر.',
+    entries: _animalsCatalog,
+  ),
+];
+
+class _StoryCatalogPage extends StatelessWidget {
+  const _StoryCatalogPage({required this.catalog});
+
+  final _StoryCatalogDefinition catalog;
+
+  void _showSourceGate(BuildContext context, _StoryCatalogEntry entry) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: const Color(0xFF0D1623),
+      builder: (sheetContext) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(entry.title,
+                    style: Theme.of(sheetContext).textTheme.titleLarge),
+                const SizedBox(height: 10),
+                Text(catalog.sourceStatus,
+                    style: const TextStyle(height: 1.6)),
+                const SizedBox(height: 14),
+                OutlinedButton.icon(
+                  onPressed: () => Navigator.push<void>(
+                    sheetContext,
+                    MaterialPageRoute<void>(
+                      builder: (_) => const _OfflinePackagesPage(),
+                    ),
+                  ),
+                  icon: const Icon(Icons.inventory_2_outlined),
+                  label: const Text('فتح الحزم والمصادر'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Scaffold(
+        appBar: AppBar(title: Text(catalog.title)),
+        body: ListView.separated(
+          padding: const EdgeInsets.all(16),
+          itemCount: catalog.entries.length + 1,
+          separatorBuilder: (_, _) => const SizedBox(height: 8),
+          itemBuilder: (context, index) {
+            if (index == 0) {
+              return _SectionNotice(
+                title: catalog.title,
+                detail: catalog.sourceStatus,
+              );
+            }
+            final entry = catalog.entries[index - 1];
+            return Card(
+              child: ListTile(
+                title: Text(entry.title),
+                subtitle: Text(entry.subtitle),
+                trailing: Icon(Icons.lock_outline, color: catalog.color),
+                onTap: () => _showSourceGate(context, entry),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _InspirationLibraryPage extends StatefulWidget {
+  const _InspirationLibraryPage({required this.stories});
+
+  final List<_StoryEntry> stories;
+
+  @override
+  State<_InspirationLibraryPage> createState() =>
+      _InspirationLibraryPageState();
+}
+
+class _InspirationLibraryPageState extends State<_InspirationLibraryPage> {
+  final _speechService = SystemTtsService();
+
+  @override
+  void initState() {
+    super.initState();
+    _speechService.addListener(_refresh);
+    _speechService.initialize();
+  }
+
+  void _refresh() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _speechService.removeListener(_refresh);
+    _speechService.stop();
+    super.dispose();
+  }
+
+  Future<void> _toggleSpeech(_StoryEntry story) async {
+    if (_speechService.isSpeaking) {
+      await _speechService.stop();
+      return;
+    }
+    await _speechService.speak(
+      text: '${story.title}. ${story.body}',
+      languageCode: context.read<LanguagePreferences>().storyLanguageCode,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final inspirationStories = widget.stories
+        .where((story) => story.category.contains('inspiration'))
+        .toList();
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Scaffold(
+        appBar: AppBar(title: const Text('الإلهام')),
+        body: ListView.separated(
+          padding: const EdgeInsets.all(16),
+          itemCount: inspirationStories.length + 1,
+          separatorBuilder: (_, _) => const SizedBox(height: 8),
+          itemBuilder: (context, index) {
+            if (index == 0) {
+              return const _SectionNotice(
+                title: 'رسائل الإلهام',
+                detail:
+                    'هذه رسائل مرفقة محلياً بمصدرها. يمكنك فتح الرسالة أو سماعها بصوت النظام.',
+              );
+            }
+            final story = inspirationStories[index - 1];
+            return Card(
+              child: ListTile(
+                title: Text(story.title),
+                subtitle: Text(story.summary),
+                trailing: IconButton(
+                  tooltip: _speechService.isSpeaking
+                      ? 'إيقاف القراءة'
+                      : 'قراءة الرسالة بصوت النظام',
+                  icon: Icon(
+                    _speechService.isSpeaking
+                        ? Icons.stop_circle_outlined
+                        : Icons.volume_up_outlined,
+                    color: RoyalColors.gold,
+                  ),
+                  onPressed: () => _toggleSpeech(story),
+                ),
+                onTap: () => Navigator.push<void>(
+                  context,
+                  MaterialPageRoute<void>(
+                    builder: (_) => _StoryReaderPage(story: story),
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _StoryReaderPage extends StatelessWidget {
+  const _StoryReaderPage({required this.story});
+
+  final _StoryEntry story;
+
+  @override
+  Widget build(BuildContext context) {
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Scaffold(
+        appBar: AppBar(title: Text(story.title)),
+        body: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SelectableText(story.body,
+                    style: const TextStyle(fontSize: 18, height: 1.85)),
+                const SizedBox(height: 24),
+                Text('المصدر: ${story.source}',
+                    style: const TextStyle(color: RoyalColors.muted)),
+                Text('الإحالة: ${story.citation}',
+                    style: const TextStyle(color: RoyalColors.muted)),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CreatorPage extends StatefulWidget {
+  const _CreatorPage({required this.deviceLanguageCode});
+
+  final String deviceLanguageCode;
+
+  @override
+  State<_CreatorPage> createState() => _CreatorPageState();
+}
+
+class _CreatorPageState extends State<_CreatorPage> {
+  static const _termsAcceptedKey = 'creator_terms_accepted_v1';
+
+  final _draftController = TextEditingController();
+  final _speechService = DeviceSpeechRecognitionService();
+  final _ttsService = SystemTtsService();
+  bool _loadingTerms = true;
+  bool _termsAccepted = false;
+  bool _termsRead = false;
+  String _dictationPrefix = '';
+  String? _notice;
+
+  @override
+  void initState() {
+    super.initState();
+    _speechService.addListener(_refresh);
+    _ttsService.addListener(_refresh);
+    _ttsService.initialize();
+    _loadTerms();
+  }
+
+  void _refresh() {
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _loadTerms() async {
+    final preferences = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() {
+      _termsAccepted = preferences.getBool(_termsAcceptedKey) ?? false;
+      _loadingTerms = false;
+    });
+  }
+
+  Future<void> _acceptTerms() async {
+    if (!_termsRead) return;
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.setBool(_termsAcceptedKey, true);
+    if (!mounted) return;
+    setState(() {
+      _termsAccepted = true;
+      _notice = 'تم حفظ الموافقة على هذا الجهاز. محرر الإبداع محلي ولا يرسل نصك تلقائياً.';
+    });
+  }
+
+  Future<void> _toggleDictation() async {
+    if (_speechService.isListening) {
+      await _speechService.stop();
+      return;
+    }
+    _dictationPrefix = _draftController.text.trim();
+    final started = await _speechService.start(
+      languageCode: widget.deviceLanguageCode,
+      onText: (recognizedText) {
+        final merged = _dictationPrefix.isEmpty
+            ? recognizedText
+            : '$_dictationPrefix $recognizedText';
+        _draftController.value = TextEditingValue(
+          text: merged,
+          selection: TextSelection.collapsed(offset: merged.length),
+        );
+        if (mounted) setState(() {});
+      },
+    );
+    if (mounted) setState(() => _notice = _speechService.message);
+    if (!started && mounted) setState(() => _notice = _speechService.message);
+  }
+
+  Future<void> _toggleDraftSpeech() async {
+    if (_ttsService.isSpeaking) {
+      await _ttsService.stop();
+      return;
+    }
+    await _ttsService.speak(
+      text: _draftController.text,
+      languageCode: widget.deviceLanguageCode,
+    );
+    if (mounted) setState(() => _notice = _ttsService.message);
+  }
+
+  void _checkDraft() {
+    final result = InspirationSafety.assessStoryDraft(_draftController.text);
+    setState(() => _notice = result.message);
+  }
+
+  @override
+  void dispose() {
+    _speechService.removeListener(_refresh);
+    _speechService.dispose();
+    _ttsService.removeListener(_refresh);
+    _ttsService.stop();
+    _draftController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loadingTerms) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+    if (!_termsAccepted) {
+      return Directionality(
+        textDirection: TextDirection.rtl,
+        child: Scaffold(
+          appBar: AppBar(title: const Text('شروط الإبداع')),
+          body: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Text('اكتب قصة تحترم الآخرين',
+                      style: TextStyle(
+                          color: RoyalColors.gold,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800)),
+                  const SizedBox(height: 14),
+                  const Text(
+                    'لا تكتب محتوى يحرض على الكراهية أو العنف أو التنمر، ولا ألفاظاً مسيئة أو تلميحات جنسية. لا يقرأ التطبيق ما تكتبه ولا يرسله إلى خدمة خارجية من هذه الشاشة.',
+                    style: TextStyle(height: 1.7, fontSize: 16),
+                  ),
+                  const Spacer(),
+                  CheckboxListTile(
+                    value: _termsRead,
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('قرأت الشروط وأوافق عليها.'),
+                    onChanged: (value) =>
+                        setState(() => _termsRead = value ?? false),
+                  ),
+                  FilledButton.icon(
+                    onPressed: _termsRead ? _acceptTerms : null,
+                    icon: const Icon(Icons.verified_user_outlined),
+                    label: const Text('موافقة وفتح محرر الإبداع'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Scaffold(
+        appBar: AppBar(title: const Text('الإبداع')),
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Text(
+                  'اكتب قصتك أو استخدم الإملاء بلغة جهازك. يبقى النص على جهازك ولا يُرسل تلقائياً.',
+                  style: TextStyle(color: RoyalColors.muted, height: 1.5),
+                ),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: TextField(
+                    controller: _draftController,
+                    expands: true,
+                    maxLines: null,
+                    minLines: null,
+                    textAlignVertical: TextAlignVertical.top,
+                    keyboardType: TextInputType.multiline,
+                    onChanged: (_) => setState(() {}),
+                    decoration: const InputDecoration(
+                      alignLabelWithHint: true,
+                      hintText: 'ابدأ كتابة قصتك هنا…',
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: FilledButton.icon(
+                        onPressed: _toggleDictation,
+                        icon: Icon(_speechService.isListening
+                            ? Icons.stop_circle_outlined
+                            : Icons.mic_none_outlined),
+                        label: Text(_speechService.isListening
+                            ? 'إيقاف الإملاء'
+                            : 'إملاء صوتي'),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: _draftController.text.trim().isEmpty
+                            ? null
+                            : _toggleDraftSpeech,
+                        icon: Icon(_ttsService.isSpeaking
+                            ? Icons.stop_circle_outlined
+                            : Icons.volume_up_outlined),
+                        label: Text(_ttsService.isSpeaking
+                            ? 'إيقاف السماع'
+                            : 'اسمع ما كتبت'),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: _checkDraft,
+                  icon: const Icon(Icons.verified_user_outlined),
+                  label: const Text('فحص شروط المسودة'),
+                ),
+                if (_notice != null) ...[
+                  const SizedBox(height: 8),
+                  Text(_notice!,
+                      style: const TextStyle(
+                          color: RoyalColors.gold, height: 1.45)),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+const _surahNames = <String>[
+  'الفاتحة', 'البقرة', 'آل عمران', 'النساء', 'المائدة', 'الأنعام', 'الأعراف',
+  'الأنفال', 'التوبة', 'يونس', 'هود', 'يوسف', 'الرعد', 'إبراهيم', 'الحجر',
+  'النحل', 'الإسراء', 'الكهف', 'مريم', 'طه', 'الأنبياء', 'الحج', 'المؤمنون',
+  'النور', 'الفرقان', 'الشعراء', 'النمل', 'القصص', 'العنكبوت', 'الروم', 'لقمان',
+  'السجدة', 'الأحزاب', 'سبأ', 'فاطر', 'يس', 'الصافات', 'ص', 'الزمر', 'غافر',
+  'فصلت', 'الشورى', 'الزخرف', 'الدخان', 'الجاثية', 'الأحقاف', 'محمد', 'الفتح',
+  'الحجرات', 'ق', 'الذاريات', 'الطور', 'النجم', 'القمر', 'الرحمن', 'الواقعة',
+  'الحديد', 'المجادلة', 'الحشر', 'الممتحنة', 'الصف', 'الجمعة', 'المنافقون',
+  'التغابن', 'الطلاق', 'التحريم', 'الملك', 'القلم', 'الحاقة', 'المعارج', 'نوح',
+  'الجن', 'المزمل', 'المدثر', 'القيامة', 'الإنسان', 'المرسلات', 'النبأ',
+  'النازعات', 'عبس', 'التكوير', 'الانفطار', 'المطففين', 'الانشقاق', 'البروج',
+  'الطارق', 'الأعلى', 'الغاشية', 'الفجر', 'البلد', 'الشمس', 'الليل', 'الضحى',
+  'الشرح', 'التين', 'العلق', 'القدر', 'البينة', 'الزلزلة', 'العاديات', 'القارعة',
+  'التكاثر', 'العصر', 'الهمزة', 'الفيل', 'قريش', 'الماعون', 'الكوثر', 'الكافرون',
+  'النصر', 'المسد', 'الإخلاص', 'الفلق', 'الناس',
+];
+
+const _prophetCatalog = <_StoryCatalogEntry>[
+  _StoryCatalogEntry(title: 'آدم عليه السلام', subtitle: 'قصة نبي — محتوى مرخص مطلوب'),
+  _StoryCatalogEntry(title: 'نوح عليه السلام', subtitle: 'قصة نبي — محتوى مرخص مطلوب'),
+  _StoryCatalogEntry(title: 'إبراهيم عليه السلام', subtitle: 'قصة نبي — محتوى مرخص مطلوب'),
+  _StoryCatalogEntry(title: 'يوسف عليه السلام', subtitle: 'قصة نبي — محتوى مرخص مطلوب'),
+  _StoryCatalogEntry(title: 'موسى عليه السلام', subtitle: 'قصة نبي — محتوى مرخص مطلوب'),
+  _StoryCatalogEntry(title: 'داود عليه السلام', subtitle: 'قصة نبي — محتوى مرخص مطلوب'),
+  _StoryCatalogEntry(title: 'سليمان عليه السلام', subtitle: 'قصة نبي — محتوى مرخص مطلوب'),
+  _StoryCatalogEntry(title: 'عيسى عليه السلام', subtitle: 'قصة نبي — محتوى مرخص مطلوب'),
+  _StoryCatalogEntry(title: 'محمد ﷺ', subtitle: 'سيرة نبي — محتوى مرخص مطلوب'),
+];
+
+const _womenCatalog = <_StoryCatalogEntry>[
+  _StoryCatalogEntry(title: 'مريم عليها السلام', subtitle: 'موضوع في انتظار حزمة مرخصة'),
+  _StoryCatalogEntry(title: 'أم موسى', subtitle: 'موضوع في انتظار حزمة مرخصة'),
+  _StoryCatalogEntry(title: 'امرأة فرعون', subtitle: 'موضوع في انتظار حزمة مرخصة'),
+  _StoryCatalogEntry(title: 'بلقيس', subtitle: 'موضوع في انتظار حزمة مرخصة'),
+  _StoryCatalogEntry(title: 'هاجر', subtitle: 'موضوع في انتظار حزمة مرخصة'),
+];
+
+const _peoplesCatalog = <_StoryCatalogEntry>[
+  _StoryCatalogEntry(title: 'قوم نوح', subtitle: 'موضوع في انتظار حزمة مرخصة'),
+  _StoryCatalogEntry(title: 'عاد', subtitle: 'موضوع في انتظار حزمة مرخصة'),
+  _StoryCatalogEntry(title: 'ثمود', subtitle: 'موضوع في انتظار حزمة مرخصة'),
+  _StoryCatalogEntry(title: 'قوم لوط', subtitle: 'موضوع في انتظار حزمة مرخصة'),
+  _StoryCatalogEntry(title: 'أصحاب مدين', subtitle: 'موضوع في انتظار حزمة مرخصة'),
+];
+
+const _animalsCatalog = <_StoryCatalogEntry>[
+  _StoryCatalogEntry(title: 'نملة سليمان', subtitle: 'موضوع في انتظار حزمة مرخصة'),
+  _StoryCatalogEntry(title: 'هدهد سليمان', subtitle: 'موضوع في انتظار حزمة مرخصة'),
+  _StoryCatalogEntry(title: 'ناقة صالح', subtitle: 'موضوع في انتظار حزمة مرخصة'),
+  _StoryCatalogEntry(title: 'حوت يونس', subtitle: 'موضوع في انتظار حزمة مرخصة'),
+  _StoryCatalogEntry(title: 'كلب أصحاب الكهف', subtitle: 'موضوع في انتظار حزمة مرخصة'),
+];
 
 class _GamesPanel extends StatefulWidget {
   const _GamesPanel();
