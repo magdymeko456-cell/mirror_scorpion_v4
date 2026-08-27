@@ -1521,7 +1521,7 @@ class _StoriesPanel extends StatefulWidget {
 class _StoriesPanelState extends State<_StoriesPanel> {
   late Future<List<_StoryEntry>> _storiesFuture;
   String? _notice;
-  bool _threeHourReminder = false;
+  final bool _threeHourReminder = false;
 
   @override
   void initState() {
