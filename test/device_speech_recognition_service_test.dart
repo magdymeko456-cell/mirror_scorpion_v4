@@ -2,6 +2,15 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mirror_scorpion_v4/core/speech/device_speech_recognition_service.dart';
 
 void main() {
+  group('Speech recognizer restart policy', () {
+    test('leaves Android time to release the previous microphone session', () {
+      expect(
+        DeviceSpeechRecognitionService.recognizerReleaseSettleTime,
+        const Duration(milliseconds: 350),
+      );
+    });
+  });
+
   group('SpeechLocaleResolver', () {
     test('matches a source language to an installed recognition locale', () {
       expect(

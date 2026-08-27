@@ -857,6 +857,7 @@ class _DialoguePanelState extends State<_DialoguePanel> {
   bool _isTranslating = false;
   bool _loadedLanguagePreferences = false;
   bool _sourceUsesDeviceLanguage = true;
+  bool _isChangingSpeaker = false;
 
   DeviceSpeechRecognitionService get _recognitionService =>
       widget.recognitionService;
@@ -909,25 +910,40 @@ class _DialoguePanelState extends State<_DialoguePanel> {
   }
 
   Future<void> _swapDialogueSpeaker() async {
-    if (!await _recognitionService.cancelAndWait()) return;
-    await _speechService.stop();
-    if (!mounted) return;
-    final deviceLanguage = context.read<LanguagePreferences>().deviceLanguageCode;
-    final nextSourceLanguage = _sourceUsesDeviceLanguage
-        ? _leftTargetLanguage
-        : deviceLanguage;
+    if (_isChangingSpeaker) return;
     setState(() {
-      _sourceUsesDeviceLanguage = !_sourceUsesDeviceLanguage;
-      _source.clear();
-      _translated.clear();
-      _hasCompletedDialogueTranslation = false;
-      _isTranslating = false;
-      _notice = 'تبدّل المتحدث. لغة المايك الآن: '
-          '${TranslationLanguageCatalog.labels[nextSourceLanguage] ?? nextSourceLanguage}.';
+      _isChangingSpeaker = true;
+      _notice = 'جارٍ إنهاء جلسة المايك السابقة قبل تبديل اللغة…';
     });
+    try {
+      if (!await _recognitionService.cancelAndWait()) {
+        if (mounted && _recognitionService.message != null) {
+          setState(() => _notice = _recognitionService.message);
+        }
+        return;
+      }
+      await _speechService.stop();
+      if (!mounted) return;
+      final deviceLanguage = context.read<LanguagePreferences>().deviceLanguageCode;
+      final nextSourceLanguage = _sourceUsesDeviceLanguage
+          ? _leftTargetLanguage
+          : deviceLanguage;
+      setState(() {
+        _sourceUsesDeviceLanguage = !_sourceUsesDeviceLanguage;
+        _source.clear();
+        _translated.clear();
+        _hasCompletedDialogueTranslation = false;
+        _isTranslating = false;
+        _notice = 'تبدّل المتحدث. لغة المايك الآن: '
+            '${TranslationLanguageCatalog.labels[nextSourceLanguage] ?? nextSourceLanguage}.';
+      });
+    } finally {
+      if (mounted) setState(() => _isChangingSpeaker = false);
+    }
   }
 
   Future<void> _toggleMicrophone() async {
+    if (_isChangingSpeaker) return;
     if (_recognitionService.isListening) {
       await _recognitionService.stop();
       if (mounted && _recognitionService.message != null) {
@@ -1097,7 +1113,7 @@ class _DialoguePanelState extends State<_DialoguePanel> {
                   ),
                   IconButton(
                     tooltip: 'تبديل المتحدث ولغة المايك',
-                    onPressed: _swapDialogueSpeaker,
+                    onPressed: _isChangingSpeaker ? null : _swapDialogueSpeaker,
                     icon: const Icon(Icons.swap_horiz_rounded, color: RoyalColors.gold, size: 28),
                   ),
                   Expanded(
@@ -1121,10 +1137,12 @@ class _DialoguePanelState extends State<_DialoguePanel> {
                         ? Colors.redAccent
                         : Colors.blueAccent,
                   ),
-                  onPressed: _toggleMicrophone,
+                  onPressed: _isChangingSpeaker ? null : _toggleMicrophone,
                   icon: Icon(_recognitionService.isListening ? Icons.stop_circle_outlined : Icons.mic),
                   label: Text(
-                    _recognitionService.isListening
+                    _isChangingSpeaker
+                        ? 'جارٍ تبديل لغة المايك…'
+                        : _recognitionService.isListening
                         ? 'إيقاف الاستماع'
                         : 'تحدث بلغة المصدر الحالية',
                     style: const TextStyle(fontWeight: FontWeight.w800),

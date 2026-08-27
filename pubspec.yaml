@@ -1,7 +1,7 @@
 name: mirror_scorpion_v4
 description: Royal Dark mobile utility for translation, inspiration, games, and secure PRO activation.
 publish_to: "none"
-version: 4.0.5+6
+version: 4.0.6+7
 
 environment:
   sdk: ">=3.9.0 <4.0.0"

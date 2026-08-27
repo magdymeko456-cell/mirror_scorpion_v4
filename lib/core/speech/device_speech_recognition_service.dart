@@ -9,6 +9,11 @@ import 'package:speech_to_text/speech_to_text.dart' as stt;
 /// التطبيق ولا يرفع ملفات صوتية؛ طريقة المعالجة (محلية/عن بُعد) يحددها نظام
 /// التعرف المثبت على الهاتف.
 class DeviceSpeechRecognitionService extends ChangeNotifier {
+  /// `speech_to_text` يحدّث حالة Dart مباشرة بعد إرسال cancel/stop إلى Android،
+  /// بينما ينفذ Android العملية على الـHandler ويؤخر إتلاف recognizer 50ms.
+  /// هذه المهلة القصيرة تمنع بدء لغة ثانية بينما مورد الميكروفون ما زال مشغولاً.
+  static const recognizerReleaseSettleTime = Duration(milliseconds: 350);
+
   DeviceSpeechRecognitionService({stt.SpeechToText? speechToText})
       : _speechToText = speechToText ?? stt.SpeechToText();
 
@@ -74,8 +79,12 @@ class DeviceSpeechRecognitionService extends ChangeNotifier {
   }
 
   Future<void> stop() async {
+    final hadActiveSession = _speechToText.isListening;
     try {
       await _speechToText.stop();
+      if (hadActiveSession) {
+        await Future<void>.delayed(recognizerReleaseSettleTime);
+      }
     } catch (_) {
       _message = 'تعذر إيقاف تعرف الكلام بشكل سليم.';
       notifyListeners();
@@ -105,7 +114,12 @@ class DeviceSpeechRecognitionService extends ChangeNotifier {
       notifyListeners();
       return false;
     }
-    return _waitUntilStopped(timeout: timeout);
+    final stopped = await _waitUntilStopped(timeout: timeout);
+    if (!stopped) return false;
+    // قد تكون جلسة Android انتهت تلقائياً قبل أن يضغط المستخدم تبديل اللغة؛
+    // لا يعني ذلك أن recognizer السابق حرّر مورد الميكروفون فعلاً بعد.
+    await Future<void>.delayed(recognizerReleaseSettleTime);
+    return true;
   }
 
   Future<bool> _waitUntilStopped({required Duration timeout}) async {
