@@ -277,6 +277,10 @@ jobs:
       - name: Unit and widget tests
         run: flutter test
       - name: Build release APK
+        env:
+          ANDROID_RELEASE_STORE_PASSWORD: ${{ secrets.ANDROID_RELEASE_STORE_PASSWORD }}
+          ANDROID_RELEASE_KEY_PASSWORD: ${{ secrets.ANDROID_RELEASE_KEY_PASSWORD }}
+          ANDROID_RELEASE_KEY_ALIAS: ${{ secrets.ANDROID_RELEASE_KEY_ALIAS }}
         run: flutter build apk --release
       - name: Verify release APK signature
         run: |
