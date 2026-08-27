@@ -1134,11 +1134,34 @@ class _DocumentsPanelState extends State<_DocumentsPanel> {
       },
     );
     if (!mounted || text != _extractedText) return;
+    final translatedText = result.isSuccess ? result.text : null;
     setState(() {
       _isTranslating = false;
-      _translatedText = result.isSuccess ? result.text : null;
+      _translatedText = translatedText;
       _notice = result.message;
     });
+    if (translatedText != null && translatedText.trim().isNotEmpty && mounted) {
+      _openTranslatedPreview(
+        originalText: text,
+        translatedText: translatedText,
+      );
+    }
+  }
+
+  Future<void> _openTranslatedPreview({
+    required String originalText,
+    required String translatedText,
+  }) async {
+    await Navigator.push<void>(
+      context,
+      MaterialPageRoute<void>(
+        builder: (_) => _TranslatedTextPreviewPage(
+          originalText: originalText,
+          translatedText: translatedText,
+          documentName: _selectedDocumentName ?? _selectedFileName ?? 'نص مستخرج',
+        ),
+      ),
+    );
   }
 
   Future<void> _pickLocalDocument() async {
@@ -1234,24 +1257,9 @@ class _DocumentsPanelState extends State<_DocumentsPanel> {
             padding: const EdgeInsets.only(top: 14),
             child: Text(_notice!, style: const TextStyle(color: RoyalColors.gold, height: 1.5)),
           ),
-        if (_extractedText != null)
-          Card(
-            margin: const EdgeInsets.only(top: 16),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const Text('النص الأصلي المستخرج', style: TextStyle(color: RoyalColors.muted)),
-                  const SizedBox(height: 8),
-                  SelectableText(_extractedText!, style: const TextStyle(height: 1.6)),
-                ],
-              ),
-            ),
-          ),
         if (_translatedText != null)
           Card(
-            margin: const EdgeInsets.only(top: 12),
+            margin: const EdgeInsets.only(top: 16),
             color: Colors.blueAccent.withValues(alpha: 0.08),
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -1263,18 +1271,12 @@ class _DocumentsPanelState extends State<_DocumentsPanel> {
                   SelectableText(_translatedText!, style: const TextStyle(height: 1.6)),
                   const SizedBox(height: 12),
                   FilledButton.icon(
-                    onPressed: () => Navigator.push(
-                      context,
-                      MaterialPageRoute<void>(
-                        builder: (_) => _TranslatedTextPreviewPage(
-                          originalText: _extractedText ?? '',
-                          translatedText: _translatedText!,
-                          documentName: _selectedDocumentName ?? _selectedFileName ?? 'نص مستخرج',
-                        ),
-                      ),
+                    onPressed: () => _openTranslatedPreview(
+                      originalText: _extractedText ?? '',
+                      translatedText: _translatedText!,
                     ),
                     icon: const Icon(Icons.fullscreen_outlined),
-                    label: const Text('معاينة الترجمة ملء الشاشة'),
+                    label: const Text('فتح شاشة الترجمة'),
                   ),
                 ],
               ),
@@ -1303,21 +1305,7 @@ class _TranslatedTextPreviewPage extends StatefulWidget {
 
 class _TranslatedTextPreviewPageState
     extends State<_TranslatedTextPreviewPage> {
-  bool _translationVisible = false;
-  bool _initialDelayComplete = false;
-
-  @override
-  void initState() {
-    super.initState();
-    Future<void>.delayed(const Duration(seconds: 3), () {
-      if (mounted) {
-        setState(() {
-          _initialDelayComplete = true;
-          _translationVisible = true;
-        });
-      }
-    });
-  }
+  bool _showOriginal = false;
 
   @override
   Widget build(BuildContext context) {
@@ -1332,37 +1320,32 @@ class _TranslatedTextPreviewPageState
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const Text(
-                  'معاينة نص محلي: ليست ملف PDF جديداً ولا تحفظ أو تشارك ملفاً في هذا الإصدار.',
+                  'تظهر الترجمة في هذه الشاشة. اضغط مطولاً لإظهار النص الأصلي مؤقتاً فوقها.',
                   style: TextStyle(color: RoyalColors.muted, height: 1.45),
                 ),
                 const SizedBox(height: 12),
                 Expanded(
                   child: GestureDetector(
                     onLongPressStart: (_) =>
-                        setState(() => _translationVisible = false),
+                        setState(() => _showOriginal = true),
                     onLongPressEnd: (_) =>
-                        setState(() => _translationVisible = _initialDelayComplete),
+                        setState(() => _showOriginal = false),
+                    onLongPressCancel: () =>
+                        setState(() => _showOriginal = false),
                     child: Stack(
                       children: [
                         _PreviewTextSheet(
-                          heading: 'النص الأصلي المستخرج',
-                          text: widget.originalText,
-                          color: const Color(0xFF172334),
+                          heading: 'الترجمة إلى لغة الجهاز',
+                          text: widget.translatedText,
+                          color: const Color(0xFF23364F),
+                          showSignature: true,
                         ),
-                        if (_translationVisible)
+                        if (_showOriginal)
                           Positioned.fill(
                             child: _PreviewTextSheet(
-                              heading: 'الترجمة إلى لغة الجهاز',
-                              text: widget.translatedText,
+                              heading: 'النص الأصلي المستخرج',
+                              text: widget.originalText,
                               color: const Color(0xFF23364F),
-                              showSignature: true,
-                            ),
-                          )
-                        else
-                          const Positioned.fill(
-                            child: ColoredBox(
-                              color: Color(0x550D1623),
-                              child: Center(child: CircularProgressIndicator()),
                             ),
                           ),
                       ],
