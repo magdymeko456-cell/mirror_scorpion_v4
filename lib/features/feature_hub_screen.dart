@@ -1404,11 +1404,12 @@ class _DocumentsPanelState extends State<_DocumentsPanel> {
   }
 
   Future<void> _pickLocalDocument() async {
-    final file = await FilePicker.pickFile(
+    final picked = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: const ['pdf', 'txt'],
     );
     if (!mounted) return;
+    final file = picked.isEmpty ? null : picked.first;
     if (file == null) {
       setState(() => _notice = 'لم يتم اختيار مستند.');
       return;
