@@ -7,7 +7,7 @@ void main() {
 
     expect(find.text('ميرور سكربيون'), findsOneWidget);
     expect(find.text('حيث تُصنع البدايات'), findsOneWidget);
-    expect(find.text('الفقاعة فوق التطبيقات: قيد الإعداد'), findsOneWidget);
+    expect(find.text('الفقاعة فوق التطبيقات: متوقفة'), findsOneWidget);
     expect(find.text('ترجمة نصية'), findsOneWidget);
     expect(find.text('ترجمة محلية + مايك'), findsOneWidget);
     expect(find.text('حوار مترجم'), findsOneWidget);
@@ -22,7 +22,7 @@ void main() {
     expect(find.text('الشطرنج'), findsOneWidget);
     expect(find.text('لعب محلي أو ضد الكمبيوتر'), findsOneWidget);
     expect(find.text('ألعاب 3D'), findsNothing);
-    expect(find.text('تفعيل الفقاعة العائمة'), findsNothing);
+    expect(find.byType(Switch), findsOneWidget);
     await tester.scrollUntilVisible(find.text('الإعدادات'), 300);
     expect(find.text('الإعدادات'), findsOneWidget);
   });

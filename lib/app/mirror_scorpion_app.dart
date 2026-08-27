@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../core/localization/language_preferences.dart';
 import '../core/media/runware_video_service.dart';
+import '../core/platform/android_overlay_service.dart';
 import '../core/platform/shared_text_inbox.dart';
 import '../core/speech/elevenlabs_voice_service.dart';
 import '../features/home/dashboard_screen.dart';
@@ -12,11 +13,13 @@ class MirrorScorpionApp extends StatelessWidget {
   const MirrorScorpionApp({
     this.languagePreferences,
     this.sharedTextInbox,
+    this.androidOverlayService,
     super.key,
   });
 
   final LanguagePreferences? languagePreferences;
   final SharedTextInbox? sharedTextInbox;
+  final AndroidOverlayService? androidOverlayService;
 
   @override
   Widget build(BuildContext context) {
@@ -27,6 +30,9 @@ class MirrorScorpionApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(create: (_) => ElevenLabsVoiceService()),
         ChangeNotifierProvider(create: (_) => RunwareVideoService()),
+        ChangeNotifierProvider<AndroidOverlayService>.value(
+          value: androidOverlayService ?? AndroidOverlayService(),
+        ),
         ChangeNotifierProvider<SharedTextInbox>.value(
           value: sharedTextInbox ?? SharedTextInbox(),
         ),

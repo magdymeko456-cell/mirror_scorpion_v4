@@ -20,6 +20,8 @@ Future<void> main() async {
   await languagePreferences.initialize();
   final sharedTextInbox = SharedTextInbox();
   await sharedTextInbox.initialize();
+  final androidOverlayService = AndroidOverlayService();
+  await androidOverlayService.initialize();
   runApp(
     MultiProvider(
       providers: [
@@ -28,6 +30,7 @@ Future<void> main() async {
       child: MirrorScorpionApp(
         languagePreferences: languagePreferences,
         sharedTextInbox: sharedTextInbox,
+        androidOverlayService: androidOverlayService,
       ),
     ),
   );

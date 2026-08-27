@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:provider/provider.dart';
 
+import '../../core/platform/android_overlay_service.dart';
 import '../../core/platform/shared_text_inbox.dart';
 import '../feature_hub_screen.dart';
 
@@ -26,6 +27,7 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
   late final Animation<double> _pulseAnimation;
   SharedTextInbox? _sharedTextInbox;
   bool _openingSharedText = false;
+  bool _changingOverlay = false;
 
   @override
   void initState() {
@@ -93,8 +95,20 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
     Navigator.push(context, MaterialPageRoute<void>(builder: (_) => FeatureHubScreen(kind: kind)));
   }
 
+  Future<void> _toggleOverlay(bool enabled) async {
+    setState(() => _changingOverlay = true);
+    final overlay = context.read<AndroidOverlayService>();
+    final result = enabled
+        ? await overlay.showBubble()
+        : await overlay.closeBubble();
+    if (!mounted) return;
+    setState(() => _changingOverlay = false);
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result.message)));
+  }
+
   @override
   Widget build(BuildContext context) {
+    final overlay = context.watch<AndroidOverlayService>();
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
@@ -109,7 +123,7 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
           child: SafeArea(
             child: CustomScrollView(
               slivers: [
-                SliverToBoxAdapter(child: _buildHeader()),
+                SliverToBoxAdapter(child: _buildHeader(overlay)),
                 SliverPadding(
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                   sliver: SliverGrid(
@@ -137,7 +151,7 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(AndroidOverlayService overlay) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 20),
       child: Column(
@@ -188,9 +202,27 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.bubble_chart_outlined, color: Colors.grey),
+                Icon(
+                  Icons.bubble_chart_outlined,
+                  color: overlay.isVisible ? Colors.cyanAccent : Colors.grey,
+                ),
                 const SizedBox(width: 12),
-                const Text('الفقاعة فوق التطبيقات: قيد الإعداد', style: TextStyle(color: Colors.white70, fontWeight: FontWeight.bold)),
+                Expanded(
+                  child: Text(
+                    overlay.isSupported
+                        ? (overlay.isVisible
+                            ? 'الفقاعة فوق التطبيقات: مفعّلة'
+                            : 'الفقاعة فوق التطبيقات: متوقفة')
+                        : 'الفقاعة فوق التطبيقات: Android فقط',
+                    style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                Switch.adaptive(
+                  value: overlay.isVisible,
+                  onChanged: _changingOverlay || !overlay.isSupported
+                      ? null
+                      : _toggleOverlay,
+                ),
               ],
             ),
           ),
