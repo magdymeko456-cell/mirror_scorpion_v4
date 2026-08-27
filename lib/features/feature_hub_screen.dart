@@ -3114,7 +3114,7 @@ class _SettingsPanel extends StatelessWidget {
             child: ListTile(
               leading: const Icon(Icons.download_outlined, color: RoyalColors.cyan),
               title: const Text('حزم المحتوى واللغات أوف لاين'),
-              subtitle: const Text('عرض المساحة المحلية وحزم JSON المستوردة؛ نماذج ML Kit تُدار من مسار الترجمة.'),
+              subtitle: const Text('عرض المساحة المحلية وحزم JSON المستوردة وتجهيز نموذجَي لغة الترجمة بموافقة صريحة.'),
               trailing: const Icon(Icons.chevron_left),
               onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const _OfflinePackagesPage())),
             ),
@@ -3336,9 +3336,11 @@ class _OfflinePackagesPage extends StatefulWidget {
 class _OfflinePackagesPageState extends State<_OfflinePackagesPage> {
   final _storage = const OfflineContentStorage();
   final _catalogService = GitHubContentCatalogService();
+  final _translationService = const OnDeviceTranslationService();
   late Future<List<OfflinePackageRecord>> _packages;
   late Future<ContentCatalogLoadResult> _catalog;
   bool _isDownloading = false;
+  bool _isPreparingTranslationModels = false;
   String? _notice;
 
   @override
@@ -3408,6 +3410,51 @@ class _OfflinePackagesPageState extends State<_OfflinePackagesPage> {
     });
   }
 
+  Future<void> _prepareTranslationModels() async {
+    final preferences = context.read<LanguagePreferences>();
+    final sourceLanguage = preferences.deviceLanguageCode;
+    final targetLanguage = preferences.translationTargetLanguage;
+    final sourceLabel =
+        TranslationLanguageCatalog.labels[sourceLanguage] ?? sourceLanguage;
+    final targetLabel =
+        TranslationLanguageCatalog.labels[targetLanguage] ?? targetLanguage;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('تجهيز نماذج الترجمة؟'),
+        content: Text(
+          'سيُطلب من ML Kit تنزيل نموذج لغة الجهاز ($sourceLabel) '
+          'ونموذج لغة الهدف ($targetLabel) إذا لم يكونا موجودين. '
+          'لن يبدأ أي تنزيل إلا بعد موافقتك الآن.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('تجهيز الآن'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    setState(() {
+      _isPreparingTranslationModels = true;
+      _notice = 'جارٍ فحص نموذجَي $sourceLabel و$targetLabel…';
+    });
+    final result = await _translationService.prepareLanguagePair(
+      sourceLanguageCode: sourceLanguage,
+      targetLanguageCode: targetLanguage,
+    );
+    if (!mounted) return;
+    setState(() {
+      _isPreparingTranslationModels = false;
+      _notice = result.message;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Directionality(
@@ -3419,14 +3466,41 @@ class _OfflinePackagesPageState extends State<_OfflinePackagesPage> {
           builder: (context, snapshot) {
             if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
             final packages = snapshot.data!;
+            final preferences = context.watch<LanguagePreferences>();
             return ListView(
               padding: const EdgeInsets.all(18),
               children: [
                 const _SectionNotice(
                   title: 'مساحة العمل أوفلاين',
-                  detail: 'تعرض هذه المساحة حزم JSON التي اختارها المستخدم فقط. تتحقق الحزم المتاحة من SHA-256 قبل الحفظ؛ المصادر غير الموثقة لا يظهر لها تنزيل.',
+                  detail: 'تعرض هذه المساحة حزم JSON التي اختارها المستخدم فقط، وتتيح تجهيز نموذجَي الترجمة باختيار صريح. تتحقق الحزم المتاحة من SHA-256 قبل الحفظ؛ المصادر غير الموثقة لا يظهر لها تنزيل.',
                 ),
                 const SizedBox(height: 16),
+                Card(
+                  child: ListTile(
+                    leading: const Icon(
+                      Icons.translate_outlined,
+                      color: RoyalColors.cyan,
+                    ),
+                    title: const Text('تجهيز ترجمة لغة الجهاز أوفلاين'),
+                    subtitle: Text(
+                      'لغة الجهاز: ${TranslationLanguageCatalog.labels[preferences.deviceLanguageCode] ?? preferences.deviceLanguageCode} '
+                      '• الهدف: ${TranslationLanguageCatalog.labels[preferences.translationTargetLanguage] ?? preferences.translationTargetLanguage}',
+                    ),
+                    trailing: FilledButton(
+                      onPressed: _isPreparingTranslationModels
+                          ? null
+                          : _prepareTranslationModels,
+                      child: _isPreparingTranslationModels
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Text('تجهيز'),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
                 if (packages.isEmpty)
                   const Card(child: ListTile(title: Text('لا توجد حزم مستوردة بعد'), subtitle: Text('يمكن استيراد حزمة JSON من كارت القصص.'))),
                 ...packages.map(

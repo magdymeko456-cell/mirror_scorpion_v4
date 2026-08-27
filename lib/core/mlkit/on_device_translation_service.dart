@@ -20,6 +20,28 @@ enum OnDeviceTranslationProgress {
   translating,
 }
 
+enum OnDeviceModelPreparationState {
+  ready,
+  downloaded,
+  unsupportedPlatform,
+  unsupportedLanguage,
+  failed,
+}
+
+class OnDeviceModelPreparationResult {
+  const OnDeviceModelPreparationResult({
+    required this.state,
+    required this.message,
+  });
+
+  final OnDeviceModelPreparationState state;
+  final String message;
+
+  bool get isSuccess =>
+      state == OnDeviceModelPreparationState.ready ||
+      state == OnDeviceModelPreparationState.downloaded;
+}
+
 typedef OnDeviceTranslationProgressCallback = void Function(
   OnDeviceTranslationProgress progress,
 );
@@ -63,6 +85,59 @@ class OnDeviceTranslationService {
       !kIsWeb &&
       (defaultTargetPlatform == TargetPlatform.android ||
           defaultTargetPlatform == TargetPlatform.iOS);
+
+  /// يجهز نموذجَي المصدر والهدف اللذين اختارهما المستخدم صراحة. لا يستدعي
+  /// ترجمة، ولا ينفذ في الخلفية، ويجري التنزيل بالتتابع لتفادي تزاحم ML Kit.
+  Future<OnDeviceModelPreparationResult> prepareLanguagePair({
+    required String sourceLanguageCode,
+    required String targetLanguageCode,
+  }) async {
+    if (!isNativePlatform) {
+      return const OnDeviceModelPreparationResult(
+        state: OnDeviceModelPreparationState.unsupportedPlatform,
+        message: 'تنزيل نماذج الترجمة المحلية متاح على Android وiOS فقط.',
+      );
+    }
+    final sourceLanguage = languageForCode(sourceLanguageCode);
+    final targetLanguage = languageForCode(targetLanguageCode);
+    if (sourceLanguage == null || targetLanguage == null) {
+      return const OnDeviceModelPreparationResult(
+        state: OnDeviceModelPreparationState.unsupportedLanguage,
+        message: 'لا يدعم ML Kit المحلي لغة الجهاز أو لغة الهدف المختارة.',
+      );
+    }
+    try {
+      final manager = OnDeviceTranslatorModelManager();
+      final sourceAlreadyReady =
+          await manager.isModelDownloaded(sourceLanguage.bcpCode);
+      final targetAlreadyReady =
+          await manager.isModelDownloaded(targetLanguage.bcpCode);
+      final sourceReady = await _ensureModel(manager, sourceLanguage);
+      final targetReady = sourceReady
+          ? await _ensureModel(manager, targetLanguage)
+          : false;
+      if (!sourceReady || !targetReady) {
+        return const OnDeviceModelPreparationResult(
+          state: OnDeviceModelPreparationState.failed,
+          message: 'تعذر تنزيل نموذجَي الترجمة. اتصل بالإنترنت ثم أعد المحاولة.',
+        );
+      }
+      final wasAlreadyReady = sourceAlreadyReady && targetAlreadyReady;
+      return OnDeviceModelPreparationResult(
+        state: wasAlreadyReady
+            ? OnDeviceModelPreparationState.ready
+            : OnDeviceModelPreparationState.downloaded,
+        message: wasAlreadyReady
+            ? 'نموذجا الترجمة المحليان جاهزان بالفعل على هذا الجهاز.'
+            : 'تم تجهيز نموذجَي الترجمة المحليين. يمكن استخدام هذا الزوج دون تنزيل جديد.',
+      );
+    } catch (error) {
+      return OnDeviceModelPreparationResult(
+        state: OnDeviceModelPreparationState.failed,
+        message: 'تعذر تجهيز نماذج الترجمة المحلية. ${failureDetail(error)}',
+      );
+    }
+  }
 
   Future<OnDeviceTranslationResult> translate({
     required String text,
