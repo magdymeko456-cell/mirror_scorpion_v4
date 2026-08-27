@@ -82,9 +82,15 @@ class ContentPackageValidator {
   }
 
   static void _validateLicense(Object? value) {
-    if (value is! Map<String, dynamic> ||
-        _requiredString(value, 'usage').isEmpty ||
-        _requiredString(value, 'rightsHolder').isEmpty) {
+    if (value is! Map<String, dynamic>) {
+      throw const FormatException('Content package license is incomplete.');
+    }
+    _requiredString(value, 'usage');
+    final hasRightsHolder = value['rightsHolder'] is String &&
+        (value['rightsHolder'] as String).trim().isNotEmpty;
+    final hasAttribution = value['attribution'] is String &&
+        (value['attribution'] as String).trim().isNotEmpty;
+    if (!hasRightsHolder && !hasAttribution) {
       throw const FormatException('Content package license is incomplete.');
     }
   }

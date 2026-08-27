@@ -243,7 +243,7 @@ class GitHubContentCatalogService {
       );
     } on FormatException {
       return const ContentPackageDownloadResult.failure(
-        'رُفضت الحزمة لأن ملف JSON غير صالح.',
+        'رُفضت الحزمة لأن بيانات المصدر أو الترخيص أو بنية المحتوى غير مكتملة.',
       );
     } catch (_) {
       return const ContentPackageDownloadResult.failure(

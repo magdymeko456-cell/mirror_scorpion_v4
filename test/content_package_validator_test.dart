@@ -30,6 +30,16 @@ void main() {
     expect(() => ContentPackageValidator.validate(validPackage()), returnsNormally);
   });
 
+  test('accepts a licensed package with visible attribution in place of a separate rights holder', () {
+    final package = validPackage();
+    package['license'] = <String, dynamic>{
+      'usage': 'CC-BY-SA-4.0',
+      'attribution': 'المؤلف والعمل ومساهمو المصدر، CC BY-SA 4.0.',
+    };
+
+    expect(() => ContentPackageValidator.validate(package), returnsNormally);
+  });
+
   test('rejects a package with missing visible rights metadata', () {
     final package = validPackage()..remove('license');
     expect(() => ContentPackageValidator.validate(package), throwsFormatException);
