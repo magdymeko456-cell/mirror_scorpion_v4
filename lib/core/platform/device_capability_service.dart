@@ -39,7 +39,9 @@ enum LocalAudioCompatibility {
 class LocalAudioCompatibilityPolicy {
   const LocalAudioCompatibilityPolicy._();
 
-  static const int minimumRamBytes = 5 * 1024 * 1024 * 1024;
+  /// تعلن الشركات الذاكرة عادة بوحدة GB العشرية؛ لهذا نستخدم 4,000,000,000
+  /// بايت حتى لا يرفض Android هاتفاً بسعة 4 GB بسبب اختلاف GB عن GiB.
+  static const int minimumRamBytes = 4 * 1000 * 1000 * 1000;
   static const int minimumFreeStorageBytes = 512 * 1024 * 1024;
 
   static LocalAudioCompatibility evaluate(DeviceCapabilities device) {
@@ -57,11 +59,11 @@ class LocalAudioCompatibilityPolicy {
 
   static String messageFor(LocalAudioCompatibility result) => switch (result) {
         LocalAudioCompatibility.supported =>
-          'الهاتف مناسب لتفريغ الملف محلياً ابتداءً من 5 GB RAM. تتأثر السرعة أيضاً '
+          'الهاتف مناسب لتفريغ الملف محلياً ابتداءً من 4 GB RAM. تتأثر السرعة أيضاً '
               'بالمعالج وطول التسجيل والمساحة الحرة؛ الأجهزة ذات الذاكرة الأعلى أنسب للملفات الطويلة.',
         LocalAudioCompatibility.insufficientMemory =>
           'تفريغ الملفات الصوتية محلياً يتطلب في هذه النسخة هاتفاً بذاكرة RAM قدرها '
-              '5 GB أو أكثر. ستبقى بقية أدوات التطبيق متاحة.',
+              '4 GB أو أكثر. ستبقى بقية أدوات التطبيق متاحة.',
         LocalAudioCompatibility.insufficientStorage =>
           'المساحة الحرة غير كافية لتفريغ الملف محلياً. حرّر 512 MB على الأقل ثم أعد المحاولة.',
         LocalAudioCompatibility.unavailable =>

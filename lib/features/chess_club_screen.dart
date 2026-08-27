@@ -4,6 +4,19 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 import '../core/games/chess_game_controller.dart';
 
+/// رموز بصرية أصلية للوحة حديثة سهلة القراءة على الهاتف. تستلهم وضوح
+/// ألعاب الشطرنج الحديثة فقط؛ القطع المستخدمة من مجموعة Meridian العامة.
+abstract final class ChessClubVisualTokens {
+  static const background = Color(0xFF0B1420);
+  static const panel = Color(0xFF172638);
+  static const lightSquareTop = Color(0xFFF4E6C5);
+  static const lightSquareBottom = Color(0xFFD7B875);
+  static const darkSquareTop = Color(0xFF70452D);
+  static const darkSquareBottom = Color(0xFF2B180F);
+  static const selected = Color(0xFFE5B53A);
+  static const legalTarget = Color(0xFF6AA84F);
+}
+
 class ChessClubScreen extends StatefulWidget {
   const ChessClubScreen({super.key});
 
@@ -137,8 +150,11 @@ class _ChessClubScreenState extends State<ChessClubScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: ChessClubVisualTokens.background,
       appBar: AppBar(
         title: const Text('الشطرنج الملكي'),
+        backgroundColor: ChessClubVisualTokens.panel,
+        elevation: 0,
         actions: [
           IconButton(
             icon: const Icon(Icons.lightbulb_outline, color: Colors.amber),
@@ -161,8 +177,15 @@ class _ChessClubScreenState extends State<ChessClubScreen> {
         children: [
           // شريط التحكم بالخيارات والمستويات
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            color: const Color(0xFF1E1E2C),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [ChessClubVisualTokens.panel, Color(0xFF0E1B2B)],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
+              border: Border(bottom: BorderSide(color: Color(0xFF37506B))),
+            ),
             child: Row(
               children: [
                 const Text('المستوى: ', style: TextStyle(color: Colors.white70)),
@@ -210,30 +233,38 @@ class _ChessClubScreenState extends State<ChessClubScreen> {
           // الرقعة بالتصميم المطور المجسم 3D
           Expanded(
             child: Center(
-              child: AspectRatio(
-                aspectRatio: 1,
-                child: Container(
-                  margin: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(18),
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFFF0C76F), Color(0xFF6A3510), Color(0xFFDDA74E)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    border: Border.all(color: const Color(0xFFFFD66B), width: 1.4),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.6),
-                        blurRadius: 15,
-                        offset: const Offset(0, 8),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 540),
+                child: AspectRatio(
+                  aspectRatio: 1,
+                  child: Container(
+                    margin: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(24),
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFF4D87A), Color(0xFF7A3B18), Color(0xFFE2AE4C)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        stops: [0, 0.5, 1],
                       ),
-                    ],
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(8),
+                      border: Border.all(color: const Color(0xFFFFE7A0), width: 1.6),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.66),
+                          blurRadius: 20,
+                          offset: const Offset(0, 11),
+                        ),
+                        BoxShadow(
+                          color: const Color(0xFFFFD66B).withValues(alpha: 0.16),
+                          blurRadius: 6,
+                          spreadRadius: 1,
+                        ),
+                      ],
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(9),
                     child: ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(16),
                       child: GridView.builder(
                         physics: const NeverScrollableScrollPhysics(),
                         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 8),
@@ -253,27 +284,43 @@ class _ChessClubScreenState extends State<ChessClubScreen> {
                         onTap: () => _onSquareTap(square),
                         child: Container(
                           decoration: BoxDecoration(
-                            color: isSelected
-                                ? Colors.amber.withValues(alpha: 0.8)
-                                : isTarget
-                                    ? Colors.green.withValues(alpha: 0.6)
-                                    : isDark
-                                        ? const Color(0xFFB58863)
-                                        : const Color(0xFFF0D9B5),
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: isSelected
+                                  ? const [Color(0xFFFFE083), ChessClubVisualTokens.selected]
+                                  : isTarget
+                                      ? const [Color(0xFFA3CF78), ChessClubVisualTokens.legalTarget]
+                                      : isDark
+                                          ? const [ChessClubVisualTokens.darkSquareTop, ChessClubVisualTokens.darkSquareBottom]
+                                          : const [ChessClubVisualTokens.lightSquareTop, ChessClubVisualTokens.lightSquareBottom],
+                            ),
                             border: Border.all(
-                              color: Colors.black12,
-                              width: 0.5,
+                              color: Colors.black.withValues(alpha: 0.16),
+                              width: 0.35,
                             ),
                           ),
                           child: Center(
                             child: piece == null
                                 ? null
-                                : Padding(
-                                    padding: const EdgeInsets.all(3),
-                                    child: SvgPicture.asset(
-                                      ChessGameController.pieceAssetPath(piece)!,
-                                      fit: BoxFit.contain,
-                                      semanticsLabel: 'قطعة شطرنج',
+                                : Container(
+                                    margin: const EdgeInsets.all(1),
+                                    decoration: BoxDecoration(
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withValues(alpha: 0.36),
+                                          blurRadius: 2.6,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(1),
+                                      child: SvgPicture.asset(
+                                        ChessGameController.pieceAssetPath(piece)!,
+                                        fit: BoxFit.contain,
+                                        semanticsLabel: 'قطعة شطرنج',
+                                      ),
                                     ),
                                   ),
                           ),
@@ -282,6 +329,7 @@ class _ChessClubScreenState extends State<ChessClubScreen> {
                         },
                       ),
                     ),
+                  ),
                   ),
                 ),
               ),
