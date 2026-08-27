@@ -16,7 +16,7 @@ class WhisperModelDescriptor {
     fileName: 'ggml-base.bin',
     uri: Uri.parse('https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin'),
     expectedBytes: 147951465,
-    sha256: '3dd14eea856493d334349b405782ddcaf0028d4b5df4088345fba2efe',
+    sha256: '60ed5bc3dd14eea856493d334349b405782ddcaf0028d4b5df4088345fba2efe',
   );
 
   final String fileName;
