@@ -51,6 +51,19 @@ jobs:
           java-version: "17"
       - name: Generate Android project
         run: flutter create --platforms=android --project-name mirror_scorpion_v4 .
+      - name: Configure whisper Android NDK
+        run: |
+          yes | sdkmanager --licenses >/dev/null
+          sdkmanager --install "ndk;29.0.13113456"
+          test -d "${ANDROID_HOME}/ndk/29.0.13113456"
+          if [ -f android/app/build.gradle.kts ]; then
+            sed -i '/android {/a\\    ndkVersion = "29.0.13113456"' android/app/build.gradle.kts
+          elif [ -f android/app/build.gradle ]; then
+            sed -i '/android {/a\\    ndkVersion "29.0.13113456"' android/app/build.gradle
+          else
+            echo "Android app Gradle file was not generated."
+            exit 1
+          fi
       - name: Configure Firebase Android
         env:
           ANDROID_GOOGLE_SERVICES_JSON: ${{ secrets.ANDROID_GOOGLE_SERVICES_JSON }}
