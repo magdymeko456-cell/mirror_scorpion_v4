@@ -51,6 +51,20 @@ void main() {
     );
   });
 
+  test('rejects an available package without visible source and license metadata', () {
+    final missingSource = availablePackage()..remove('sourceCitation');
+    final missingLicense = availablePackage()..remove('license');
+
+    expect(
+      () => ContentCatalogPackage.fromJson(missingSource),
+      throwsFormatException,
+    );
+    expect(
+      () => ContentCatalogPackage.fromJson(missingLicense),
+      throwsFormatException,
+    );
+  });
+
   test('checks raw package bytes against the catalog hash', () {
     expect(ContentHash.matchesSha256(packageBytes, packageHash), isTrue);
     expect(ContentHash.matchesSha256(packageBytes, '0' * 64), isFalse);

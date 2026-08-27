@@ -94,7 +94,9 @@ class ContentCatalogPackage {
           contentPath == null ||
           !_safePackagePath.hasMatch(contentPath) ||
           contentSha256 == null ||
-          !_sha256.hasMatch(contentSha256)) {
+          !_sha256.hasMatch(contentSha256) ||
+          !_hasAttribution(sourceCitation) ||
+          !_hasLicenseUsage(license)) {
         throw const FormatException('Available package is missing integrity metadata.');
       }
     }
@@ -279,6 +281,17 @@ String _requiredString(Map<String, dynamic> json, String key) {
     throw FormatException('Missing $key.');
   }
   return value;
+}
+
+bool _hasAttribution(Map<String, dynamic>? citation) {
+  if (citation == null) return false;
+  return <String>['name', 'work', 'author']
+      .any((key) => citation[key] is String && (citation[key] as String).trim().isNotEmpty);
+}
+
+bool _hasLicenseUsage(Map<String, dynamic>? license) {
+  final usage = license?['usage'];
+  return usage is String && usage.trim().isNotEmpty;
 }
 
 final _safeRef = RegExp(r'^[A-Za-z0-9._-]+$');

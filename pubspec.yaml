@@ -42,8 +42,6 @@ flutter_launcher_icons:
 flutter:
   uses-material-design: true
   assets:
-    - assets/books/tafseer_jalalayn/
-    - assets/books/prophets_stories/
     - assets/data/
     - assets/fonts/
     - assets/images/
