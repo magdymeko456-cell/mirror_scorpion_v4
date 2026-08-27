@@ -12,6 +12,7 @@ import '../core/localization/language_preferences.dart';
 import '../core/content/offline_content_storage.dart';
 import '../core/content/github_content_catalog_service.dart';
 import '../core/games/chess_game_controller.dart';
+import 'chess_club_screen.dart';
 import '../core/inspiration/inspiration_safety.dart';
 import '../core/documents/local_document_text_service.dart';
 import '../core/media/runware_video_service.dart';
