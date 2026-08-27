@@ -266,7 +266,7 @@ class _TranslationPanelState extends State<_TranslationPanel> {
 
   Future<void> _pickAudioFileForLocalTranslation() async {
     if (_isInstallingAudioModel || _isTranscribingAudio) return;
-    final selection = await FilePicker.pickFiles(
+    final selection = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: AudioTranscriberService.supportedExtensions.toList()..sort(),
       withData: false,
@@ -1404,7 +1404,7 @@ class _DocumentsPanelState extends State<_DocumentsPanel> {
   }
 
   Future<void> _pickLocalDocument() async {
-    final picked = await FilePicker.pickFiles(
+    final picked = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: const ['pdf', 'txt'],
     );
