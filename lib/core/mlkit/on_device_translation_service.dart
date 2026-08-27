@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:google_mlkit_language_id/google_mlkit_language_id.dart';
 import 'package:google_mlkit_translation/google_mlkit_translation.dart';
 
@@ -127,12 +128,12 @@ class OnDeviceTranslationService {
       if (!sourceAlreadyDownloaded || !targetAlreadyDownloaded) {
         onProgress?.call(OnDeviceTranslationProgress.downloadingModels);
       }
-      final readiness = await Future.wait<bool>([
-        _ensureModel(modelManager, sourceLanguage),
-        _ensureModel(modelManager, targetLanguage),
-      ]);
-      final sourceReady = readiness[0];
-      final targetReady = readiness[1];
+      // تنزيل النموذجين بالتتابع. يجنّب ذلك تزاحم طلبين أصليين متزامنين من
+      // ML Kit عند أول استخدام، ويجعل شاشة التقدم ورسالة الفشل مفهومتين.
+      final sourceReady = await _ensureModel(modelManager, sourceLanguage);
+      final targetReady = sourceReady
+          ? await _ensureModel(modelManager, targetLanguage)
+          : false;
       if (!sourceReady || !targetReady) {
         return OnDeviceTranslationResult(
           state: OnDeviceTranslationState.modelDownloadFailed,
@@ -158,11 +159,11 @@ class OnDeviceTranslationService {
       } finally {
         await translator.close();
       }
-    } catch (_) {
-      return const OnDeviceTranslationResult(
+    } catch (error) {
+      return OnDeviceTranslationResult(
         state: OnDeviceTranslationState.failed,
-        message:
-            'تعذرت الترجمة المحلية. تحقق من اتصالك عند تنزيل النموذج ثم أعد المحاولة.',
+        message: 'تعذرت الترجمة المحلية. تحقق من اتصالك عند تنزيل النموذج ثم أعد المحاولة. '
+            '${failureDetail(error)}',
       );
     } finally {
       await identifier.close();
@@ -176,5 +177,15 @@ class OnDeviceTranslationService {
     final code = language.bcpCode;
     if (await modelManager.isModelDownloaded(code)) return true;
     return modelManager.downloadModel(code);
+  }
+
+  /// يعرض رمز منصة محدوداً للتشخيص، من دون تضمين نص المدخل أو مسارات الهاتف.
+  @visibleForTesting
+  static String failureDetail(Object error) {
+    if (error is PlatformException) {
+      final code = error.code.trim();
+      return code.isEmpty ? 'رمز ML Kit: غير معروف.' : 'رمز ML Kit: $code.';
+    }
+    return 'رمز ML Kit: ${error.runtimeType}.';
   }
 }

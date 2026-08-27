@@ -82,10 +82,17 @@ class FeatureHubScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final child = switch (kind) {
       FeatureKind.translation =>
-        _TranslationPanel(initialText: initialTranslationText),
-      FeatureKind.dialogue => const _DialoguePanel(),
+        _TranslationPanel(
+          initialText: initialTranslationText,
+          recognitionService: context.read<DeviceSpeechRecognitionService>(),
+        ),
+      FeatureKind.dialogue => _DialoguePanel(
+          recognitionService: context.read<DeviceSpeechRecognitionService>(),
+        ),
       FeatureKind.documents => const _DocumentsPanel(),
-      FeatureKind.stories => const _StoriesPanel(),
+      FeatureKind.stories => _StoriesPanel(
+          recognitionService: context.read<DeviceSpeechRecognitionService>(),
+        ),
       FeatureKind.games => const ChessClubScreen(),
       FeatureKind.settings => const _SettingsPanel(),
     };
@@ -112,9 +119,10 @@ class FeatureHubScreen extends StatelessWidget {
 }
 
 class _TranslationPanel extends StatefulWidget {
-  const _TranslationPanel({this.initialText});
+  const _TranslationPanel({this.initialText, required this.recognitionService});
 
   final String? initialText;
+  final DeviceSpeechRecognitionService recognitionService;
 
   @override
   State<_TranslationPanel> createState() => _TranslationPanelState();
@@ -125,7 +133,6 @@ class _TranslationPanelState extends State<_TranslationPanel> {
   final _output = TextEditingController();
   final _translationService = const OnDeviceTranslationService();
   final _speechService = SystemTtsService();
-  final _recognitionService = DeviceSpeechRecognitionService();
   final _capabilityService = DeviceCapabilityService();
   final _modelInstaller = WhisperModelInstaller();
   final _audioTranscriber = AudioTranscriberService();
@@ -143,6 +150,9 @@ class _TranslationPanelState extends State<_TranslationPanel> {
   bool _loadedLanguagePreference = false;
   bool _processedInitialText = false;
   Timer? _translationDebounce;
+
+  DeviceSpeechRecognitionService get _recognitionService =>
+      widget.recognitionService;
 
   @override
   void initState() {
@@ -523,7 +533,7 @@ class _TranslationPanelState extends State<_TranslationPanel> {
     _speechService.removeListener(_onSpeechChanged);
     _speechService.stop();
     _recognitionService.removeListener(_onSpeechChanged);
-    _recognitionService.dispose();
+    unawaited(_recognitionService.cancelAndWait());
     _modelInstaller.dispose();
     unawaited(_audioExporter.delete(_translatedAudioFile));
     _input.dispose();
@@ -827,7 +837,9 @@ class _EditorAction {
 }
 
 class _DialoguePanel extends StatefulWidget {
-  const _DialoguePanel();
+  const _DialoguePanel({required this.recognitionService});
+
+  final DeviceSpeechRecognitionService recognitionService;
 
   @override
   State<_DialoguePanel> createState() => _DialoguePanelState();
@@ -838,7 +850,6 @@ class _DialoguePanelState extends State<_DialoguePanel> {
   final _translated = TextEditingController();
   final _translationService = const OnDeviceTranslationService();
   final _speechService = SystemTtsService();
-  final _recognitionService = DeviceSpeechRecognitionService();
   Timer? _translationDebounce;
   String _leftTargetLanguage = 'en';
   String? _notice;
@@ -846,6 +857,9 @@ class _DialoguePanelState extends State<_DialoguePanel> {
   bool _isTranslating = false;
   bool _loadedLanguagePreferences = false;
   bool _sourceUsesDeviceLanguage = true;
+
+  DeviceSpeechRecognitionService get _recognitionService =>
+      widget.recognitionService;
 
   @override
   void initState() {
@@ -1030,7 +1044,7 @@ class _DialoguePanelState extends State<_DialoguePanel> {
   void dispose() {
     _translationDebounce?.cancel();
     _recognitionService.removeListener(_onServiceChanged);
-    _recognitionService.dispose();
+    unawaited(_recognitionService.cancelAndWait());
     _speechService.removeListener(_onServiceChanged);
     _speechService.stop();
     _source.dispose();
@@ -1721,7 +1735,9 @@ class _PreviewTextSheet extends StatelessWidget {
 }
 
 class _StoriesPanel extends StatefulWidget {
-  const _StoriesPanel();
+  const _StoriesPanel({required this.recognitionService});
+
+  final DeviceSpeechRecognitionService recognitionService;
 
   @override
   State<_StoriesPanel> createState() => _StoriesPanelState();
@@ -1782,6 +1798,7 @@ class _StoriesPanelState extends State<_StoriesPanel> {
         builder: (_) => _CreatorPage(
           deviceLanguageCode:
               context.read<LanguagePreferences>().deviceLanguageCode,
+          recognitionService: widget.recognitionService,
         ),
       ),
     );
@@ -2179,9 +2196,13 @@ class _StoryReaderPage extends StatelessWidget {
 }
 
 class _CreatorPage extends StatefulWidget {
-  const _CreatorPage({required this.deviceLanguageCode});
+  const _CreatorPage({
+    required this.deviceLanguageCode,
+    required this.recognitionService,
+  });
 
   final String deviceLanguageCode;
+  final DeviceSpeechRecognitionService recognitionService;
 
   @override
   State<_CreatorPage> createState() => _CreatorPageState();
@@ -2191,13 +2212,15 @@ class _CreatorPageState extends State<_CreatorPage> {
   static const _termsAcceptedKey = 'creator_terms_accepted_v1';
 
   final _draftController = TextEditingController();
-  final _speechService = DeviceSpeechRecognitionService();
   final _ttsService = SystemTtsService();
   bool _loadingTerms = true;
   bool _termsAccepted = false;
   bool _termsRead = false;
   String _dictationPrefix = '';
   String? _notice;
+
+  DeviceSpeechRecognitionService get _speechService =>
+      widget.recognitionService;
 
   @override
   void initState() {
@@ -2275,7 +2298,6 @@ class _CreatorPageState extends State<_CreatorPage> {
   @override
   void dispose() {
     _speechService.removeListener(_refresh);
-    _speechService.dispose();
     _ttsService.removeListener(_refresh);
     _ttsService.stop();
     _draftController.dispose();
