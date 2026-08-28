@@ -946,24 +946,31 @@ class _DialoguePanelState extends State<_DialoguePanel> {
       }
       return;
     }
+    final preferences = context.read<LanguagePreferences>();
+    final sourceLanguage = _sourceUsesDeviceLanguage
+        ? preferences.deviceLanguageCode
+        : _leftTargetLanguage;
     try {
       await _recognitionService.cancelAndWait();
       await _speechService.stop();
-    if (!mounted) return;
-    _beginFreshDialogueIfNeeded();
-    await _recognitionService.start(
-      languageCode: sourceLanguage,
-      onText: (recognizedText) {
-        if (!mounted) return;
-        _source.text = recognizedText;
-        _queueTranslation(
-          recognizedText,
-          sourceLanguageCode: sourceLanguage,
-        );
-      },
-    );
-    if (mounted && _recognitionService.message != null) {
-      setState(() => _notice = _recognitionService.message);
+      if (!mounted) return;
+      _beginFreshDialogueIfNeeded();
+      await _recognitionService.start(
+        languageCode: sourceLanguage,
+        onText: (recognizedText) {
+          if (!mounted) return;
+          _source.text = recognizedText;
+          _queueTranslation(
+            recognizedText,
+            sourceLanguageCode: sourceLanguage,
+          );
+        },
+      );
+      if (mounted && _recognitionService.message != null) {
+        setState(() => _notice = _recognitionService.message);
+      }
+    } finally {
+      if (mounted) setState(() {});
     }
   }
 
@@ -3888,3 +3895,31 @@ class _ContactMethodCard extends StatelessWidget {
   }
 }
 
+
+
+class _SectionNotice extends StatelessWidget {
+  const _SectionNotice({required this.title, required this.detail});
+
+  final String title;
+  final String detail;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: RoyalColors.cardBg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: RoyalColors.gold.withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: const TextStyle(color: RoyalColors.gold, fontWeight: FontWeight.bold, fontSize: 15)),
+          const SizedBox(height: 6),
+          Text(detail, style: const TextStyle(color: Colors.white70, fontSize: 13, height: 1.4)),
+        ],
+      ),
+    );
+  }
+}
