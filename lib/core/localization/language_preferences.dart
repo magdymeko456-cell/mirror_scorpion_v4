@@ -1,57 +1,48 @@
+import 'dart:ui';
+
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+/// يحتفظ بلغة هدف الترجمة فقط. لغة مصدر الميكروفون هي لغة الجهاز دائماً،
+/// لذلك لا تحفظ كاختيار منفصل ولا تختلط بلغة واجهة التطبيق.
 class LanguagePreferences extends ChangeNotifier {
-  static const String _sourceLangKey = 'mirror_scorpion_source_lang';
-  static const String _targetLangKey = 'mirror_scorpion_target_lang';
-  static const String _autoDetectKey = 'mirror_scorpion_auto_detect';
+  static const _legacySourceKey = 'mirror_scorpion_translation_source';
+  static const _targetKey = 'mirror_scorpion_translation_target';
 
-  String _sourceLanguage = 'ar';
-  String _targetLanguage = 'en';
-  bool _autoDetect = false;
+  LanguagePreferences({Locale? deviceLocale})
+      : _deviceLocale = deviceLocale ?? PlatformDispatcher.instance.locale;
 
-  String get sourceLanguage => _sourceLanguage;
-  String get targetLanguage => _targetLanguage;
-  bool get autoDetect => _autoDetect;
+  final Locale _deviceLocale;
+  late SharedPreferences _preferences;
+  late String _targetLanguage = 'en';
+
+  Locale get deviceLocale => _deviceLocale;
+  String get deviceLanguageCode => _deviceLocale.languageCode.toLowerCase();
+  String get translationSourceLanguage => deviceLanguageCode;
+  String get translationTargetLanguage => _targetLanguage;
+  String get storyLanguageCode => deviceLanguageCode;
 
   Future<void> initialize() async {
-    final prefs = await SharedPreferences.getInstance();
-    _sourceLanguage = prefs.getString(_sourceLangKey) ?? 'ar';
-    _targetLanguage = prefs.getString(_targetLangKey) ?? 'en';
-    _autoDetect = prefs.getBool(_autoDetectKey) ?? false;
+    _preferences = await SharedPreferences.getInstance();
+    await _preferences.remove(_legacySourceKey);
+    _targetLanguage = _preferences.getString(_targetKey) ?? 'en';
+  }
+
+  @Deprecated('لغة مصدر المايك هي لغة الجهاز دائماً.')
+  Future<void> setTranslationSourceLanguage(String code) async {
+    await _preferences.remove(_legacySourceKey);
     notifyListeners();
   }
 
-  Future<void> setSourceLanguage(String code) async {
-    if (_sourceLanguage == code) return;
-    _sourceLanguage = code;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_sourceLangKey, code);
+  Future<void> setTranslationTargetLanguage(String code) async {
+    _targetLanguage = code.toLowerCase();
+    await _preferences.setString(_targetKey, _targetLanguage);
     notifyListeners();
   }
 
-  Future<void> setTargetLanguage(String code) async {
-    if (_targetLanguage == code) return;
-    _targetLanguage = code;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_targetLangKey, code);
-    notifyListeners();
-  }
-
-  Future<void> swapLanguages() async {
-    final temp = _sourceLanguage;
-    _sourceLanguage = _targetLanguage;
-    _targetLanguage = temp;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_sourceLangKey, _sourceLanguage);
-    await prefs.setString(_targetLangKey, _targetLanguage);
-    notifyListeners();
-  }
-
-  Future<void> setAutoDetect(bool enabled) async {
-    _autoDetect = enabled;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_autoDetectKey, enabled);
+  @Deprecated('لا يمكن تبديل لغة جهاز المايك مع لغة الترجمة.')
+  Future<void> swapTranslationLanguages() async {
+    await _preferences.remove(_legacySourceKey);
     notifyListeners();
   }
 }
