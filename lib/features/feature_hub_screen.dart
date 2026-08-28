@@ -916,12 +916,8 @@ class _DialoguePanelState extends State<_DialoguePanel> {
       _notice = 'جارٍ إنهاء جلسة المايك السابقة قبل تبديل اللغة…';
     });
     try {
-      if (!await _recognitionService.cancelAndWait()) {
-        if (mounted && _recognitionService.message != null) {
-          setState(() => _notice = _recognitionService.message);
-        }
-        return;
-      }
+    try {
+      await _recognitionService.cancelAndWait();
       await _speechService.stop();
       if (!mounted) return;
       final deviceLanguage = context.read<LanguagePreferences>().deviceLanguageCode;
@@ -951,18 +947,9 @@ class _DialoguePanelState extends State<_DialoguePanel> {
       }
       return;
     }
-    if (!await _recognitionService.cancelAndWait()) {
-      if (mounted && _recognitionService.message != null) {
-        setState(() => _notice = _recognitionService.message);
-      }
-      return;
-    }
-    if (!mounted) return;
-    final deviceLanguage = context.read<LanguagePreferences>().deviceLanguageCode;
-    final sourceLanguage = _sourceUsesDeviceLanguage
-        ? deviceLanguage
-        : _leftTargetLanguage;
-    await _speechService.stop();
+    try {
+      await _recognitionService.cancelAndWait();
+      await _speechService.stop();
     if (!mounted) return;
     _beginFreshDialogueIfNeeded();
     await _recognitionService.start(
