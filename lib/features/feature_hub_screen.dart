@@ -916,7 +916,6 @@ class _DialoguePanelState extends State<_DialoguePanel> {
       _notice = 'جارٍ إنهاء جلسة المايك السابقة قبل تبديل اللغة…';
     });
     try {
-    try {
       await _recognitionService.cancelAndWait();
       await _speechService.stop();
       if (!mounted) return;
