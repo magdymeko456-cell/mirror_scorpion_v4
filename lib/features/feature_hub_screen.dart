@@ -3889,29 +3889,3 @@ class _ContactMethodCard extends StatelessWidget {
   }
 }
 
-class _SectionNotice extends StatelessWidget {
-  const _SectionNotice({required this.title, required this.detail});
-
-  final String title;
-  final String detail;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: RoyalColors.surface,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: RoyalColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
-          const SizedBox(height: 6),
-          Text(detail, style: const TextStyle(color: RoyalColors.muted, height: 1.55)),
-        ],
-      ),
-    );
-  }
-}
