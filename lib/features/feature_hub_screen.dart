@@ -3908,9 +3908,9 @@ class _SectionNotice extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: RoyalColors.cardBg,
+        color: RoyalColors.border,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: RoyalColors.gold.withOpacity(0.3)),
+        border: Border.all(color: RoyalColors.gold.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
