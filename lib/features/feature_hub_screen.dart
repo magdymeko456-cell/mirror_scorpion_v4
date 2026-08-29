@@ -913,24 +913,23 @@ class _DialoguePanelState extends State<_DialoguePanel> {
     if (_isChangingSpeaker) return;
     setState(() {
       _isChangingSpeaker = true;
-      _notice = 'جارٍ إنهاء جلسة المايك السابقة قبل تبديل اللغة…';
+      _notice = 'جارٍ إنهاء جلسة المايك السابقة وتحديث لغة المتحدث…';
     });
     try {
       await _recognitionService.cancelAndWait();
       await _speechService.stop();
       if (!mounted) return;
-      final deviceLanguage = context.read<LanguagePreferences>().deviceLanguageCode;
-      final nextSourceLanguage = _sourceUsesDeviceLanguage
-          ? _leftTargetLanguage
-          : deviceLanguage;
+
       setState(() {
         _sourceUsesDeviceLanguage = !_sourceUsesDeviceLanguage;
         _source.clear();
         _translated.clear();
         _hasCompletedDialogueTranslation = false;
         _isTranslating = false;
-        _notice = 'تبدّل المتحدث. لغة المايك الآن: '
-            '${TranslationLanguageCatalog.labels[nextSourceLanguage] ?? nextSourceLanguage}.';
+
+        final deviceLanguage = context.read<LanguagePreferences>().deviceLanguageCode;
+        final currentSourceLang = _sourceUsesDeviceLanguage ? deviceLanguage : _leftTargetLanguage;
+        _notice = 'تبدّل المتحدث. لغة المايك الآن: ${TranslationLanguageCatalog.labels[currentSourceLang] ?? currentSourceLang}.';
       });
     } finally {
       if (mounted) setState(() => _isChangingSpeaker = false);
@@ -946,16 +945,20 @@ class _DialoguePanelState extends State<_DialoguePanel> {
       }
       return;
     }
-    final preferences = context.read<LanguagePreferences>();
-    final sourceLanguage = _sourceUsesDeviceLanguage
-        ? preferences.deviceLanguageCode
-        : _leftTargetLanguage;
+
     try {
       await _recognitionService.cancelAndWait();
       await _speechService.stop();
       if (!mounted) return;
+
       _beginFreshDialogueIfNeeded();
-      await _recognitionService.start(
+
+      final preferences = context.read<LanguagePreferences>();
+      final sourceLanguage = _sourceUsesDeviceLanguage
+          ? preferences.deviceLanguageCode
+          : _leftTargetLanguage;
+
+      final started = await _recognitionService.start(
         languageCode: sourceLanguage,
         onText: (recognizedText) {
           if (!mounted) return;
@@ -966,15 +969,18 @@ class _DialoguePanelState extends State<_DialoguePanel> {
           );
         },
       );
-      if (mounted && _recognitionService.message != null) {
+
+      if (mounted) {
         setState(() => _notice = _recognitionService.message);
       }
-    } finally {
-      if (mounted) setState(() {});
+    } catch (e) {
+      if (mounted) {
+        setState(() => _notice = 'تعذر تشغيل المايك: $e');
+      }
     }
   }
 
-  void _queueTranslation(String value, {String? sourceLanguageCode}) {
+    void _queueTranslation(String value, {String? sourceLanguageCode}) {
     _translationDebounce?.cancel();
     if (value.trim().isEmpty) {
       setState(() {
