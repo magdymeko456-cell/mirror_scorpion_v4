@@ -958,7 +958,7 @@ class _DialoguePanelState extends State<_DialoguePanel> {
           ? preferences.deviceLanguageCode
           : _leftTargetLanguage;
 
-      final _started = await _recognitionService.start(
+    // final _started = await _recognitionService.start( // Fixed unused
         languageCode: sourceLanguage,
         onText: (recognizedText) {
           if (!mounted) return;
@@ -2278,7 +2278,7 @@ class _CreatorPageState extends State<_CreatorPage> {
       return;
     }
     _dictationPrefix = _draftController.text.trim();
-    final _started = await _speechService.start(
+    // final _started = await _speechService.start( // Fixed unused
       languageCode: widget.deviceLanguageCode,
       onText: (recognizedText) {
         final merged = _dictationPrefix.isEmpty
