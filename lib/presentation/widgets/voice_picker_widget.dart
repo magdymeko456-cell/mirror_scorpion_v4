@@ -14,10 +14,10 @@ class VoicePickerWidget extends StatelessWidget {
       padding: const EdgeInsets.all(16.0),
       decoration: BoxDecoration(
         color: Colors.black// ignore: deprecated_member_use
-    .withOpacity(0.6),
+    .withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(16.0),
         border: Border.all(color: Colors.amber// ignore: deprecated_member_use
-    .withOpacity(0.3)),
+    .withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

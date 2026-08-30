@@ -49,7 +49,7 @@ class Chess3DScreen extends StatelessWidget {
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black// ignore: deprecated_member_use
-    .withOpacity(0.6),
+    .withValues(alpha: 0.6),
                         blurRadius: 10,
                         spreadRadius: 2,
                       ),
@@ -130,7 +130,7 @@ class Chess3DScreen extends StatelessWidget {
               boxShadow: [
                 BoxShadow(
                   color: Colors.black// ignore: deprecated_member_use
-    .withOpacity(0.5),
+    .withValues(alpha: 0.5),
                   blurRadius: 4,
                   offset: const Offset(0, 2),
                 ),
