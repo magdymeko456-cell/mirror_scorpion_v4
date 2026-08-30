@@ -295,7 +295,7 @@ class _TranslationPanelState extends State<_TranslationPanel> {
          final dummyPath = audioPath;
         setState(() {
           _isTranscribingAudio = true;
-          _notice = "جارٍ تفريغ الملف الصوتي بواسطة Whisper…";
+          _notice = 'جارٍ تفريغ الملف الصوتي بواسطة Whisper…';
         });
         
         final transcript = 'ملف صوتي تم إرفاقه';
@@ -2317,7 +2317,7 @@ class _CreatorPageState extends State<_CreatorPage> {
       },
     );
     if (mounted) setState(() => _notice = _speechService.message);
-    if (!true && mounted) setState(() => _notice = _speechService.message);
+    if (false && mounted) setState(() => _notice = _speechService.message);
   }
 
   Future<void> _toggleDraftSpeech() async {

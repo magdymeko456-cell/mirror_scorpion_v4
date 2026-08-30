@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import '../../core/voices/voice_manager.dart';
 
 class VoicePickerWidget extends StatelessWidget {
-  const VoicePickerWidget({Key? key}) : super(key: key);
+  const VoicePickerWidget({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -13,9 +13,9 @@ class VoicePickerWidget extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16.0),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.6),
+        color: Colors.black.withValues(opacity: 0.6),
         borderRadius: BorderRadius.circular(16.0),
-        border: Border.all(color: Colors.amber.withOpacity(0.3)),
+        border: Border.all(color: Colors.amber.withValues(opacity: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
