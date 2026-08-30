@@ -447,7 +447,7 @@ class _TranslationPanelState extends State<_TranslationPanel> {
         text: _output.text,
         languageCode: _lastOutputLanguage,
         profile: _speechService.selectedProfile,
-        selectedVoice: _speechService.selectedVoice,
+        selectedVoice: _speechService.selectedVoice, // الأصوات النشطة: تامر، سيف، سلمى، سما، سارة
       );
       if (!mounted) return;
       audioFile = exported.audioFile;
