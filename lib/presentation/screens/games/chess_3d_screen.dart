@@ -116,7 +116,7 @@ class Chess3DScreen extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         InkWell(
-          onPress: onPressed,
+          onPressed: onPressed,
           child: Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(

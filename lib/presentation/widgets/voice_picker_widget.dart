@@ -62,7 +62,7 @@ class VoicePickerWidget extends StatelessWidget {
                   ? const Icon(Icons.lock, color: Colors.amberAccent, size: 20)
                   : (profile.isPaidOnly ? const Icon(Icons.star, color: Colors.amber, size: 20) : null),
             );
-          }).toList(),
+          }),
         ],
       ),
     );
