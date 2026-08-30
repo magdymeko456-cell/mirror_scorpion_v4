@@ -71,7 +71,7 @@ class _Chess3DScreenState extends State<Chess3DScreen> {
                       color: isDark ? const Color(0xFF0F2C2A) : const Color(0xFF2E5A56),
                       child: Center(
                         child: Text(
-                          '${row},${col}',
+                          '$row,$col',
                           style: TextStyle(color: Colors.white.withValues(alpha: 0.2), fontSize: 10),
                         ),
                       ),
