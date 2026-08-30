@@ -288,27 +288,11 @@ class _TranslationPanelState extends State<_TranslationPanel> {
         allowedExtensions: AudioTranscriberService.supportedExtensions.toList()..sort(),
         withData: false,
       );
-
-      if (selection != null && selection.files.single.path != null) {
-        final String audioPath = selection.files.single.path!;
-        setState(() {
-          _isTranscribingAudio = true;
-          _notice = "جارٍ تفريغ الملف الصوتي بواسطة Whisper…";
-        });
-        
-        final transcript = await _whisperService.transcribeAudio(audioPath);
-        
-        if (mounted) {
-          setState(() {
-            _input.text = transcript;
-            _isTranscribingAudio = false;
-            _notice = null;
-          });
-          _queueTranslation(transcript, sourceLanguageCode: sourceLanguage);
-        }
-      }
     
-
+    if (result != null && result.files.single.path != null) {
+      final String path = result.files.single.path!;
+      await _whisperService.transcribeAudio(path);
+    }
 } on PlatformException catch (error) {
       if (mounted) setState(() => _notice = 'تعذر فتح منتقي ملفات Android: ${error.code}.');
       return;
@@ -436,7 +420,10 @@ class _TranslationPanelState extends State<_TranslationPanel> {
       setState(() => _notice = 'لا يوجد نص مترجم لإنشاء ملف صوتي.');
       return;
     
-
+    if (result != null && result.files.single.path != null) {
+      final String path = result.files.single.path!;
+      await _whisperService.transcribeAudio(path);
+    }
 }
     var audioFile = _translatedAudioFile;
     if (audioFile == null) {
