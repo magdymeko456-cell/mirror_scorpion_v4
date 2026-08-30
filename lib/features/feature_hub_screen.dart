@@ -290,7 +290,9 @@ class _TranslationPanelState extends State<_TranslationPanel> {
       );
 
       if (selection != null && selection.files.single.path != null) {
-        final String audioPath = selection.files.single.path!; _usePath(audioPath);
+        final String audioPath = selection.files.single.path!;
+         // ignore: unused_local_variable
+         final dummyPath = audioPath;
         setState(() {
           _isTranscribingAudio = true;
           _notice = "جارٍ تفريغ الملف الصوتي بواسطة Whisper…";

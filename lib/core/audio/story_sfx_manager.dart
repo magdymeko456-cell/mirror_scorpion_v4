@@ -7,5 +7,5 @@ class StorySfxManager {
 
   Future<void> playSfx(String sfxName) async {}
   Future<void> playEffect(String effectName) async {}
-  Future<void> stopEffect(String effectName) async {}
+  Future<void> stopEffect([String? effectName]) async {}
 }
