@@ -511,7 +511,7 @@ class _TranslationPanelState extends State<_TranslationPanel> {
     _translationDebounce = Timer(const Duration(milliseconds: 650), () {
       _translateLocally(
         value,
-        sourceLanguageCode: 'ar'Code,
+        sourceLanguageCode: 'ar',
         targetLanguageCode: targetLanguageCode,
       );
     });
@@ -533,7 +533,7 @@ class _TranslationPanelState extends State<_TranslationPanel> {
     final result = await _translationService.translate(
       text: value,
       targetLanguageCode: targetLanguage,
-      sourceLanguageCode: 'ar'Code,
+      sourceLanguageCode: 'ar',
       onProgress: (progress) {
         if (mounted && value.trim() == _input.text.trim()) {
           setState(() => _notice = _translationProgressMessage(progress));
@@ -1016,7 +1016,7 @@ class _DialoguePanelState extends State<_DialoguePanel> {
       return;
     }
     _translationDebounce = Timer(const Duration(milliseconds: 650), () {
-      _translateDialogue(value, sourceLanguageCode: 'ar'Code);
+      _translateDialogue(value, sourceLanguageCode: 'ar');
     });
   }
 
