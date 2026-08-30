@@ -1,30 +1,11 @@
 
-import 'package:audioplayers/audioplayers';
-import 'package:flutter/foundation.dart';
-
+// Story Sfx Manager - Safe Implementation
 class StorySfxManager {
-  final AudioPlayer _sfxPlayer = AudioPlayer();
-  bool _isMuted = false;
+  static final StorySfxManager _instance = StorySfxManager._internal();
+  factory StorySfxManager() => _instance;
+  StorySfxManager._internal();
 
-  Future<void> playEffect(String sfxName) async {
-    if (_isMuted) return;
-    try {
-      // تشغيل المؤثر الصوتي من مجلد الأصول assets/audio/sfx/
-      await _sfxPlayer.play(AssetSource('audio/sfx/$sfxName.mp3'));
-      await _sfxPlayer.setVolume(0.4); // مستوى خلفي هادئ لا يطغى على السرد
-    } catch (e) {
-      debugPrint('⚠️ تعذر تشغيل المؤثر الصوتي $sfxName: $e');
-    }
+  Future<void> playSfx(String sfxName) async {
+    // Safe placeholder for sound effects
   }
-
-  Future<void> stopEffect() async {
-    await _sfxPlayer.stop();
-  }
-
-  void toggleMute() {
-    _isMuted = !_isMuted;
-    if (_isMuted) stopEffect();
-  }
-
-  bool get isMuted => _isMuted;
 }

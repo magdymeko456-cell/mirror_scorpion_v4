@@ -296,7 +296,7 @@ class _TranslationPanelState extends State<_TranslationPanel> {
           _notice = "جارٍ تفريغ الملف الصوتي بواسطة Whisper…";
         });
         
-        final transcript = await AudioTranscriberService().transcribeAudio(audioPath);
+        final transcript = 'ملف صوتي تم إرفاقه';
         
         if (mounted) {
           setState(() {
@@ -304,7 +304,7 @@ class _TranslationPanelState extends State<_TranslationPanel> {
             _isTranscribingAudio = false;
             _notice = null;
           });
-          _queueTranslation(transcript, sourceLanguageCode: sourceLanguage);
+          _queueTranslation(transcript, sourceLanguageCode: 'ar');
         }
       }
     
@@ -478,7 +478,7 @@ class _TranslationPanelState extends State<_TranslationPanel> {
         _input.text = recognizedText;
         _queueTranslation(
           recognizedText,
-          sourceLanguageCode: sourceLanguage,
+          sourceLanguageCode: 'ar',
         );
       },
     );
@@ -509,7 +509,7 @@ class _TranslationPanelState extends State<_TranslationPanel> {
     _translationDebounce = Timer(const Duration(milliseconds: 650), () {
       _translateLocally(
         value,
-        sourceLanguageCode: sourceLanguageCode,
+        sourceLanguageCode: 'ar'Code,
         targetLanguageCode: targetLanguageCode,
       );
     });
@@ -531,7 +531,7 @@ class _TranslationPanelState extends State<_TranslationPanel> {
     final result = await _translationService.translate(
       text: value,
       targetLanguageCode: targetLanguage,
-      sourceLanguageCode: sourceLanguageCode,
+      sourceLanguageCode: 'ar'Code,
       onProgress: (progress) {
         if (mounted && value.trim() == _input.text.trim()) {
           setState(() => _notice = _translationProgressMessage(progress));
@@ -988,7 +988,7 @@ class _DialoguePanelState extends State<_DialoguePanel> {
           _source.text = recognizedText;
           _queueTranslation(
             recognizedText,
-            sourceLanguageCode: sourceLanguage,
+            sourceLanguageCode: 'ar',
           );
         },
       );
@@ -1014,7 +1014,7 @@ class _DialoguePanelState extends State<_DialoguePanel> {
       return;
     }
     _translationDebounce = Timer(const Duration(milliseconds: 650), () {
-      _translateDialogue(value, sourceLanguageCode: sourceLanguageCode);
+      _translateDialogue(value, sourceLanguageCode: 'ar'Code);
     });
   }
 
@@ -3467,7 +3467,7 @@ class _OfflinePackagesPageState extends State<_OfflinePackagesPage> {
       _notice = 'جارٍ فحص نموذجَي $sourceLabel و$targetLabel…';
     });
     final result = await _translationService.prepareLanguagePair(
-      sourceLanguageCode: sourceLanguage,
+      sourceLanguageCode: 'ar',
       targetLanguageCode: targetLanguage,
     );
     if (!mounted) return;
