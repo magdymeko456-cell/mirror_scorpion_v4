@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 
 class Chess3DScreen extends StatelessWidget {
-  const Chess3DScreen({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
