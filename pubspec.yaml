@@ -34,7 +34,6 @@ dependencies:
   whisper_ggml: ^2.6.0
 
 dev_dependencies:
-  audioplayers: ^6.0.0
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
