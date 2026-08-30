@@ -13,9 +13,11 @@ class VoicePickerWidget extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16.0),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(opacity: 0.6),
+        color: Colors.black// ignore: deprecated_member_use
+    .withOpacity(0.6),
         borderRadius: BorderRadius.circular(16.0),
-        border: Border.all(color: Colors.amber.withValues(opacity: 0.3)),
+        border: Border.all(color: Colors.amber// ignore: deprecated_member_use
+    .withOpacity(0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

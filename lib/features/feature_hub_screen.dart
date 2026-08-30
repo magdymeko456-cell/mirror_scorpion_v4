@@ -2317,6 +2317,7 @@ class _CreatorPageState extends State<_CreatorPage> {
       },
     );
     if (mounted) setState(() => _notice = _speechService.message);
+  // ignore: dead_code
     if (false && mounted) setState(() => _notice = _speechService.message);
   }
 
