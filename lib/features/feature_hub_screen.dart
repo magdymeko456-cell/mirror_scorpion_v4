@@ -2292,7 +2292,6 @@ class _CreatorPageState extends State<_CreatorPage> {
       },
     );
     if (mounted) setState(() => _notice = _speechService.message);
-    if (!started && mounted) setState(() => _notice = _speechService.message);
   }
 
   Future<void> _toggleDraftSpeech() async {
