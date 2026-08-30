@@ -1,4 +1,9 @@
-import 'package:flutter/material.dart';
+import os
+
+path = "lib/presentation/widgets/voice_picker_widget.dart"
+os.makedirs(os.path.dirname(path), exist_ok=True)
+
+code = """import 'package:flutter/material.dart';
 
 class VoicePickerWidget extends StatelessWidget {
   final String selectedVoice;
@@ -49,3 +54,8 @@ class VoicePickerWidget extends StatelessWidget {
     );
   }
 }
+"""
+
+with open(path, "w", encoding="utf-8") as f:
+    f.write(code)
+print("✅ تم تحديث نظام الأصوات والمايك بنجاح جذري.")

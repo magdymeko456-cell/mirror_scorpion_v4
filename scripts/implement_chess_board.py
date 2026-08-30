@@ -1,4 +1,9 @@
-import 'package:flutter/material.dart';
+import os
+
+path = "lib/presentation/screens/games/chess_3d_screen.dart"
+os.makedirs(os.path.dirname(path), exist_ok=True)
+
+code = """import 'package:flutter/material.dart';
 import 'package:chess/chess.dart' as chess_lib;
 
 class Chess3DScreen extends StatefulWidget {
@@ -93,3 +98,8 @@ class _Chess3DScreenState extends State<Chess3DScreen> {
     );
   }
 }
+"""
+
+with open(path, "w", encoding="utf-8") as f:
+    f.write(code)
+print("✅ تم تحديث شاشة الشطرنج بذكاء ومنطق اللعبة الحقيقي.")
