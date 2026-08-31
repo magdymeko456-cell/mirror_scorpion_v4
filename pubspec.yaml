@@ -19,7 +19,7 @@ dependencies:
   google_mlkit_translation: ^0.15.1
   google_mlkit_text_recognition: ^0.17.1
   image_picker: ^1.2.3
-  file_picker: 10.3.8
+  file_picker: ^12.1.2
   path_provider: ^2.1.5
   chess: ^0.8.1
   flutter_tts: ^4.2.5
@@ -28,15 +28,15 @@ dependencies:
   pdf: ^3.13.0
   printing: ^5.15.0
   flutter_overlay_window: ^0.5.0
-  receive_sharing_intent: 1.8.1
+  receive_sharing_intent: ^1.9.0
   flutter_svg: ^2.2.3
-  share_plus: ^10.1.4
+  share_plus: ^13.3.0
   whisper_ggml: ^2.6.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^5.0.0
+  flutter_lints: ^6.0.0
   flutter_launcher_icons: ^0.14.4
 
 flutter_launcher_icons:
