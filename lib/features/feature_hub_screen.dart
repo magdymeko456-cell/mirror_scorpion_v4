@@ -1,3 +1,4 @@
+import '../audio/voice_selection_sheet.dart';
 import 'dart:async';
 import 'dart:convert';
 
@@ -462,6 +463,7 @@ class _TranslationPanelState extends State<_TranslationPanel> {
   }
 
   Future<void> _toggleMicrophone() async {
+    setState(() => _notice = 'جارٍ تفعيل المايك واستماع الصوت...');
     if (_recognitionService.isListening) {
       await _recognitionService.stop();
       if (mounted && _recognitionService.message != null) {
@@ -658,7 +660,18 @@ return ListView(
           actionsOnRight: true,
           actions: [
             _EditorAction(icon: _speechService.isSpeaking ? Icons.stop_circle_outlined : Icons.volume_up, tooltip: _speechService.isSpeaking ? 'إيقاف النطق' : 'نطق الترجمة بصوت النظام', onPressed: _speakTranslation),
-            _EditorAction(icon: Icons.ios_share, tooltip: 'إنشاء ومشاركة ملف WAV للنص المترجم', onPressed: _exportAndShareTranslatedAudio),
+            _EditorAction(
+                    icon: Icons.record_voice_over,
+                    tooltip: 'اختيار الأصوات الخمسة (تامر، سيف، سلمى، سما، سارة)',
+                    onPressed: () {
+                      showModalBottomSheet(
+                        context: context,
+                        backgroundColor: Colors.transparent,
+                        builder: (_) => VoiceSelectionSheet(voiceService: _speechService),
+                      );
+                    },
+                  ),
+                  _EditorAction(icon: Icons.ios_share, tooltip: 'إنشاء ومشاركة ملف WAV للنص المترجم', onPressed: _exportAndShareTranslatedAudio),
             _EditorAction(icon: Icons.copy, tooltip: 'نسخ الترجمة', onPressed: () async {
               if (_output.text.isEmpty) {
                 if (context.mounted) {
@@ -962,6 +975,7 @@ class _DialoguePanelState extends State<_DialoguePanel> {
   }
 
   Future<void> _toggleMicrophone() async {
+    setState(() => _notice = 'جارٍ تفعيل المايك واستماع الصوت...');
     if (_isChangingSpeaker) return;
     if (_recognitionService.isListening) {
       await _recognitionService.stop();
