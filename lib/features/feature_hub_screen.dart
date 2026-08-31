@@ -1,3 +1,4 @@
+import '../core/services/voice_selection_service.dart';
 import 'audio/voice_selection_sheet.dart';
 import 'dart:async';
 import 'dart:convert';
@@ -667,7 +668,9 @@ return ListView(
                       showModalBottomSheet(
                         context: context,
                         backgroundColor: Colors.transparent,
-                        builder: (_) => VoiceSelectionSheet(voiceService: _speechService),
+                        builder: (_) => VoiceSelectionSheet(
+                        voiceService: VoiceSelectionService()..initialize(),
+                      ),
                       );
                     },
                   ),
