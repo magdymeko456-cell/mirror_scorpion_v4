@@ -1,3 +1,4 @@
+import 'package:mirror_scorpion/core/speech/system_tts_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mirror_scorpion_v4/core/localization/language_preferences.dart';
@@ -7,7 +8,7 @@ import 'package:provider/provider.dart';
 
 void main() {
   testWidgets('dialogue feature opens with the app recognition lifecycle', (tester) async {
-    await tester.pumpWidget(
+    await tester.pumpWidget(ChangeNotifierProvider<SystemTtsService>(create: (_) => SystemTtsService(), child: 
       MultiProvider(
         providers: [
           ChangeNotifierProvider(
@@ -19,7 +20,7 @@ void main() {
           home: FeatureHubScreen(kind: FeatureKind.dialogue),
         ),
       ),
-    );
+    ));
 
     expect(find.text('المحرر العلوي — المتحدث بلغة الجهاز'), findsOneWidget);
     expect(find.byTooltip('تبديل المتحدث ولغة المايك'), findsOneWidget);
