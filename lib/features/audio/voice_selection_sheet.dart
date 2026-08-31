@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/services/voice_selection_service.dart';
 
 class VoiceSelectionSheet extends StatelessWidget {
-  final VoiceSelectionService voiceService;
+  final dynamic voiceService;
 
   const VoiceSelectionSheet({super.key, required this.voiceService});
 
