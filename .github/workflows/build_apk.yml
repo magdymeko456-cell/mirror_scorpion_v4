@@ -249,6 +249,10 @@ jobs:
       - name: Configure PDF text extraction R8 rule
         run: |
           cat > android/app/mirror-scorpion-pdf-r8.pro <<'EOF'
+          # Release hardening: R8 obfuscation/shrinking is enabled below.
+          # Keep Flutter's generated registrant and plugin entry points discoverable.
+          -keep class io.flutter.** { *; }
+          -keep class **.GeneratedPluginRegistrant { *; }
           # PDFBox references an optional JPX decoder. Text extraction does not package it.
           -dontwarn com.gemalto.jp2.**
           EOF
@@ -258,7 +262,12 @@ jobs:
           android {
               buildTypes {
                   getByName("release") {
-                      proguardFiles("mirror-scorpion-pdf-r8.pro")
+                      isMinifyEnabled = true
+                      isShrinkResources = true
+                      proguardFiles(
+                          getDefaultProguardFile("proguard-android-optimize.txt"),
+                          "mirror-scorpion-pdf-r8.pro",
+                      )
                   }
               }
           }
@@ -269,7 +278,9 @@ jobs:
           android {
               buildTypes {
                   release {
-                      proguardFiles 'mirror-scorpion-pdf-r8.pro'
+                      minifyEnabled true
+                      shrinkResources true
+                      proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'mirror-scorpion-pdf-r8.pro'
                   }
               }
           }

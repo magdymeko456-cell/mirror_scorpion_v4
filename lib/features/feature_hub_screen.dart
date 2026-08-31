@@ -134,7 +134,7 @@ class _TranslationPanelState extends State<_TranslationPanel> {
   final _input = TextEditingController();
   final _output = TextEditingController();
   final _translationService = const OnDeviceTranslationService();
-  final _speechService = SystemTtsService();
+  late final SystemTtsService _speechService;
   final _capabilityService = DeviceCapabilityService();
   final _modelInstaller = WhisperModelInstaller();
   final _audioTranscriber = AudioTranscriberService();
@@ -159,8 +159,8 @@ class _TranslationPanelState extends State<_TranslationPanel> {
   @override
   void initState() {
     super.initState();
+    _speechService = context.read<SystemTtsService>();
     _speechService.addListener(_onSpeechChanged);
-    _speechService.initialize();
     _recognitionService.addListener(_onSpeechChanged);
   }
 
@@ -290,28 +290,6 @@ class _TranslationPanelState extends State<_TranslationPanel> {
         allowedExtensions: AudioTranscriberService.supportedExtensions.toList()..sort(),
         withData: false,
       );
-
-      if (selection != null && selection.files.single.path != null) {
-        final String audioPath = selection.files.single.path!;
-         // ignore: unused_local_variable
-         final dummyPath = audioPath;
-        setState(() {
-          _isTranscribingAudio = true;
-          _notice = 'جارٍ تفريغ الملف الصوتي بواسطة Whisper…';
-        });
-        
-        final transcript = 'ملف صوتي تم إرفاقه';
-        
-        if (mounted) {
-          setState(() {
-            _input.text = transcript;
-            _isTranscribingAudio = false;
-            _notice = null;
-          });
-          _queueTranslation(transcript, sourceLanguageCode: 'ar');
-        }
-      }
-    
 
 } on PlatformException catch (error) {
       if (mounted) setState(() => _notice = 'تعذر فتح منتقي ملفات Android: ${error.code}.');
@@ -483,7 +461,7 @@ class _TranslationPanelState extends State<_TranslationPanel> {
         _input.text = recognizedText;
         _queueTranslation(
           recognizedText,
-          sourceLanguageCode: 'ar',
+          sourceLanguageCode: sourceLanguage,
         );
       },
     );
@@ -514,7 +492,7 @@ class _TranslationPanelState extends State<_TranslationPanel> {
     _translationDebounce = Timer(const Duration(milliseconds: 650), () {
       _translateLocally(
         value,
-        sourceLanguageCode: 'ar',
+        sourceLanguageCode: sourceLanguageCode,
         targetLanguageCode: targetLanguageCode,
       );
     });
@@ -536,7 +514,7 @@ class _TranslationPanelState extends State<_TranslationPanel> {
     final result = await _translationService.translate(
       text: value,
       targetLanguageCode: targetLanguage,
-      sourceLanguageCode: 'ar',
+      sourceLanguageCode: sourceLanguageCode,
       onProgress: (progress) {
         if (mounted && value.trim() == _input.text.trim()) {
           setState(() => _notice = _translationProgressMessage(progress));
@@ -890,7 +868,7 @@ class _DialoguePanelState extends State<_DialoguePanel> {
   final _source = TextEditingController();
   final _translated = TextEditingController();
   final _translationService = const OnDeviceTranslationService();
-  final _speechService = SystemTtsService();
+  late final SystemTtsService _speechService;
   Timer? _translationDebounce;
   String _leftTargetLanguage = 'en';
   String? _notice;
@@ -907,8 +885,8 @@ class _DialoguePanelState extends State<_DialoguePanel> {
   void initState() {
     super.initState();
     _recognitionService.addListener(_onServiceChanged);
+    _speechService = context.read<SystemTtsService>();
     _speechService.addListener(_onServiceChanged);
-    _speechService.initialize();
   }
 
   @override
@@ -952,6 +930,7 @@ class _DialoguePanelState extends State<_DialoguePanel> {
 
   Future<void> _swapDialogueSpeaker() async {
     if (_isChangingSpeaker) return;
+    final shouldResumeMicrophone = _recognitionService.isListening;
     setState(() {
       _isChangingSpeaker = true;
       _notice = 'جارٍ إنهاء جلسة المايك السابقة وتحديث لغة المتحدث…';
@@ -973,52 +952,70 @@ class _DialoguePanelState extends State<_DialoguePanel> {
         _notice = 'تبدّل المتحدث. لغة المايك الآن: ${TranslationLanguageCatalog.labels[currentSourceLang] ?? currentSourceLang}.';
       });
     } finally {
-      if (mounted) setState(() => _isChangingSpeaker = false);
+      if (mounted) {
+        setState(() => _isChangingSpeaker = false);
+        if (shouldResumeMicrophone) {
+          await _startMicrophoneForCurrentSpeaker();
+        }
+      }
     }
   }
 
   Future<void> _toggleMicrophone() async {
-    setState(() => _notice = 'جارٍ تفعيل المايك واستماع الصوت...');
     if (_isChangingSpeaker) return;
     if (_recognitionService.isListening) {
-      await _recognitionService.stop();
+      await _recognitionService.stopAndWait();
       if (mounted && _recognitionService.message != null) {
         setState(() => _notice = _recognitionService.message);
       }
       return;
     }
+    await _startMicrophoneForCurrentSpeaker();
+  }
 
+  Future<void> _startMicrophoneForCurrentSpeaker() async {
+    if (_isChangingSpeaker || !mounted) return;
+    setState(() => _notice = 'جارٍ تفعيل المايك واستماع الصوت...');
     try {
-      await _recognitionService.cancelAndWait();
+      if (!await _recognitionService.cancelAndWait()) return;
       await _speechService.stop();
       if (!mounted) return;
-
       _beginFreshDialogueIfNeeded();
 
       final preferences = context.read<LanguagePreferences>();
       final sourceLanguage = _sourceUsesDeviceLanguage
           ? preferences.deviceLanguageCode
           : _leftTargetLanguage;
-
-      await _recognitionService.start(
+      final started = await _recognitionService.start(
         languageCode: sourceLanguage,
         onText: (recognizedText) {
           if (!mounted) return;
           _source.text = recognizedText;
           _queueTranslation(
             recognizedText,
-            sourceLanguageCode: 'ar',
+            sourceLanguageCode: sourceLanguage,
           );
         },
       );
-
-      if (mounted) {
-        setState(() => _notice = _recognitionService.message);
+      if (!started && mounted) {
+        await Future<void>.delayed(const Duration(milliseconds: 450));
+        if (mounted && !_recognitionService.isListening) {
+          await _recognitionService.start(
+            languageCode: sourceLanguage,
+            onText: (recognizedText) {
+              if (!mounted) return;
+              _source.text = recognizedText;
+              _queueTranslation(
+                recognizedText,
+                sourceLanguageCode: sourceLanguage,
+              );
+            },
+          );
+        }
       }
+      if (mounted) setState(() => _notice = _recognitionService.message);
     } catch (e) {
-      if (mounted) {
-        setState(() => _notice = 'تعذر تشغيل المايك: $e');
-      }
+      if (mounted) setState(() => _notice = 'تعذر تشغيل المايك: $e');
     }
   }
 
@@ -1033,7 +1030,7 @@ class _DialoguePanelState extends State<_DialoguePanel> {
       return;
     }
     _translationDebounce = Timer(const Duration(milliseconds: 650), () {
-      _translateDialogue(value, sourceLanguageCode: 'ar');
+      _translateDialogue(value, sourceLanguageCode: sourceLanguageCode);
     });
   }
 
@@ -3095,6 +3092,53 @@ class _CapturedPiecesPane extends StatelessWidget {
   }
 }
 
+class _SystemVoiceSettingsPage extends StatelessWidget {
+  const _SystemVoiceSettingsPage();
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<SystemTtsService>(
+      builder: (context, service, _) => Scaffold(
+        appBar: AppBar(title: const Text('أصوات الترجمة والحوار')),
+        body: ListView(
+          padding: const EdgeInsets.all(18),
+          children: [
+            const _SectionNotice(
+              title: 'اختيار صوت موحّد',
+              detail: 'ينطبق الاختيار على نطق الترجمة ونطق الحوار والملفات الصوتية التي يستخدمها صوت النظام. الأسماء التالية ملفات أداء محلية؛ الصوت البشري الفعلي يعتمد على محرك Android المثبت.',
+            ),
+            const SizedBox(height: 14),
+            ...SystemVoiceProfile.values.map(
+              (profile) => Card(
+                child: RadioListTile<SystemVoiceProfile>(
+                  value: profile,
+                  groupValue: service.selectedProfile,
+                  title: Text(profile.label),
+                  subtitle: Text(profile.styleDescription),
+                  activeColor: RoyalColors.gold,
+                  onChanged: (value) {
+                    if (value != null) service.selectProfile(value);
+                  },
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Card(
+              child: Padding(
+                padding: EdgeInsets.all(16),
+                child: Text(
+                  'صوت المستخدم المنسوخ يحتاج مسار موافقة وتسجيل وتحقق منفصل. لن يُعرض كصوت فعّال قبل اكتمال هذا المسار، حفاظاً على الخصوصية وعدم الإيحاء بأن ElevenLabs يعمل حالياً.',
+                  style: TextStyle(height: 1.6),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _SettingsPanel extends StatelessWidget {
   const _SettingsPanel();
 
@@ -3129,6 +3173,26 @@ class _SettingsPanel extends StatelessWidget {
               onPressed: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const _ProActivationPage())),
               icon: const Icon(Icons.workspace_premium),
               label: const Text('تفعيل النسخة PRO', style: TextStyle(fontWeight: FontWeight.w800)),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Card(
+            child: ListTile(
+              leading: const Icon(
+                Icons.tune,
+                color: RoyalColors.cyan,
+              ),
+              title: const Text('إعدادات أصوات الترجمة والحوار'),
+              subtitle: const Text(
+                'اختيار ملف أداء محلي مشترك للترجمة والحوار بصوت Android المثبت.',
+              ),
+              trailing: const Icon(Icons.chevron_left),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute<void>(
+                  builder: (_) => const _SystemVoiceSettingsPage(),
+                ),
+              ),
             ),
           ),
           const SizedBox(height: 12),
@@ -3487,7 +3551,7 @@ class _OfflinePackagesPageState extends State<_OfflinePackagesPage> {
       _notice = 'جارٍ فحص نموذجَي $sourceLabel و$targetLabel…';
     });
     final result = await _translationService.prepareLanguagePair(
-      sourceLanguageCode: 'ar',
+      sourceLanguageCode: sourceLanguage,
       targetLanguageCode: targetLanguage,
     );
     if (!mounted) return;
