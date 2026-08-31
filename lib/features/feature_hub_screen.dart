@@ -601,6 +601,9 @@ return ListView(
               tooltip: 'ترجم آخر نص نسخته بعد موافقتك',
               onPressed: _translateClipboardOnce,
             ),
+            buildGoldenProActivationButton(),
+            buildAsbabAnNuzolSection(),
+
           ],
         ),
         if (_notice != null)
@@ -4035,4 +4038,103 @@ class _SectionNotice extends StatelessWidget {
       ),
     );
   }
+
+  // [تم الحقن تلقائياً بواسطة سكربت الأدوات المستقل - P0]
+  Future<void> updateSourceLanguageAndResetMic(String newLanguageCode) async {
+    try {
+      if (_speechToText.isListening) {
+        await _speechToText.stop();
+      }
+      setState(() {
+        currentSourceLanguage = newLanguageCode;
+      });
+      bool available = await _speechToText.initialize(
+        onError: (error) => print('خطأ في الميكروفون: $error'),
+        onStatus: (status) => print('حالة الميكروفون: $status'),
+      );
+      if (available) {
+        print('تم إعادة ضبط الميكروفون بنجاح للغة: $currentSourceLanguage');
+      }
+    } catch (e) {
+      print('خطأ أثناء إعادة ضبط الميكروفون: $e');
+    }
+  }
+
+  Future<void> handleAudioPinSelection() async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.audio,
+      );
+      if (result != null && result.files.single.path != null) {
+        String audioPath = result.files.single.path!;
+        print('جاري معالجة الملف الصوتي عبر Whisper: $audioPath');
+        final whisperService = Provider.of<WhisperService>(context, listen: false);
+        String transcriptionResult = await whisperService.transcribeAudio(audioPath);
+        setState(() {
+          inputController.text = transcriptionResult;
+        });
+      }
+    } catch (e) {
+      print('خطأ في معالجة ملف Whisper الصوتي: $e');
+    }
+  }
+
+
+  // [تم الحقن بواسطة سكربت الأدوات - P2: أسباب النزول]
+  Widget buildAsbabAnNuzolSection() {
+    return Container(
+      padding: const EdgeInsets.all(12.0),
+      margin: const EdgeInsets.symmetric(vertical: 8.0),
+      decoration: BoxDecoration(
+        color: Colors.amber.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.amber, width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: const [
+          Text(
+            '📖 أسباب النزول والآيات المرتبطة',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.amberAccent),
+          ),
+          SizedBox(height: 6),
+          Text(
+            'عرض تفصيلي لسبب نزول الآيات مع المؤثرات الصوتية والترجمة بالصوت المختار.',
+            style: TextStyle(fontSize: 14, color: Colors.white70),
+          ),
+        ],
+      ),
+    );
+  }
+
+
+  // [تم الحقن بواسطة سكربت الأدوات - P2: زر PRO الذهبي]
+  Widget buildGoldenProActivationButton() {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.symmetric(vertical: 10.0),
+      child: ElevatedButton.icon(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.amber,
+          foregroundColor: Colors.black,
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+          elevation: 6,
+          shadowColor: Colors.amberAccent.withOpacity(0.5),
+        ),
+        onPressed: () {
+          print('تم النقر على زر التفعيل الذهبي لنسخة PRO');
+          // تفعيل أو التحقق من الترخيص عبر PremiumVerificationService
+        },
+        icon: const Icon(Icons.workspace_premium, color: Colors.black, size: 24),
+        label: const Text(
+          '👑 تفعيل نسخة PRO الذهبية',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+      ),
+    );
+  }
+
 }

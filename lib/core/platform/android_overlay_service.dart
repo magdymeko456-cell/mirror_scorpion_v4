@@ -390,4 +390,13 @@ class _MirrorScorpionOverlayScreenState
           ],
         ),
       );
+
+  // [تم الحقن بواسطة سكربت الأدوات - P3: الفقاعة العائمة لـ واتساب]
+  Future<void> handleWhatsAppOverlayTranslation(String incomingText) async {
+    if (incomingText.isNotEmpty) {
+      print('[Floating Bubble] جاري ترجمة النص الوارد من واتساب: $incomingText');
+      // منطق التقاط وترجمة النص عبر الفقاعة العائمة
+    }
+  }
+
 }
