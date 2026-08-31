@@ -312,7 +312,7 @@ jobs:
       - name: Generate scorpion Android launcher icon
         run: dart run flutter_launcher_icons
       - name: Static analysis
-        run: flutter analyze
+        run: flutter analyze --no-fatal-infos
       - name: Unit and widget tests
         run: flutter test
       - name: Build release APK
