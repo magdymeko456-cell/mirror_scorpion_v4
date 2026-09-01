@@ -54,7 +54,7 @@ class AudioTranscriberService {
       await source.copy(workFile.path);
       onProgress?.call(AudioTranscriptionStage.transcribing, 0);
       final response = await Whisper(model: WhisperModel.base).transcribe(
-        transcribeRequest: TranscribeRequest(audio: workFile.path, language: 'auto', isNoTimestamps: true, keepModelLoaded: false),
+        transcribeRequest: TranscribeRequest(audio: workFile.path, isNoTimestamps: true, keepModelLoaded: false),
         modelPath: verifiedModelFile.path,
         onProgress: (value) => onProgress?.call(AudioTranscriptionStage.transcribing, value.clamp(0, 100).toInt()),
       );
