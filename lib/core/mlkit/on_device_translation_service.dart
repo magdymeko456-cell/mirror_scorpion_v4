@@ -253,7 +253,7 @@ class OnDeviceTranslationService {
     if (await modelManager.isModelDownloaded(code)) return true;
     for (var attempt = 1; attempt <= 3; attempt++) {
       try {
-        await modelManager.downloadModel(code, requiresWifi: false);
+        await modelManager.downloadModel(code);
       } on PlatformException {
         // أعد المحاولة قبل الاستسلام.
       }
