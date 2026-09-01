@@ -279,6 +279,52 @@ jobs:
             exit 1
           fi
           grep -q -- '-dontwarn com.gemalto.jp2.\*\*' android/app/mirror-scorpion-pdf-r8.pro
+      - name: Enable R8 hardening for release APK
+        run: |
+          cat > android/app/mirror-scorpion-hardening.pro <<'EOF'
+          # Mirror Scorpion v4 release hardening (P2).
+          # JNI: keep every class declaring native methods (Whisper/ML Kit bridges).
+          -keepclasseswithmembernames class * { native <methods>; }
+          # Whisper GGML engine packages (whichever the plugin ships).
+          -keep class com.baseflo.** { *; }
+          -keep class com.whispercpp.** { *; }
+          -keep class com.whispercppggml.** { *; }
+          # Flutter engine embedding.
+          -keep class io.flutter.embedding.** { *; }
+          -dontwarn android.support.**
+          -dontwarn org.slf4j.**
+          EOF
+          if [ -f android/app/build.gradle.kts ]; then
+            cat >> android/app/build.gradle.kts <<'EOF'
+
+          android {
+              buildTypes {
+                  getByName("release") {
+                      isMinifyEnabled = true
+                      isShrinkResources = true
+                      proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "mirror-scorpion-hardening.pro")
+                  }
+              }
+          }
+          EOF
+          elif [ -f android/app/build.gradle ]; then
+            cat >> android/app/build.gradle <<'EOF'
+
+          android {
+              buildTypes {
+                  release {
+                      minifyEnabled true
+                      shrinkResources true
+                      proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'mirror-scorpion-hardening.pro'
+                  }
+              }
+          }
+          EOF
+          else
+            echo "Android app Gradle file was not generated."
+            exit 1
+          fi
+          echo "R8 hardening configured."
       - name: Install dependencies
         run: flutter pub get
       - name: Add local-audio device capability bridge
