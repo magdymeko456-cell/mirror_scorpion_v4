@@ -159,6 +159,14 @@ class _MirrorScorpionOverlayScreen extends StatefulWidget {
 
 class _MirrorScorpionOverlayScreenState
     extends State<_MirrorScorpionOverlayScreen> {
+  static const _overlayLanguages = <String, String>{
+    'ar': 'العربية', 'en': 'English', 'hi': 'हिन्दी', 'fr': 'Français',
+    'es': 'Español', 'de': 'Deutsch', 'tr': 'Türkçe', 'ur': 'اردو',
+    'ru': 'Русский', 'zh': '中文',
+  };
+  String? _selectedFrom;
+  String? _selectedTo;
+
   static const _clipboardBridge = MethodChannel(
     'mirror_scorpion/overlay_clipboard',
   );
@@ -234,9 +242,11 @@ class _MirrorScorpionOverlayScreenState
       _notice = 'جارٍ تحديد اللغة وترجمتها محلياً…';
       _translatedText = null;
     });
-    final targetLanguage = PlatformDispatcher.instance.locale.languageCode;
+    final targetLanguage = _selectedTo ??
+        PlatformDispatcher.instance.locale.languageCode;
     final result = await _translationService.translate(
       text: text,
+      sourceLanguageCode: _selectedFrom,
       targetLanguageCode: targetLanguage,
       onProgress: (progress) {
         if (!mounted) return;
@@ -338,6 +348,55 @@ class _MirrorScorpionOverlayScreenState
                 isDense: true,
                 border: OutlineInputBorder(),
               ),
+            ),
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                Expanded(
+                  child: DropdownButtonFormField<String>(
+                    value: _selectedFrom,
+                    isDense: true,
+                    decoration: const InputDecoration(
+                      labelText: 'من لغة',
+                      isDense: true,
+                      border: OutlineInputBorder(),
+                    ),
+                    items: <DropdownMenuItem<String>>[
+                      const DropdownMenuItem<String>(
+                        child: Text('اكتشاف تلقائي'),
+                      ),
+                      ..._overlayLanguages.entries.map(
+                        (e) => DropdownMenuItem<String>(
+                          value: e.key,
+                          child: Text(e.value),
+                        ),
+                      ),
+                    ],
+                    onChanged: (v) => setState(() => _selectedFrom = v),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: DropdownButtonFormField<String>(
+                    value: _selectedTo,
+                    isDense: true,
+                    decoration: const InputDecoration(
+                      labelText: 'إلى لغة',
+                      isDense: true,
+                      border: OutlineInputBorder(),
+                    ),
+                    items: _overlayLanguages.entries
+                        .map(
+                          (e) => DropdownMenuItem<String>(
+                            value: e.key,
+                            child: Text(e.value),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (v) => setState(() => _selectedTo = v),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 6),
             Row(
