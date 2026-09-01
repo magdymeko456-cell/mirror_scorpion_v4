@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 enum SystemSpeechState { idle, speaking, unavailable, failed }
 
@@ -17,7 +18,7 @@ enum SystemVoiceProfile {
         SystemVoiceProfile.salma => 'سلمى',
         SystemVoiceProfile.saif => 'سيف',
         SystemVoiceProfile.sama => 'سما',
-        SystemVoiceProfile.sara => 'ساره',
+        SystemVoiceProfile.sara => 'سارة',
       };
 
   String get styleDescription => switch (this) {
@@ -78,9 +79,13 @@ class SystemTtsVoice {
 }
 
 class SystemTtsService extends ChangeNotifier {
-  SystemTtsService() : _tts = FlutterTts();
+  /// مفتاح اختياري يجعل ملف الأداء مستقلاً لكل كارت ويحفظه بين الجلسات.
+  SystemTtsService({String? storageKey})
+      : _tts = FlutterTts(),
+        _storageKey = storageKey;
 
   final FlutterTts _tts;
+  final String? _storageKey;
   SystemSpeechState _state = SystemSpeechState.idle;
   String? _message;
   SystemTtsVoice? _selectedVoice;
@@ -105,7 +110,23 @@ class SystemTtsService extends ChangeNotifier {
       _message = 'تعذر تشغيل صوت النظام للنص المحدد.';
       notifyListeners();
     });
+    await _restoreSavedProfile();
     await _applyProfile();
+  }
+
+  Future<void> _restoreSavedProfile() async {
+    if (_storageKey == null) return;
+    try {
+      final preferences = await SharedPreferences.getInstance();
+      final saved =
+          preferences.getString('mirror_scorpion_voice_profile_$_storageKey');
+      final matches = SystemVoiceProfile.values
+          .where((profile) => profile.name == saved)
+          .toList();
+      if (matches.isNotEmpty) _selectedProfile = matches.first;
+    } catch (_) {
+      // بلا تخزين متاح يبقى ملف الأداء الافتراضي.
+    }
   }
 
   Future<bool> speak({required String text, required String languageCode}) async {
@@ -212,6 +233,7 @@ class SystemTtsService extends ChangeNotifier {
   Future<void> selectProfile(SystemVoiceProfile profile) async {
     _selectedProfile = profile;
     try {
+      await _saveProfile(profile);
       await _applyProfile();
       _state = SystemSpeechState.idle;
       _message = 'تم اختيار ملف الأداء المحلي: ${profile.label} — '
@@ -222,6 +244,19 @@ class SystemTtsService extends ChangeNotifier {
       _message = 'تعذر تطبيق ملف الأداء المحلي المطلوب على صوت النظام.';
     }
     notifyListeners();
+  }
+
+  Future<void> _saveProfile(SystemVoiceProfile profile) async {
+    if (_storageKey == null) return;
+    try {
+      final preferences = await SharedPreferences.getInstance();
+      await preferences.setString(
+        'mirror_scorpion_voice_profile_$_storageKey',
+        profile.name,
+      );
+    } catch (_) {
+      // الحفظ اختياري؛ لا يفشل النطق إذا تعذر التخزين.
+    }
   }
 
   void _markIdle() {

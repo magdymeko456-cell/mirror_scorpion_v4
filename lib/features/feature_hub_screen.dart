@@ -132,7 +132,7 @@ class _TranslationPanelState extends State<_TranslationPanel> {
   final _input = TextEditingController();
   final _output = TextEditingController();
   final _translationService = const OnDeviceTranslationService();
-  final _speechService = SystemTtsService();
+  final _speechService = SystemTtsService(storageKey: 'translationpanelstate');
   final _capabilityService = DeviceCapabilityService();
   final _modelInstaller = WhisperModelInstaller();
   final _audioTranscriber = AudioTranscriberService();
@@ -849,7 +849,7 @@ class _DialoguePanelState extends State<_DialoguePanel> {
   final _source = TextEditingController();
   final _translated = TextEditingController();
   final _translationService = const OnDeviceTranslationService();
-  final _speechService = SystemTtsService();
+  final _speechService = SystemTtsService(storageKey: 'dialoguepanelstate');
   Timer? _translationDebounce;
   String _leftTargetLanguage = 'en';
   String? _notice;
@@ -2096,7 +2096,7 @@ class _InspirationLibraryPage extends StatefulWidget {
 }
 
 class _InspirationLibraryPageState extends State<_InspirationLibraryPage> {
-  final _speechService = SystemTtsService();
+  final _speechService = SystemTtsService(storageKey: 'inspirationlibrarypagestate');
 
   @override
   void initState() {
@@ -2230,7 +2230,7 @@ class _CreatorPageState extends State<_CreatorPage> {
   static const _termsAcceptedKey = 'creator_terms_accepted_v1';
 
   final _draftController = TextEditingController();
-  final _ttsService = SystemTtsService();
+  final _ttsService = SystemTtsService(storageKey: 'creatorpagestate');
   bool _loadingTerms = true;
   bool _termsAccepted = false;
   bool _termsRead = false;
