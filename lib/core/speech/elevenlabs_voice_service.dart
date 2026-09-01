@@ -48,7 +48,8 @@ class ElevenLabsVoiceService extends ChangeNotifier {
   String? _clonedVoiceId;
   String? _message;
   bool _busy = false;
-  ElevenLabsGatewayState _state = ElevenLabsGatewayState.missingRuntimeKey;
+  ElevenLabsGatewayState _state =
+      ElevenLabsGatewayState.disabledPendingServerApproval;
 
   ElevenLabsGatewayState get state => _state;
   bool get isGatewayEnabled =>
@@ -57,10 +58,14 @@ class ElevenLabsVoiceService extends ChangeNotifier {
   bool get hasClonedVoice => _clonedVoiceId?.trim().isNotEmpty == true;
   String? get message => _message;
 
-  String get statusMessage => _message ??
-      (isGatewayEnabled
-          ? 'الربط مفعّل بمفتاح دخلته يدوياً — محفوظ على جهازك فقط.'
-          : 'أدخل مفتاح ElevenLabs الخاص بك ليُحفظ محلياً على جهازك فقط.');
+  String get statusMessage => _message ?? switch (_state) {
+        ElevenLabsGatewayState.disabledPendingServerApproval =>
+          'الربط السحابي معطّل حالياً. لا يُرسل التطبيق نصاً أو تسجيلاً إلى أي خدمة.',
+        ElevenLabsGatewayState.missingRuntimeKey =>
+          'أدخل مفتاح ElevenLabs الخاص بك ليُحفظ محلياً على جهازك فقط.',
+        ElevenLabsGatewayState.readyWithRuntimeKey =>
+          'الربط مفعّل بمفتاح دخلته يدوياً — محفوظ على جهازك فقط.',
+      };
 
   Future<void> restore() async {
     try {
@@ -69,7 +74,7 @@ class ElevenLabsVoiceService extends ChangeNotifier {
       _clonedVoiceId = preferences.getString(_clonedVoiceIdStoreKey);
       _state = (_runtimeKey?.trim().isNotEmpty ?? false)
           ? ElevenLabsGatewayState.readyWithRuntimeKey
-          : ElevenLabsGatewayState.missingRuntimeKey;
+          : ElevenLabsGatewayState.disabledPendingServerApproval;
     } catch (_) {
       _state = ElevenLabsGatewayState.missingRuntimeKey;
     }
@@ -250,7 +255,7 @@ class ElevenLabsVoiceService extends ChangeNotifier {
     return const ElevenLabsVoiceAttempt(
       allowed: false,
       message:
-          'سجّل عينة صوتك (10–30 ثانية) من شريط الأصوات ثم ارفعها من نفس الشاشة.',
+          'لن يُرفع أي تسجيل تلقائياً. سجّل عينة صوتك (10–30 ثانية) من شريط الأصوات، ثم ارفعها فقط بعد موافقتك الصريحة ومن نفس الشاشة.',
     );
   }
 
