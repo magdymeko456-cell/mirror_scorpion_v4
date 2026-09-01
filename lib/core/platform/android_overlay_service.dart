@@ -187,6 +187,8 @@ class _MirrorScorpionOverlayScreenState
     await FlutterOverlayWindow.updateFlag(OverlayFlag.focusPointer);
     await FlutterOverlayWindow.resizeOverlay(344, 350, false);
     if (mounted) setState(() => _expanded = true);
+  
+    unawaited(_centerExpandedPanel());
   }
 
   Future<void> _collapse() async {
@@ -198,6 +200,8 @@ class _MirrorScorpionOverlayScreenState
         _notice = null;
       });
     }
+  
+    unawaited(_restoreBubbleCorner());
   }
 
   Future<void> _close() async {
@@ -283,6 +287,56 @@ class _MirrorScorpionOverlayScreenState
         ),
       ),
     );
+  }
+
+  // ---- overlay fix: center panel, draggable bubble ----
+
+  static const double _kPanelWidth = 320;
+  static const double _kPanelHeight = 326;
+  static const double _kBubbleSize = 76;
+
+  (double, double, double)? _physicalScreenMetrics() {
+    try {
+      final views = PlatformDispatcher.instance.views;
+      if (views.isEmpty) return null;
+      final view = views.first;
+      final size = view.display.size;
+      if (size.width <= 0 || size.height <= 0) return null;
+      final dpr = view.devicePixelRatio > 0 ? view.devicePixelRatio : 2.0;
+      return (size.width, size.height, dpr);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> _centerExpandedPanel() async {
+    try {
+      final metrics = _physicalScreenMetrics();
+      if (metrics == null) return;
+      final (screenW, screenH, dpr) = metrics;
+      final panelW = (_kPanelWidth * dpr).round();
+      final panelH = (_kPanelHeight * dpr).round();
+      final left = ((screenW - panelW) / 2).floor().clamp(0, screenW.round());
+      final top = ((screenH - panelH) / 2).floor().clamp(0, screenH.round());
+      await FlutterOverlayWindow.resizeOverlay(panelW, panelH, true);
+      await FlutterOverlayWindow.moveOverlay(OverlayPosition(left, top));
+    } catch (_) {
+    }
+  }
+
+  Future<void> _restoreBubbleCorner() async {
+    try {
+      final metrics = _physicalScreenMetrics();
+      if (metrics == null) return;
+      final (screenW, screenH, dpr) = metrics;
+      final bubblePx = (_kBubbleSize * dpr).round();
+      final left = (screenW.round() - bubblePx - (16 * dpr).round())
+          .clamp(0, screenW.round());
+      final top = (screenH * 0.12).round();
+      await FlutterOverlayWindow.resizeOverlay(bubblePx, bubblePx, true);
+      await FlutterOverlayWindow.moveOverlay(OverlayPosition(left, top));
+    } catch (_) {
+    }
   }
 
   Widget _compactBubble() => Container(
