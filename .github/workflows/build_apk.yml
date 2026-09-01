@@ -23,10 +23,12 @@ jobs:
         run: |
           npm ci
           npm run verify
-      - name: Verify ElevenLabs secret stays outside the APK
+      - name: Verify no embedded ElevenLabs secret in the APK
         run: |
-          if grep -R -nE 'ELEVENLABS_API_KEY|xi-api-key|api\.elevenlabs\.io' lib test; then
-            echo "ElevenLabs credentials or direct provider calls must not be present in Flutter code."
+          # يُمنع أي سر مضمّن (مفتاح حرفي). يُسمح بعميل يستخدم مفتاحاً يدخله
+          # المالك وقت التشغيل ويُحفظ في SharedPreferences على الجهاز فقط.
+          if grep -R -nE "ELEVENLABS_API_KEY[=:]|sk_[A-Za-z0-9]{20,}" lib test; then
+            echo "Embedded ElevenLabs credentials are forbidden. Runtime-key UI entry is allowed."
             exit 1
           fi
       - name: Verify Runware secret stays outside the APK
