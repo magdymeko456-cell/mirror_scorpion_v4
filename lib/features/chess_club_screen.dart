@@ -242,12 +242,12 @@ class _ChessClubScreenState extends State<ChessClubScreen> {
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(24),
                       gradient: const LinearGradient(
-                        colors: [Color(0xFFF4D87A), Color(0xFF7A3B18), Color(0xFFE2AE4C)],
+                        colors: [Color(0xFF3C3A36), Color(0xFF262421), Color(0xFF3C3A36)],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                         stops: [0, 0.5, 1],
                       ),
-                      border: Border.all(color: const Color(0xFFFFE7A0), width: 1.6),
+                      border: Border.all(color: const Color(0xFF55524C), width: 1.6),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withValues(alpha: 0.66),
