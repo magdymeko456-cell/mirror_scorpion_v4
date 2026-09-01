@@ -26,6 +26,7 @@ import '../core/speech/device_speech_recognition_service.dart';
 import '../core/speech/elevenlabs_voice_service.dart';
 import '../core/speech/audio_transcriber_service.dart';
 import '../core/speech/system_tts_service.dart';
+import 'voice_profile_bar.dart';
 import '../core/speech/translated_audio_export_service.dart';
 import '../core/speech/whisper_model_installer.dart';
 import 'chess_club_screen.dart';
@@ -547,6 +548,7 @@ Widget build(BuildContext context) {
 return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
       children: [
+        VoiceProfileBar(ttsService: _speechService),
         Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 280),
@@ -1074,6 +1076,7 @@ class _DialoguePanelState extends State<_DialoguePanel> {
     return ListView(
       padding: const EdgeInsets.fromLTRB(18, 10, 18, 18),
       children: [
+        VoiceProfileBar(ttsService: _speechService),
         _DialogueEditor(
           controller: _source,
           label: _sourceUsesDeviceLanguage
@@ -2338,6 +2341,7 @@ class _CreatorPageState extends State<_CreatorPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  VoiceProfileBar(ttsService: _ttsService),
                   const Text('اكتب قصة تحترم الآخرين',
                       style: TextStyle(
                           color: RoyalColors.gold,
