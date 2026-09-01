@@ -28,7 +28,7 @@ void main() {
     expect(SystemVoiceProfile.values, hasLength(4));
     expect(
       SystemVoiceProfile.values.map((profile) => profile.label),
-      <String>['سلمى', 'سيف', 'سما', 'ساره'],
+      <String>['سلمى', 'سيف', 'سما', 'سارة'],
     );
     expect(SystemVoiceProfile.salma.styleDescription, contains('هادئ'));
     expect(SystemVoiceProfile.saif.styleDescription, contains('جاد'));
