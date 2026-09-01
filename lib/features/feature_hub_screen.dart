@@ -3787,10 +3787,16 @@ class _ProActivationPageState extends State<_ProActivationPage> {
               SizedBox(
                 height: 52,
                 child: FilledButton.icon(
-                  style: FilledButton.styleFrom(backgroundColor: Colors.green.shade700),
+style: FilledButton.styleFrom(
+                    backgroundColor: const Color(0xFFD4AF37),
+                    foregroundColor: Colors.black,
+                    textStyle: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18),
+                    elevation: 8,
+                    shadowColor: const Color(0xFFD4AF37).withValues(alpha: 0.5),
+                  ),
                   onPressed: _activate,
-                  icon: const Icon(Icons.verified_user),
-                  label: const Text('تفعيل'),
+icon: const Icon(Icons.workspace_premium),
+label: const Text('تفعيل PRO'),
                 ),
               ),
               if (_notice != null) Padding(padding: const EdgeInsets.only(top: 12), child: Text(_notice!, style: const TextStyle(color: RoyalColors.gold, height: 1.5))),
