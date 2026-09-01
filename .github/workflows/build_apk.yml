@@ -292,6 +292,7 @@ jobs:
           # Flutter engine embedding.
           -keep class io.flutter.embedding.** { *; }
           -dontwarn android.support.**
+          -dontwarn com.google.android.play.core.**
           -dontwarn org.slf4j.**
           EOF
           if [ -f android/app/build.gradle.kts ]; then
