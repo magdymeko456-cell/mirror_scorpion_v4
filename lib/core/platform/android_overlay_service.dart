@@ -329,8 +329,8 @@ class _MirrorScorpionOverlayScreenState
       final (screenW, screenH, dpr) = metrics;
       final panelW = (_kPanelWidth * dpr).round();
       final panelH = (_kPanelHeight * dpr).round();
-      final left = ((screenW - panelW) / 2).floor().clamp(0, screenW.round());
-      final top = ((screenH - panelH) / 2).floor().clamp(0, screenH.round());
+      final left = ((screenW - panelW) / 2).floor().clamp(0, screenW.round()).toDouble();
+      final top = ((screenH - panelH) / 2).floor().clamp(0, screenH.round()).toDouble();
       await FlutterOverlayWindow.resizeOverlay(panelW, panelH, true);
       await FlutterOverlayWindow.moveOverlay(OverlayPosition(left, top));
     } catch (_) {}
@@ -345,8 +345,8 @@ class _MirrorScorpionOverlayScreenState
       final left = (screenW.round() - bubblePx - (16 * dpr).round()).clamp(
         0,
         screenW.round(),
-      );
-      final top = (screenH * 0.12).round();
+      ).toDouble();
+      final top = (screenH * 0.12).round().toDouble();
       await FlutterOverlayWindow.resizeOverlay(bubblePx, bubblePx, true);
       await FlutterOverlayWindow.moveOverlay(OverlayPosition(left, top));
     } catch (_) {}
