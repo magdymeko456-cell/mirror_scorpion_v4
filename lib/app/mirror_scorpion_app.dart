@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 
 import '../core/localization/language_preferences.dart';
+import '../core/localization/supported_app_locales.dart';
 import '../core/media/runware_video_service.dart';
 import '../core/platform/android_overlay_service.dart';
 import '../core/platform/shared_text_inbox.dart';
@@ -47,6 +49,12 @@ class MirrorScorpionApp extends StatelessWidget {
             debugShowCheckedModeBanner: false,
             theme: royalDarkTheme(),
             locale: preferences.deviceLocale,
+            supportedLocales: kMirrorScorpionSupportedLocales,
+            localizationsDelegates: const [
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
             home: const DashboardScreen(),
           );
         },
