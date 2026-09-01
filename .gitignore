@@ -31,3 +31,9 @@ node_modules/
 /resolve_conflict.sh
 /secure_keys.sh
 /sync_github.sh
+
+fix_*.txt
+clean_failed_runs.sh
+repo_review_*.txt
+patch2_*.log
+patch2_backup_*/
