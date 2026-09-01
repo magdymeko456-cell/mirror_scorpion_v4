@@ -263,19 +263,4 @@ class OnDeviceTranslationService {
     }
     return 'رمز ML Kit: ${error.runtimeType}.';
   }
-
-  // [تم الحقن بواسطة سكربت الأدوات - P1]
-  Future<void> ensureModelDownloaded(String sourceLang, String targetLang) async {
-    final modelManager = OnDeviceTranslatorModelManager();
-    // التحقق وتحميل النماذج تلقائياً عند الاستخدام الأول
-    bool sourceDownloaded = await modelManager.isModelDownloaded(sourceLang);
-    if (!sourceDownloaded) {
-      await modelManager.downloadModel(sourceLang);
-    }
-    bool targetDownloaded = await modelManager.isModelDownloaded(targetLang);
-    if (!targetDownloaded) {
-      await modelManager.downloadModel(targetLang);
-    }
-  }
-
 }

@@ -45,18 +45,4 @@ class LanguagePreferences extends ChangeNotifier {
     await _preferences.remove(_legacySourceKey);
     notifyListeners();
   }
-
-  // [تم الحقن بواسطة سكربت الأدوات - حفظ واسترجاع آخر لغة]
-  static const String _lastLangKey = 'last_used_translation_language';
-
-  Future<void> saveLastLanguage(String langCode) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_lastLangKey, langCode);
-  }
-
-  Future<String?> getLastLanguage() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_lastLangKey);
-  }
-
 }
