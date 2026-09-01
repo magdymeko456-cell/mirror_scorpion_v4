@@ -354,7 +354,7 @@ class _MirrorScorpionOverlayScreenState
               children: [
                 Expanded(
                   child: DropdownButtonFormField<String>(
-                    value: _selectedFrom,
+                    initialValue: _selectedFrom,
                     isDense: true,
                     decoration: const InputDecoration(
                       labelText: 'من لغة',
@@ -378,7 +378,7 @@ class _MirrorScorpionOverlayScreenState
                 const SizedBox(width: 8),
                 Expanded(
                   child: DropdownButtonFormField<String>(
-                    value: _selectedTo,
+                    initialValue: _selectedTo,
                     isDense: true,
                     decoration: const InputDecoration(
                       labelText: 'إلى لغة',
