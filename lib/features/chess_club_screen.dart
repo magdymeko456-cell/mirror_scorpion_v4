@@ -9,10 +9,10 @@ import '../core/games/chess_game_controller.dart';
 abstract final class ChessClubVisualTokens {
   static const background = Color(0xFF0B1420);
   static const panel = Color(0xFF172638);
-  static const lightSquareTop = Color(0xFFF4E6C5);
-  static const lightSquareBottom = Color(0xFFD7B875);
-  static const darkSquareTop = Color(0xFF70452D);
-  static const darkSquareBottom = Color(0xFF2B180F);
+  static const lightSquareTop = Color(0xFFEEF2BD);
+  static const lightSquareBottom = Color(0xFFEEF2BD);
+  static const darkSquareTop = Color(0xFF769656);
+  static const darkSquareBottom = Color(0xFF769656);
   static const selected = Color(0xFFE5B53A);
   static const legalTarget = Color(0xFF6AA84F);
 }
