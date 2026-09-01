@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
@@ -33,28 +32,31 @@ class _VoiceProfileBarState extends State<VoiceProfileBar> {
       animation: widget.ttsService,
       builder: (context, _) {
         final selected = widget.ttsService.selectedProfile;
-        return Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: <Widget>[
-            for (final profile in SystemVoiceProfile.values)
-              ChoiceChip(
-                label: Text(profile.label),
-                selected: selected == profile,
-                tooltip: profile.styleDescription,
-                onSelected: (_) => widget.ttsService.selectProfile(profile),
+        return Padding(
+          padding: const EdgeInsets.only(top: 4, bottom: 4),
+          child: Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: <Widget>[
+              for (final profile in SystemVoiceProfile.values)
+                ChoiceChip(
+                  label: Text(profile.label),
+                  selected: selected == profile,
+                  tooltip: profile.styleDescription,
+                  onSelected: (_) => widget.ttsService.selectProfile(profile),
+                ),
+              ActionChip(
+                avatar: Icon(
+                  _cloud.hasClonedVoice
+                      ? Icons.record_voice_over
+                      : Icons.mic_none,
+                  size: 18,
+                ),
+                label: const Text('صوتي'),
+                onPressed: _openUserVoiceSheet,
               ),
-            ActionChip(
-              avatar: Icon(
-                _cloud.hasClonedVoice
-                    ? Icons.record_voice_over
-                    : Icons.mic_none,
-                size: 18,
-              ),
-              label: const Text('صوتي'),
-              onPressed: _openUserVoiceSheet,
-            ),
-          ],
+            ],
+          ),
         );
       },
     );
@@ -84,10 +86,9 @@ class _UserVoiceSheet extends StatefulWidget {
 class _UserVoiceSheetState extends State<_UserVoiceSheet> {
   final TextEditingController _keyController = TextEditingController();
   final AudioRecorder _recorder = AudioRecorder();
-
+  final AudioPlayer _previewPlayer = AudioPlayer();
   bool _isRecording = false;
   String? _samplePath;
-  final AudioPlayer _previewPlayer = AudioPlayer();
 
   @override
   void initState() {
@@ -98,45 +99,51 @@ class _UserVoiceSheetState extends State<_UserVoiceSheet> {
   @override
   void dispose() {
     _keyController.dispose();
-    _player.dispose();
+    _recorder.dispose();
     _previewPlayer.dispose();
     super.dispose();
   }
 
   void _toast(String message) {
-    if (!mounted) return;
+    if (!mounted || message.isEmpty) return;
     ScaffoldMessenger.of(context)
         .showSnackBar(SnackBar(content: Text(message)));
   }
 
   Future<void> _saveKey() async {
     final ok = await widget.service.saveRuntimeKey(_keyController.text);
-    if (mounted) {
-      _toast(widget.service.message ?? (ok ? 'حُفظ المفتاح محلياً.' : 'تعذر الحفظ.'));
-    }
+    _toast(widget.service.message ??
+        (ok ? 'حُفظ المفتاح محلياً على جهازك فقط.' : 'تعذر حفظ المفتاح.'));
+    if (ok && mounted) _keyController.clear();
   }
 
   Future<void> _toggleRecord() async {
     if (_isRecording) {
       final path = await _recorder.stop();
-      setState(() { _isRecording = false; _samplePath = path; });
+      setState(() {
+        _isRecording = false;
+        _samplePath = path;
+      });
       _toast('توقف التسجيل. راجع العينة ثم ارفعها.');
       return;
     }
     if (!await _recorder.hasPermission()) {
-      _toast('امنح إذن الميكروفون للتطبيق أولاً من إعدادات النظام.');
+      _toast('امنح إذن الميكروفون للتطبيق من إعدادات النظام.');
       return;
     }
-    final dir = await getTemporaryDirectory();
-    await Directory('${dir.path}/mirror_scorpion').create(recursive: true);
-    final path =
-        '${dir.path}/mirror_scorpion/voice_sample_${DateTime.now().millisecondsSinceEpoch}.m4a';
     try {
+      final dir = await getTemporaryDirectory();
+      await Directory('${dir.path}/mirror_scorpion').create(recursive: true);
+      final path =
+          '${dir.path}/mirror_scorpion/voice_sample_${DateTime.now().millisecondsSinceEpoch}.m4a';
       await _recorder.start(
         const RecordConfig(encoder: AudioEncoder.aacLc),
         path: path,
       );
-      setState(() { _isRecording = true; _samplePath = path; });
+      setState(() {
+        _isRecording = true;
+        _samplePath = path;
+      });
       _toast('جارٍ التسجيل… تحدث بوضوح من 10 إلى 30 ثانية.');
     } catch (_) {
       _toast('تعذر بدء التسجيل. تحقق من إذن المايك.');
@@ -150,7 +157,7 @@ class _UserVoiceSheetState extends State<_UserVoiceSheet> {
       return;
     }
     final attempt = await widget.service.uploadVoiceSample(filePath: path);
-    if (mounted) _toast(attempt.message);
+    _toast(attempt.message);
   }
 
   Future<void> _previewClone() async {
@@ -159,16 +166,18 @@ class _UserVoiceSheetState extends State<_UserVoiceSheet> {
       languageCode: 'ar',
     );
     if (attempt.isSuccess && attempt.audioPath != null) {
-      try { await _previewPlayer.stop(); } catch (_) {}
+      try {
+        await _previewPlayer.stop();
+      } catch (_) {}
       await _previewPlayer.play(DeviceFileSource(attempt.audioPath!));
-    } else if (mounted) {
+    } else {
       _toast(attempt.message);
     }
   }
 
   Future<void> _deleteClone() async {
     final ok = await widget.service.deleteClonedVoice();
-    _toast(ok ? 'حُذفت نسخة الصوت.' : 'تعذر الحذف، أعد المحاولة.');
+    _toast(ok ? 'حُذفت النسخة من الخدمة ومن جهازك.' : 'تعذر الحذف.');
   }
 
   @override
@@ -178,7 +187,9 @@ class _UserVoiceSheetState extends State<_UserVoiceSheet> {
       builder: (context, _) {
         return Padding(
           padding: EdgeInsets.only(
-            left: 16, right: 16, top: 16,
+            left: 16,
+            right: 16,
+            top: 16,
             bottom: MediaQuery.of(context).viewInsets.bottom + 16,
           ),
           child: SingleChildScrollView(
@@ -203,12 +214,7 @@ class _UserVoiceSheetState extends State<_UserVoiceSheet> {
                 Row(children: <Widget>[
                   Expanded(
                     child: FilledButton(
-                      onPressed: () async {
-                        final ok = await widget.service
-                            .saveRuntimeKey(_keyController.text);
-                        if (mounted) _toast(widget.service.message ?? '');
-                        if (ok) _keyController.clear();
-                      },
+                      onPressed: _saveKey,
                       child: const Text('حفظ المفتاح'),
                     ),
                   ),
@@ -230,9 +236,7 @@ class _UserVoiceSheetState extends State<_UserVoiceSheet> {
                 ),
                 const SizedBox(height: 8),
                 FilledButton.icon(
-                  onPressed: widget.service.isBusy
-                      ? null
-                      : _uploadSample,
+                  onPressed: widget.service.isBusy ? null : _uploadSample,
                   icon: const Icon(Icons.cloud_upload),
                   label: Text(widget.service.hasClonedVoice
                       ? 'إعادة إنشاء النسخة الصوتية'
@@ -246,23 +250,16 @@ class _UserVoiceSheetState extends State<_UserVoiceSheet> {
                     label: const Text('استمع لقراءة تجريبية بصوتي'),
                   ),
                   TextButton.icon(
-                    onPressed: widget.service.isBusy
-                        ? null
-                        : () async {
-                            final ok =
-                                await widget.service.deleteClonedVoice();
-                            _toast(ok
-                                ? 'حُذفت النسخة من الخدمة ومن جهازك.'
-                                : 'تعذر الحذف.');
-                          },
+                    onPressed: widget.service.isBusy ? null : _deleteClone,
                     icon: const Icon(Icons.delete_outline),
                     label: const Text('حذف صوتي المستنسخ'),
                   ),
                 ],
-                const SizedBox(height: 8),
-                if (widget.service.message != null)
+                if (widget.service.message != null) ...<Widget>[
+                  const SizedBox(height: 8),
                   Text(widget.service.message!,
                       style: Theme.of(context).textTheme.bodySmall),
+                ],
               ],
             ),
           ),
