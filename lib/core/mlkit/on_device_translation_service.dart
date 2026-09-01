@@ -251,7 +251,16 @@ class OnDeviceTranslationService {
   ) async {
     final code = language.bcpCode;
     if (await modelManager.isModelDownloaded(code)) return true;
-    return modelManager.downloadModel(code);
+    for (var attempt = 1; attempt <= 3; attempt++) {
+      try {
+        await modelManager.downloadModel(code, requiresWifi: false);
+      } on PlatformException {
+        // أعد المحاولة قبل الاستسلام.
+      }
+      if (await modelManager.isModelDownloaded(code)) return true;
+      await Future<void>.delayed(Duration(milliseconds: 800 * attempt));
+    }
+    return false;
   }
 
   /// يعرض رمز منصة محدوداً للتشخيص، من دون تضمين نص المدخل أو مسارات الهاتف.
