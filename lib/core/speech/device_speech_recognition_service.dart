@@ -59,8 +59,8 @@ class DeviceSpeechRecognitionService extends ChangeNotifier {
           installedLocales.map((locale) => locale.localeId),
         );
         _message = available.isEmpty
-            ? 'لا توجد لغة تعرف كلام متاحة في الجهاز. لم يبدأ الاستماع ولم يُستخدم بديل عربي.'
-            : 'لغة الكلام «$languageCode» غير متاحة في خدمة التعرف. اللغات المتاحة: ${available.join('، ')}. لم يبدأ الاستماع ولم يُستخدم بديل عربي.';
+            ? 'لا توجد أي لغة تعرف كلام مثبتة على الجهاز. افتح إعدادات Android ← إدارة اللغات ← إدخال الصوت (Google) ونزّل حزمة اللغة المطلوبة ثم أعد المحاولة.'
+            : 'لغة المايك «$languageCode» غير مثبتة كخدمة تعرف كلام على هذا الهاتف. اللغات المثبتة: ${available.join('، ')}. ثبّت حزمة اللغة من إعدادات إدخال الصوت (Google) ثم أعد المحاولة — سلسلة الكود سليمة لكن الجهاز يفتقد حزمة اللغة.';
         notifyListeners();
         return false;
       }
@@ -150,7 +150,7 @@ class DeviceSpeechRecognitionService extends ChangeNotifier {
   }
 
   void _handleStatus(String status) {
-    if (status == 'done' || status == 'notListening') {
+    if (status == 'done') {
       _message = 'انتهى الاستماع. راجع النص قبل ترجمته.';
     }
     notifyListeners();
