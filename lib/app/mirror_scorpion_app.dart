@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
+import '../l10n/generated/app_localizations.dart';
 import 'package:provider/provider.dart';
 
 import '../core/localization/language_preferences.dart';
@@ -49,12 +49,11 @@ class MirrorScorpionApp extends StatelessWidget {
             debugShowCheckedModeBanner: false,
             theme: royalDarkTheme(),
             locale: preferences.deviceLocale,
-            supportedLocales: kMirrorScorpionSupportedLocales,
-            localizationsDelegates: const [
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
-            ],
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: {
+              ...kMirrorScorpionSupportedLocales,
+              ...AppLocalizations.supportedLocales,
+            }.toList(growable: false),
             home: const DashboardScreen(),
           );
         },

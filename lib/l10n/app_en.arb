@@ -1,0 +1,11 @@
+{
+  "@@locale": "en",
+  "appTitle": "Mirror Scorpion",
+  "proActivate": "Activate PRO",
+  "translationCardTitle": "Translation",
+  "dialogueCardTitle": "Dialogue",
+  "documentsCardTitle": "Documents & Lens",
+  "storiesCardTitle": "Stories & Inspiration",
+  "gamesCardTitle": "Games",
+  "settingsCardTitle": "Settings"
+}
