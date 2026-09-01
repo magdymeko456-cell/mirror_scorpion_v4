@@ -8,7 +8,13 @@ import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 
 import '../mlkit/on_device_translation_service.dart';
 
-enum AndroidOverlayState { started, stopped, unsupported, permissionDenied, failed }
+enum AndroidOverlayState {
+  started,
+  stopped,
+  unsupported,
+  permissionDenied,
+  failed,
+}
 
 class AndroidOverlayResult {
   const AndroidOverlayResult(this.state, this.message);
@@ -160,9 +166,16 @@ class _MirrorScorpionOverlayScreen extends StatefulWidget {
 class _MirrorScorpionOverlayScreenState
     extends State<_MirrorScorpionOverlayScreen> {
   static const _overlayLanguages = <String, String>{
-    'ar': 'العربية', 'en': 'English', 'hi': 'हिन्दी', 'fr': 'Français',
-    'es': 'Español', 'de': 'Deutsch', 'tr': 'Türkçe', 'ur': 'اردو',
-    'ru': 'Русский', 'zh': '中文',
+    'ar': 'العربية',
+    'en': 'English',
+    'hi': 'हिन्दी',
+    'fr': 'Français',
+    'es': 'Español',
+    'de': 'Deutsch',
+    'tr': 'Türkçe',
+    'ur': 'اردو',
+    'ru': 'Русский',
+    'zh': '中文',
   };
   String? _selectedFrom;
   String? _selectedTo;
@@ -187,7 +200,7 @@ class _MirrorScorpionOverlayScreenState
     await FlutterOverlayWindow.updateFlag(OverlayFlag.focusPointer);
     await FlutterOverlayWindow.resizeOverlay(344, 350, false);
     if (mounted) setState(() => _expanded = true);
-  
+
     unawaited(_centerExpandedPanel());
   }
 
@@ -200,7 +213,7 @@ class _MirrorScorpionOverlayScreenState
         _notice = null;
       });
     }
-  
+
     unawaited(_restoreBubbleCorner());
   }
 
@@ -212,9 +225,11 @@ class _MirrorScorpionOverlayScreenState
   Future<void> _pasteText() async {
     String text = '';
     try {
-      text = (await _clipboardBridge.invokeMethod<String>(
-        'readUserRequestedText',
-      ))?.trim() ?? '';
+      text =
+          (await _clipboardBridge.invokeMethod<String>(
+            'readUserRequestedText',
+          ))?.trim() ??
+          '';
     } catch (_) {
       // محرك Overlay مستقل عن Activity؛ لا نعيد الوصول إلى الحافظة تلقائياً.
     }
@@ -246,8 +261,8 @@ class _MirrorScorpionOverlayScreenState
       _notice = 'جارٍ تحديد اللغة وترجمتها محلياً…';
       _translatedText = null;
     });
-    final targetLanguage = _selectedTo ??
-        PlatformDispatcher.instance.locale.languageCode;
+    final targetLanguage =
+        _selectedTo ?? PlatformDispatcher.instance.locale.languageCode;
     final result = await _translationService.translate(
       text: text,
       sourceLanguageCode: _selectedFrom,
@@ -282,9 +297,7 @@ class _MirrorScorpionOverlayScreenState
       textDirection: TextDirection.rtl,
       child: Material(
         color: Colors.transparent,
-        child: Center(
-          child: _expanded ? _expandedBubble() : _compactBubble(),
-        ),
+        child: Center(child: _expanded ? _expandedBubble() : _compactBubble()),
       ),
     );
   }
@@ -320,8 +333,7 @@ class _MirrorScorpionOverlayScreenState
       final top = ((screenH - panelH) / 2).floor().clamp(0, screenH.round());
       await FlutterOverlayWindow.resizeOverlay(panelW, panelH, true);
       await FlutterOverlayWindow.moveOverlay(OverlayPosition(left, top));
-    } catch (_) {
-    }
+    } catch (_) {}
   }
 
   Future<void> _restoreBubbleCorner() async {
@@ -330,177 +342,177 @@ class _MirrorScorpionOverlayScreenState
       if (metrics == null) return;
       final (screenW, screenH, dpr) = metrics;
       final bubblePx = (_kBubbleSize * dpr).round();
-      final left = (screenW.round() - bubblePx - (16 * dpr).round())
-          .clamp(0, screenW.round());
+      final left = (screenW.round() - bubblePx - (16 * dpr).round()).clamp(
+        0,
+        screenW.round(),
+      );
       final top = (screenH * 0.12).round();
       await FlutterOverlayWindow.resizeOverlay(bubblePx, bubblePx, true);
       await FlutterOverlayWindow.moveOverlay(OverlayPosition(left, top));
-    } catch (_) {
-    }
+    } catch (_) {}
   }
 
   Widget _compactBubble() => Container(
-        width: 76,
-        height: 76,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: const Color(0xFF102840),
-          border: Border.all(color: Colors.cyanAccent, width: 2),
-          boxShadow: const [BoxShadow(color: Colors.black54, blurRadius: 12)],
-        ),
-        child: IconButton(
-          tooltip: 'فتح مترجم ميرور سكربيون',
-          onPressed: _expand,
-          icon: const Icon(Icons.translate, color: Colors.cyanAccent, size: 34),
-        ),
-      );
+    width: 76,
+    height: 76,
+    decoration: BoxDecoration(
+      shape: BoxShape.circle,
+      color: const Color(0xFF102840),
+      border: Border.all(color: Colors.cyanAccent, width: 2),
+      boxShadow: const [BoxShadow(color: Colors.black54, blurRadius: 12)],
+    ),
+    child: IconButton(
+      tooltip: 'فتح مترجم ميرور سكربيون',
+      onPressed: _expand,
+      icon: const Icon(Icons.translate, color: Colors.cyanAccent, size: 34),
+    ),
+  );
 
   Widget _expandedBubble() => Container(
-        width: 320,
-        height: 326,
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: const Color(0xFF102840),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.cyanAccent, width: 1.5),
-          boxShadow: const [BoxShadow(color: Colors.black87, blurRadius: 16)],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+    width: 320,
+    height: 326,
+    padding: const EdgeInsets.all(12),
+    decoration: BoxDecoration(
+      color: const Color(0xFF102840),
+      borderRadius: BorderRadius.circular(20),
+      border: Border.all(color: Colors.cyanAccent, width: 1.5),
+      boxShadow: const [BoxShadow(color: Colors.black87, blurRadius: 16)],
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
           children: [
-            Row(
-              children: [
-                const Icon(Icons.translate, color: Colors.cyanAccent),
-                const SizedBox(width: 8),
-                const Expanded(
-                  child: Text(
-                    'ترجمة محلية',
-                    style: TextStyle(fontWeight: FontWeight.w800),
-                  ),
-                ),
-                IconButton(
-                  tooltip: 'تصغير الفقاعة',
-                  onPressed: _collapse,
-                  icon: const Icon(Icons.minimize),
-                ),
-                IconButton(
-                  tooltip: 'إيقاف الفقاعة',
-                  onPressed: _close,
-                  icon: const Icon(Icons.close),
-                ),
-              ],
-            ),
-            TextField(
-              controller: _input,
-              minLines: 2,
-              maxLines: 3,
-              maxLength: 1800,
-              textInputAction: TextInputAction.newline,
-              decoration: const InputDecoration(
-                hintText: 'اكتب النص الذي تريد ترجمته…',
-                counterText: '',
-                isDense: true,
-                border: OutlineInputBorder(),
+            const Icon(Icons.translate, color: Colors.cyanAccent),
+            const SizedBox(width: 8),
+            const Expanded(
+              child: Text(
+                'ترجمة محلية',
+                style: TextStyle(fontWeight: FontWeight.w800),
               ),
             ),
-            const SizedBox(height: 6),
-            Row(
-              children: [
-                Expanded(
-                  child: DropdownButtonFormField<String>(
-                    initialValue: _selectedFrom,
-                    isDense: true,
-                    decoration: const InputDecoration(
-                      labelText: 'من لغة',
-                      isDense: true,
-                      border: OutlineInputBorder(),
-                    ),
-                    items: <DropdownMenuItem<String>>[
-                      const DropdownMenuItem<String>(
-                        child: Text('اكتشاف تلقائي'),
-                      ),
-                      ..._overlayLanguages.entries.map(
-                        (e) => DropdownMenuItem<String>(
-                          value: e.key,
-                          child: Text(e.value),
-                        ),
-                      ),
-                    ],
-                    onChanged: (v) => setState(() => _selectedFrom = v),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: DropdownButtonFormField<String>(
-                    initialValue: _selectedTo,
-                    isDense: true,
-                    decoration: const InputDecoration(
-                      labelText: 'إلى لغة',
-                      isDense: true,
-                      border: OutlineInputBorder(),
-                    ),
-                    items: _overlayLanguages.entries
-                        .map(
-                          (e) => DropdownMenuItem<String>(
-                            value: e.key,
-                            child: Text(e.value),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (v) => setState(() => _selectedTo = v),
-                  ),
-                ),
-              ],
+            IconButton(
+              tooltip: 'تصغير الفقاعة',
+              onPressed: _collapse,
+              icon: const Icon(Icons.minimize),
             ),
-            const SizedBox(height: 6),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: _isTranslating ? null : _pasteText,
-                    icon: const Icon(Icons.content_paste_go_outlined),
-                    label: const Text('الصق النص'),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: FilledButton.icon(
-                    onPressed: _isTranslating ? null : _translate,
-                    icon: _isTranslating
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.translate),
-                    label: const Text('ترجم'),
-                  ),
-                ),
-              ],
+            IconButton(
+              tooltip: 'إيقاف الفقاعة',
+              onPressed: _close,
+              icon: const Icon(Icons.close),
             ),
-            const SizedBox(height: 6),
+          ],
+        ),
+        TextField(
+          controller: _input,
+          minLines: 2,
+          maxLines: 3,
+          maxLength: 1800,
+          textInputAction: TextInputAction.newline,
+          decoration: const InputDecoration(
+            hintText: 'اكتب النص الذي تريد ترجمته…',
+            counterText: '',
+            isDense: true,
+            border: OutlineInputBorder(),
+          ),
+        ),
+        const SizedBox(height: 6),
+        Row(
+          children: [
             Expanded(
-              child: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.black26,
-                  borderRadius: BorderRadius.circular(10),
+              child: DropdownButtonFormField<String>(
+                initialValue: _selectedFrom,
+                isDense: true,
+                decoration: const InputDecoration(
+                  labelText: 'من لغة',
+                  isDense: true,
+                  border: OutlineInputBorder(),
                 ),
-                child: SingleChildScrollView(
-                  child: Text(
-                    _translatedText ?? _notice ??
-                        'تعمل الفقاعة للنص الذي تكتبه أو تلصقه بنفسك فقط.',
-                    style: TextStyle(
-                      color: _translatedText == null
-                          ? Colors.white70
-                          : Colors.cyanAccent,
-                      height: 1.35,
+                items: <DropdownMenuItem<String>>[
+                  const DropdownMenuItem<String>(child: Text('اكتشاف تلقائي')),
+                  ..._overlayLanguages.entries.map(
+                    (e) => DropdownMenuItem<String>(
+                      value: e.key,
+                      child: Text(e.value),
                     ),
                   ),
+                ],
+                onChanged: (v) => setState(() => _selectedFrom = v),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: DropdownButtonFormField<String>(
+                initialValue: _selectedTo,
+                isDense: true,
+                decoration: const InputDecoration(
+                  labelText: 'إلى لغة',
+                  isDense: true,
+                  border: OutlineInputBorder(),
                 ),
+                items: _overlayLanguages.entries
+                    .map(
+                      (e) => DropdownMenuItem<String>(
+                        value: e.key,
+                        child: Text(e.value),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (v) => setState(() => _selectedTo = v),
               ),
             ),
           ],
         ),
-      );
+        const SizedBox(height: 6),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: _isTranslating ? null : _pasteText,
+                icon: const Icon(Icons.content_paste_go_outlined),
+                label: const Text('الصق النص'),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: FilledButton.icon(
+                onPressed: _isTranslating ? null : _translate,
+                icon: _isTranslating
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.translate),
+                label: const Text('ترجم'),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.black26,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: SingleChildScrollView(
+              child: Text(
+                _translatedText ??
+                    _notice ??
+                    'تعمل الفقاعة للنص الذي تكتبه أو تلصقه بنفسك فقط.',
+                style: TextStyle(
+                  color: _translatedText == null
+                      ? Colors.white70
+                      : Colors.cyanAccent,
+                  height: 1.35,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
 }
