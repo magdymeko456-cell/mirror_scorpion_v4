@@ -977,7 +977,7 @@ class _DialoguePanelState extends State<_DialoguePanel> {
         _source.text = recognizedText;
         _queueTranslation(
           recognizedText,
-          sourceLanguageCode: sourceLanguage,
+          _dialogueMicLanguageCodeCode: sourceLanguage,
         );
       },
     );
