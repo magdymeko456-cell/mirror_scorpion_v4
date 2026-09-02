@@ -858,7 +858,8 @@ class _DialoguePanelState extends State<_DialoguePanel> {
   bool _hasCompletedDialogueTranslation = false;
   bool _isTranslating = false;
   bool _loadedLanguagePreferences = false;
-  bool _sourceUsesDeviceLanguage = true;
+  // لغة المصدر في الجهة اليمنى؛ لغة الجهاز مجرد قيمة ابتدائية.
+  String _rightSourceLanguage = 'en';
   bool _isChangingSpeaker = false;
 
   DeviceSpeechRecognitionService get _recognitionService =>
@@ -878,6 +879,7 @@ class _DialoguePanelState extends State<_DialoguePanel> {
     if (_loadedLanguagePreferences) return;
     final preferences = context.read<LanguagePreferences>();
     _leftTargetLanguage = preferences.translationTargetLanguage;
+    _rightSourceLanguage = preferences.deviceLanguageCode;
     _loadedLanguagePreferences = true;
   }
 
@@ -896,19 +898,18 @@ class _DialoguePanelState extends State<_DialoguePanel> {
   }
 
   Future<void> _selectLeftTargetLanguage(String code) async {
-    final preferences = context.read<LanguagePreferences>();
-    final sourceLanguage = preferences.deviceLanguageCode;
-    if (!_sourceUsesDeviceLanguage) {
-      if (!await _recognitionService.cancelAndWait()) return;
-    }
     setState(() => _leftTargetLanguage = code);
-    await preferences.setTranslationTargetLanguage(code);
+    await context.read<LanguagePreferences>().setTranslationTargetLanguage(code);
     if (!mounted) return;
-    _queueTranslation(
-      _source.text,
-      sourceLanguageCode:
-          _sourceUsesDeviceLanguage ? sourceLanguage : code,
-    );
+    _queueTranslation(_source.text, sourceLanguageCode: _dialogueMicLanguageCode);
+  }
+
+  Future<void> _selectRightSourceLanguage(String code) async {
+    final wasListening = _recognitionService.isListening;
+    if (wasListening && !await _recognitionService.cancelAndWait()) return;
+    if (!mounted) return;
+    setState(() => _rightSourceLanguage = code);
+    if (wasListening) await _startDialogueMicrophone();
   }
 
   Future<void> _swapDialogueSpeaker() async {
