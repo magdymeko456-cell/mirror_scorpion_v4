@@ -905,15 +905,20 @@ class _DialoguePanelState extends State<_DialoguePanel> {
   }
 
   Future<void> _selectLeftTargetLanguage(String code) async {
+    final wasListening = _recognitionService.isListening;
+    if (wasListening && !await _recognitionService.cancelAndWait()) return;
+    if (!mounted) return;
     setState(() => _leftTargetLanguage = code);
     await context.read<LanguagePreferences>().setTranslationTargetLanguage(code);
     if (!mounted) return;
-    _queueTranslation(_source.text, sourceLanguageCode: _dialogueMicLanguageCode);
+    _queueTranslation(_source.text, sourceLanguageCode: code);
+    if (wasListening) await _toggleMicrophone();
   }
 
 
   Future<void> _swapDialogueSpeaker() async {
     if (_isChangingSpeaker) return;
+    final wasListening = _recognitionService.isListening;
     setState(() {
       _isChangingSpeaker = true;
       _notice = 'جارٍ إنهاء جلسة المايك السابقة قبل تبديل اللغة…';
@@ -943,6 +948,7 @@ class _DialoguePanelState extends State<_DialoguePanel> {
     } finally {
       if (mounted) setState(() => _isChangingSpeaker = false);
     }
+    if (wasListening) await _toggleMicrophone();
   }
 
   Future<void> _toggleMicrophone() async {
