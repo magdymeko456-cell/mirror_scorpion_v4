@@ -933,7 +933,7 @@ class _DialoguePanelState extends State<_DialoguePanel> {
       }
       await _speechService.stop();
       if (!mounted) return;
-      final deviceLanguage = context.read<LanguagePreferences>().deviceLanguageCode;
+
       final nextSourceLanguage = _dialogueLeftLanguage;
       setState(() {
         final previousLeft = _dialogueLeftLanguage;
@@ -1019,9 +1019,7 @@ class _DialoguePanelState extends State<_DialoguePanel> {
       targetLanguageCode: targetLanguage,
       sourceLanguageCode:
           sourceLanguageCode ??
-              (_sourceUsesDeviceLanguage
-                  ? deviceLanguage
-                  : _leftTargetLanguage),
+              _dialogueRightLanguage,
       onProgress: (progress) {
         if (mounted && value.trim() == _source.text.trim()) {
           setState(() => _notice = _translationProgressMessage(progress));
