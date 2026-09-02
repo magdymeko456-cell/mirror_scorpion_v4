@@ -196,7 +196,7 @@ class ElevenLabsVoiceService extends ChangeNotifier {
     if (!isGatewayEnabled) {
       return const ElevenLabsVoiceAttempt(
         allowed: false,
-        message: 'أدخل مفتاح ElevenLabs أولاً. لم يُرسل أي نص إلى الخدمة.',
+        message: 'أدخل مفتاح ElevenLabs أولاً. لم يُرسل النص إلى الخدمة.',
       );
     }
     if (!hasClonedVoice) {
