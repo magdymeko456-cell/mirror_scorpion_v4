@@ -967,15 +967,11 @@ class _DialoguePanelState extends State<_DialoguePanel> {
       return;
     }
     if (!mounted) return;
-    final deviceLanguage = context.read<LanguagePreferences>().deviceLanguageCode;
-    final sourceLanguage = _sourceUsesDeviceLanguage
-        ? deviceLanguage
-        : _leftTargetLanguage;
     await _speechService.stop();
     if (!mounted) return;
     _beginFreshDialogueIfNeeded();
     await _recognitionService.start(
-      languageCode: sourceLanguage,
+      languageCode: _dialogueMicLanguageCode,
       onText: (recognizedText) {
         if (!mounted) return;
         _source.text = recognizedText;
