@@ -155,11 +155,6 @@ class _TranslationPanelState extends State<_TranslationPanel> {
   DeviceSpeechRecognitionService get _recognitionService =>
       widget.recognitionService;
 
-  /// لغة المايك الحالية في لوحة الحوار.
-  String get _dialogueMicLanguageCode => _sourceUsesDeviceLanguage
-      ? _rightSourceLanguage
-      : _leftTargetLanguage;
-
   @override
   void initState() {
     super.initState();
@@ -916,13 +911,6 @@ class _DialoguePanelState extends State<_DialoguePanel> {
     _queueTranslation(_source.text, sourceLanguageCode: _dialogueMicLanguageCode);
   }
 
-  Future<void> _selectRightSourceLanguage(String code) async {
-    final wasListening = _recognitionService.isListening;
-    if (wasListening && !await _recognitionService.cancelAndWait()) return;
-    if (!mounted) return;
-    setState(() => _rightSourceLanguage = code);
-    if (wasListening) await _startDialogueMicrophone();
-  }
 
   Future<void> _swapDialogueSpeaker() async {
     if (_isChangingSpeaker) return;
@@ -2255,11 +2243,6 @@ class _CreatorPageState extends State<_CreatorPage> {
 
   DeviceSpeechRecognitionService get _speechService =>
       widget.recognitionService;
-
-  /// لغة المايك الحالية في لوحة الحوار.
-  String get _dialogueMicLanguageCode => _sourceUsesDeviceLanguage
-      ? _rightSourceLanguage
-      : _leftTargetLanguage;
 
   @override
   void initState() {
