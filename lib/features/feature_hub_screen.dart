@@ -853,7 +853,7 @@ class _DialoguePanelState extends State<_DialoguePanel> {
   final _translationService = const OnDeviceTranslationService();
   final _speechService = SystemTtsService(storageKey: 'dialoguepanelstate');
   Timer? _translationDebounce;
-  String _leftTargetLanguage = 'en';
+  String _dialogueLeftLanguage = 'en';   // لغة المايك (المربع الأيسر)
   String? _notice;
   bool _hasCompletedDialogueTranslation = false;
   bool _isTranslating = false;
@@ -861,16 +861,15 @@ class _DialoguePanelState extends State<_DialoguePanel> {
   // لغة المصدر في الجهة اليمنى؛ لغة الجهاز مجرد قيمة ابتدائية.
   String _rightSourceLanguage = 'en';
   /// true: المايك يعمل بلغة الجهاز، false: المايك يعمل باللغة المقابلة.
-  bool _sourceUsesDeviceLanguage = true;
+  String _dialogueRightLanguage = 'en';  // لغة هدف الترجمة (المربع الأيمن)
   bool _isChangingSpeaker = false;
 
   DeviceSpeechRecognitionService get _recognitionService =>
       widget.recognitionService;
 
   /// لغة المايك الحالية في لوحة الحوار.
-  String get _dialogueMicLanguageCode => _sourceUsesDeviceLanguage
+  String get _dialogueMicLanguageCode => _dialogueLeftLanguage;
       ? _rightSourceLanguage
-      : _leftTargetLanguage;
 
   @override
   void initState() {
@@ -885,7 +884,9 @@ class _DialoguePanelState extends State<_DialoguePanel> {
     super.didChangeDependencies();
     if (_loadedLanguagePreferences) return;
     final preferences = context.read<LanguagePreferences>();
-    _leftTargetLanguage = preferences.translationTargetLanguage;
+    _dialogueRightLanguage = preferences.translationTargetLanguage;
+    final savedMic = preferences.dialogueMicLanguageCode;
+    if (savedMic != null) _dialogueLeftLanguage = savedMic;
     _rightSourceLanguage = preferences.deviceLanguageCode;
     _loadedLanguagePreferences = true;
   }
@@ -908,7 +909,7 @@ class _DialoguePanelState extends State<_DialoguePanel> {
     final wasListening = _recognitionService.isListening;
     if (wasListening && !await _recognitionService.cancelAndWait()) return;
     if (!mounted) return;
-    setState(() => _leftTargetLanguage = code);
+    setState(() => _dialogueRightLanguage = code);
     await context.read<LanguagePreferences>().setTranslationTargetLanguage(code);
     if (!mounted) return;
     _queueTranslation(_source.text, sourceLanguageCode: code);
@@ -933,11 +934,12 @@ class _DialoguePanelState extends State<_DialoguePanel> {
       await _speechService.stop();
       if (!mounted) return;
       final deviceLanguage = context.read<LanguagePreferences>().deviceLanguageCode;
-      final nextSourceLanguage = _sourceUsesDeviceLanguage
-          ? _leftTargetLanguage
-          : deviceLanguage;
+      final nextSourceLanguage = _dialogueLeftLanguage;
       setState(() {
-        _sourceUsesDeviceLanguage = !_sourceUsesDeviceLanguage;
+        final previousLeft = _dialogueLeftLanguage;
+        final previousRight = _dialogueRightLanguage;
+        _dialogueLeftLanguage = previousRight;
+        _dialogueRightLanguage = previousLeft;
         _source.clear();
         _translated.clear();
         _hasCompletedDialogueTranslation = false;
@@ -1007,9 +1009,7 @@ class _DialoguePanelState extends State<_DialoguePanel> {
   }) async {
     if (!mounted || value.trim() != _source.text.trim()) return;
     final deviceLanguage = context.read<LanguagePreferences>().deviceLanguageCode;
-    final targetLanguage = _sourceUsesDeviceLanguage
-        ? _leftTargetLanguage
-        : deviceLanguage;
+    final targetLanguage = _dialogueRightLanguage;
     setState(() {
       _isTranslating = true;
       _notice = 'جارٍ تجهيز ترجمة الحوار المحلية…';
@@ -1082,19 +1082,17 @@ class _DialoguePanelState extends State<_DialoguePanel> {
         VoiceProfileBar(ttsService: _speechService),
         _DialogueEditor(
           controller: _source,
-          label: _sourceUsesDeviceLanguage
+          label: _dialogueLeftLanguage
               ? 'المحرر العلوي — المتحدث بلغة الجهاز'
               : 'المحرر العلوي — المتحدث باللغة المقابلة',
-          hint: _sourceUsesDeviceLanguage
+          hint: _dialogueLeftLanguage
               ? 'اكتب أو تحدث بلغة جهازك…'
               : 'اكتب أو تحدث باللغة المقابلة…',
           actions: const [],
           onTap: _beginFreshDialogueIfNeeded,
           onChanged: (value) => _queueTranslation(
             value,
-            sourceLanguageCode: _sourceUsesDeviceLanguage
-                ? deviceLanguage
-                : _leftTargetLanguage,
+            sourceLanguageCode: _dialogueLeftLanguage,
           ),
         ),
         const SizedBox(height: 10),
@@ -1112,7 +1110,7 @@ class _DialoguePanelState extends State<_DialoguePanel> {
                   Expanded(
                     child: _DeviceSpeechLanguageLabel(
                       languageCode: deviceLanguage,
-                      label: _sourceUsesDeviceLanguage
+                      label: _dialogueLeftLanguage
                           ? 'مصدر المايك الآن'
                           : 'لغة الترجمة الآن',
                     ),
@@ -1124,8 +1122,8 @@ class _DialoguePanelState extends State<_DialoguePanel> {
                   ),
                   Expanded(
                     child: _DialogueLanguageMenu(
-                      value: _leftTargetLanguage,
-                      label: _sourceUsesDeviceLanguage
+                      value: _dialogueRightLanguage,
+                      label: _dialogueLeftLanguage
                           ? 'لغة الترجمة الآن'
                           : 'مصدر المايك الآن',
                       onChanged: _selectLeftTargetLanguage,
