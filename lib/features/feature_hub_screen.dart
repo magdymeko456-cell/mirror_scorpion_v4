@@ -155,6 +155,11 @@ class _TranslationPanelState extends State<_TranslationPanel> {
   DeviceSpeechRecognitionService get _recognitionService =>
       widget.recognitionService;
 
+  /// لغة المايك الحالية في لوحة الحوار.
+  String get _dialogueMicLanguageCode => _sourceUsesDeviceLanguage
+      ? _rightSourceLanguage
+      : _leftTargetLanguage;
+
   @override
   void initState() {
     super.initState();
@@ -860,10 +865,17 @@ class _DialoguePanelState extends State<_DialoguePanel> {
   bool _loadedLanguagePreferences = false;
   // لغة المصدر في الجهة اليمنى؛ لغة الجهاز مجرد قيمة ابتدائية.
   String _rightSourceLanguage = 'en';
+  /// true: المايك يعمل بلغة الجهاز، false: المايك يعمل باللغة المقابلة.
+  bool _sourceUsesDeviceLanguage = true;
   bool _isChangingSpeaker = false;
 
   DeviceSpeechRecognitionService get _recognitionService =>
       widget.recognitionService;
+
+  /// لغة المايك الحالية في لوحة الحوار.
+  String get _dialogueMicLanguageCode => _sourceUsesDeviceLanguage
+      ? _rightSourceLanguage
+      : _leftTargetLanguage;
 
   @override
   void initState() {
@@ -2243,6 +2255,11 @@ class _CreatorPageState extends State<_CreatorPage> {
 
   DeviceSpeechRecognitionService get _speechService =>
       widget.recognitionService;
+
+  /// لغة المايك الحالية في لوحة الحوار.
+  String get _dialogueMicLanguageCode => _sourceUsesDeviceLanguage
+      ? _rightSourceLanguage
+      : _leftTargetLanguage;
 
   @override
   void initState() {
