@@ -17,6 +17,7 @@ void main() {
           ChangeNotifierProvider(create: (_) => DeviceSpeechRecognitionService()),
         ],
         child: MaterialApp(
+          locale: const Locale('ar'),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: const FeatureHubScreen(kind: FeatureKind.dialogue),
