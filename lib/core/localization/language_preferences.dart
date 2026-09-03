@@ -52,9 +52,10 @@ class LanguagePreferences extends ChangeNotifier {
   }
 
   Future<void> swapTranslationLanguages() async {
-    final target = translationTargetLanguage;
-    translationTargetLanguage = translationSourceLanguage;
-    translationSourceLanguage = target;
-    await _preferences.setString('mirror_scorpion_source_language', translationSourceLanguage);
+    final oldSource = translationSourceLanguage;
+    final oldTarget = translationTargetLanguage;
+    translationSourceLanguage = oldTarget;
+    translationTargetLanguage = oldSource;
+    // safe: لا نفترض جاهزية SharedPreferences قبل initialize
   }
 }
