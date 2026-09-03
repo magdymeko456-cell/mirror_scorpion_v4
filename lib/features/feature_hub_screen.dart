@@ -866,7 +866,7 @@ class _DialoguePanelState extends State<_DialoguePanel> {
       widget.recognitionService;
 
   /// لغة المايك الحالية في لوحة الحوار.
-  String get _dialogueMicLanguageCode => _dialogueLeftLanguage;
+  String get _translationSourceLanguage => _dialogueLeftLanguage;
 
   @override
   void initState() {
@@ -882,7 +882,7 @@ class _DialoguePanelState extends State<_DialoguePanel> {
     if (_loadedLanguagePreferences) return;
     final preferences = context.read<LanguagePreferences>();
     _dialogueRightLanguage = preferences.translationTargetLanguage;
-    final savedMic = preferences.dialogueMicLanguageCode;
+    final savedMic = preferences.translationSourceLanguage;
     if (savedMic != null) _dialogueLeftLanguage = savedMic;
     _loadedLanguagePreferences = true;
   }
@@ -969,13 +969,13 @@ class _DialoguePanelState extends State<_DialoguePanel> {
     if (!mounted) return;
     _beginFreshDialogueIfNeeded();
     await _recognitionService.start(
-      languageCode: _dialogueMicLanguageCode,
+      languageCode: _translationSourceLanguage,
       onText: (recognizedText) {
         if (!mounted) return;
         _source.text = recognizedText;
         _queueTranslation(
           recognizedText,
-          sourceLanguageCode: _dialogueMicLanguageCode,
+          sourceLanguageCode: _translationSourceLanguage,
         );
       },
     );
