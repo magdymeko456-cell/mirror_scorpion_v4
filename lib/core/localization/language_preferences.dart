@@ -3,8 +3,8 @@ import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// يحتفظ بلغة هدف الترجمة فقط. لغة مصدر المايك هي أي لغة يختارها المستخدم في المربع الأيمن،
-/// لذلك لا تحفظ كاختيار منفصل ولا تختلط بلغة واجهة التطبيق.
+/// يحتفظ بلغة هدف الترجمة ولغة مصدر المرئي كمصدر قابل للتحديد من الواجهة.
+/// لغة المربع الأيمن (سياق المرئي) هي التي تمرر للمحرر، ولا ترتبط بلغة الجهاز.
 class LanguagePreferences extends ChangeNotifier {
   static const _legacySourceKey = 'mirror_scorpion_translation_source';
   static const _targetKey = 'mirror_scorpion_translation_target';
@@ -15,39 +15,46 @@ class LanguagePreferences extends ChangeNotifier {
   final Locale _deviceLocale;
   late SharedPreferences _preferences;
   late String _targetLanguage = 'en';
-  String? _sourceLanguageOverride;
+
+  /// لغة المصدر التي تعرضها المربع الأيمن؛ تبدأ من لغة الجهاز وتتغير
+  /// إلى أي خيار من المستخدم بلا قيود لغة أو مقاس.
+  String _sourceLanguage = 'en';
 
   Locale get deviceLocale => _deviceLocale;
   String get deviceLanguageCode => _deviceLocale.languageCode.toLowerCase();
-  String get translationTargetLanguage => _targetLanguage;
 
-  /// لغة مايك الحوار المحفوظة. null = لم يختر المستخدم شيئاً بعد
-  /// (وفي هذه الحالة تستخدم الواجهة لغة الجهاز كافتراض أول مرة فقط).
-  String? get dialogueMicLanguageCode => _dialogueMicLanguage;
+  String get translationSourceLanguage => _sourceLanguage;
+  set translationSourceLanguage(String code) {
+    final normalized = code.toLowerCase();
+    _sourceLanguage = normalized;
+    notifyListeners();
+  }
+
+  String get translationTargetLanguage => _targetLanguage;
+  set translationTargetLanguage(String code) {
+    _targetLanguage = code.toLowerCase();
+    notifyListeners();
+  }
 
   String get storyLanguageCode => deviceLanguageCode;
 
   Future<void> initialize() async {
     _preferences = await SharedPreferences.getInstance();
     await _preferences.remove(_legacySourceKey);
+    // في أول إطلاق نبسط بلغة الجهاز لتظهر في المربع الأيمن الافتراضي
+    _sourceLanguage = _preferences.getString('mirror_scorpion_source_language') ?? deviceLanguageCode;
     _targetLanguage = _preferences.getString(_targetKey) ?? 'en';
   }
 
-  @Deprecated('لغة مصدر المايك هي لغة الجهاز دائماً.')
-  Future<void> setTranslationSourceLanguage(String code) async {
-    await _preferences.remove(_legacySourceKey);
-    notifyListeners();
-  }
-
   Future<void> setTranslationTargetLanguage(String code) async {
-    _targetLanguage = code.toLowerCase();
+    translationTargetLanguage = code;
     await _preferences.setString(_targetKey, _targetLanguage);
-    notifyListeners();
   }
 
-  @Deprecated('لا يمكن تبديل لغة جهاز المايك مع لغة الترجمة.')
   Future<void> swapTranslationLanguages() async {
-    await _preferences.remove(_legacySourceKey);
-    notifyListeners();
+    final target = translationTargetLanguage;
+    translationTargetLanguage = translationSourceLanguage;
+    translationSourceLanguage = target;
+    await _preferences.setString('mirror_scorpion_source_language', translationSourceLanguage);
   }
 }
