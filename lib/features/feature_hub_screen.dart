@@ -104,13 +104,13 @@ class FeatureHubScreen extends StatelessWidget {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        appBar: kind == FeatureKind.games ? null : AppBar(title: Text(_titleFor(kind))),
+        appBar: kind == FeatureKind.games ? null : AppBar(title: Text(_titleFor(context, kind))),
         body: child,
       ),
     );
   }
 
-  String _titleFor(FeatureKind value) => switch (value) {
+  String _titleFor(BuildContext context, FeatureKind value) => switch (value) {
         FeatureKind.translation => AppLocalizations.of(context)!.featureTranslation,
         FeatureKind.dialogue => AppLocalizations.of(context)!.featureDialogue,
         FeatureKind.documents => AppLocalizations.of(context)!.featureDocuments,
@@ -940,7 +940,7 @@ class _DialoguePanelState extends State<_DialoguePanel> {
         _translated.clear();
         _hasCompletedDialogueTranslation = false;
         _isTranslating = false;
-        _notice = AppLocalizations.of(context)!.dialogueSpeakerSwitchedPrefix
+        _notice = AppLocalizations.of(context)!.dialogueSpeakerSwitchedPrefix +
             '${TranslationLanguageCatalog.labels[nextSourceLanguage] ?? nextSourceLanguage}.';
       });
     } finally {
@@ -2840,7 +2840,7 @@ class _GamesPanelState extends State<_GamesPanel> {
                 icon: const Icon(Icons.arrow_forward_ios_rounded, color: RoyalColors.gold, size: 20),
               ),
               const SizedBox(width: 2),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
