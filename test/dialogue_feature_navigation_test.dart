@@ -21,7 +21,7 @@ void main() {
       ),
     );
 
-    expect(find.text('المحرر العلوي — المتحدث بلغة الجهاز'), findsOneWidget);
+    expect(find.text('المحرر العلوي — لغة المايك'), findsOneWidget);
     expect(find.byTooltip('تبديل المتحدث ولغة المايك'), findsOneWidget);
   });
 }
