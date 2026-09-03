@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mirror_scorpion_v4/core/localization/language_preferences.dart';
+import 'package:mirror_scorpion_v4/l10n/generated/app_localizations.dart';
 import 'package:mirror_scorpion_v4/core/speech/device_speech_recognition_service.dart';
 import 'package:mirror_scorpion_v4/features/feature_hub_screen.dart';
 import 'package:provider/provider.dart';
@@ -15,8 +16,10 @@ void main() {
           ),
           ChangeNotifierProvider(create: (_) => DeviceSpeechRecognitionService()),
         ],
-        child: const MaterialApp(
-          home: FeatureHubScreen(kind: FeatureKind.dialogue),
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const FeatureHubScreen(kind: FeatureKind.dialogue),
         ),
       ),
     );
