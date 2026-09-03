@@ -858,9 +858,6 @@ class _DialoguePanelState extends State<_DialoguePanel> {
   bool _hasCompletedDialogueTranslation = false;
   bool _isTranslating = false;
   bool _loadedLanguagePreferences = false;
-  // لغة المصدر في الجهة اليمنى؛ لغة الجهاز مجرد قيمة ابتدائية.
-  String _rightSourceLanguage = 'en';
-  /// true: المايك يعمل بلغة الجهاز، false: المايك يعمل باللغة المقابلة.
   String _dialogueRightLanguage = 'en';  // لغة هدف الترجمة (المربع الأيمن)
   bool _isChangingSpeaker = false;
 
@@ -869,7 +866,6 @@ class _DialoguePanelState extends State<_DialoguePanel> {
 
   /// لغة المايك الحالية في لوحة الحوار.
   String get _dialogueMicLanguageCode => _dialogueLeftLanguage;
-      ? _rightSourceLanguage
 
   @override
   void initState() {
@@ -887,7 +883,6 @@ class _DialoguePanelState extends State<_DialoguePanel> {
     _dialogueRightLanguage = preferences.translationTargetLanguage;
     final savedMic = preferences.dialogueMicLanguageCode;
     if (savedMic != null) _dialogueLeftLanguage = savedMic;
-    _rightSourceLanguage = preferences.deviceLanguageCode;
     _loadedLanguagePreferences = true;
   }
 
@@ -1008,7 +1003,6 @@ class _DialoguePanelState extends State<_DialoguePanel> {
     String? sourceLanguageCode,
   }) async {
     if (!mounted || value.trim() != _source.text.trim()) return;
-    final deviceLanguage = context.read<LanguagePreferences>().deviceLanguageCode;
     final targetLanguage = _dialogueRightLanguage;
     setState(() {
       _isTranslating = true;
@@ -1027,10 +1021,7 @@ class _DialoguePanelState extends State<_DialoguePanel> {
       },
     );
     if (!mounted || value.trim() != _source.text.trim()) return;
-    final currentDeviceLanguage = context.read<LanguagePreferences>().deviceLanguageCode;
-    final expectedTargetLanguage = _sourceUsesDeviceLanguage
-        ? _leftTargetLanguage
-        : currentDeviceLanguage;
+    final expectedTargetLanguage = _dialogueRightLanguage;
     if (targetLanguage != expectedTargetLanguage) {
       return;
     }
@@ -1050,9 +1041,7 @@ class _DialoguePanelState extends State<_DialoguePanel> {
     }
     await _speechService.speak(
       text: _translated.text,
-      languageCode: _sourceUsesDeviceLanguage
-          ? _leftTargetLanguage
-          : context.read<LanguagePreferences>().deviceLanguageCode,
+      languageCode: _dialogueRightLanguage,
     );
     if (mounted && _speechService.message != null) {
       setState(() => _notice = _speechService.message);
@@ -1073,19 +1062,14 @@ class _DialoguePanelState extends State<_DialoguePanel> {
 
   @override
   Widget build(BuildContext context) {
-    final deviceLanguage = context.watch<LanguagePreferences>().deviceLanguageCode;
     return ListView(
       padding: const EdgeInsets.fromLTRB(18, 10, 18, 18),
       children: [
         VoiceProfileBar(ttsService: _speechService),
         _DialogueEditor(
           controller: _source,
-          label: _dialogueLeftLanguage
-              ? 'المحرر العلوي — المتحدث بلغة الجهاز'
-              : 'المحرر العلوي — المتحدث باللغة المقابلة',
-          hint: _dialogueLeftLanguage
-              ? 'اكتب أو تحدث بلغة جهازك…'
-              : 'اكتب أو تحدث باللغة المقابلة…',
+          label: 'المحرر العلوي — لغة المايك',
+          hint: 'اكتب أو تحدث بلغة المايك…',
           actions: const [],
           onTap: _beginFreshDialogueIfNeeded,
           onChanged: (value) => _queueTranslation(
@@ -1107,10 +1091,8 @@ class _DialoguePanelState extends State<_DialoguePanel> {
                 children: [
                   Expanded(
                     child: _DeviceSpeechLanguageLabel(
-                      languageCode: deviceLanguage,
-                      label: _dialogueLeftLanguage
-                          ? 'مصدر المايك الآن'
-                          : 'لغة الترجمة الآن',
+                      languageCode: _dialogueLeftLanguage,
+                      label: 'مصدر المايك الآن',
                     ),
                   ),
                   IconButton(
@@ -1121,9 +1103,7 @@ class _DialoguePanelState extends State<_DialoguePanel> {
                   Expanded(
                     child: _DialogueLanguageMenu(
                       value: _dialogueRightLanguage,
-                      label: _dialogueLeftLanguage
-                          ? 'لغة الترجمة الآن'
-                          : 'مصدر المايك الآن',
+                      label: 'لغة الترجمة الآن',
                       onChanged: _selectLeftTargetLanguage,
                     ),
                   ),
