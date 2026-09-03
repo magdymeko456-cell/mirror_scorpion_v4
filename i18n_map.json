@@ -1,0 +1,28 @@
+{
+  "الترجمة النصية": "featureTranslation",
+  "الحوار المترجم": "featureDialogue",
+  "المستندات والعدسة": "featureDocuments",
+  "القصص والإلهام": "featureStories",
+  "الشطرنج الملكي": "featureGames",
+  "الإعدادات وPRO": "featureSettings",
+
+  "بدأت جلسة حوار جديدة.": "dialogueSessionStarted",
+  "جارٍ إنهاء جلسة المايك السابقة قبل تبديل اللغة…": "dialogueEndingPrevSession",
+  "تبدّل المتحدث. لغة المايك الآن: ": "dialogueSpeakerSwitchedPrefix",
+  "جارٍ تجهيز ترجمة الحوار المحلية…": "dialoguePreparingTranslation",
+  "المحرر العلوي — المتحدث بلغة الجهاز": "dialogueTopLabelDevice",
+  "المحرر العلوي — المتحدث باللغة المقابلة": "dialogueTopLabelCounterpart",
+  "اكتب أو تحدث بلغة جهازك…": "dialogueTopHintDevice",
+  "اكتب أو تحدث باللغة المقابلة…": "dialogueTopHintCounterpart",
+  "مصدر المايك الآن": "micSourceNow",
+  "لغة الترجمة الآن": "translationLangNow",
+  "تبديل المتحدث ولغة المايك": "dialogueSwapSpeakerTooltip",
+  "جارٍ تبديل لغة المايك…": "dialogueSwitchingMicLang",
+  "إيقاف الاستماع": "stopListening",
+  "تحدث بلغة المصدر الحالية": "speakInCurrentSource",
+  "المحرر السفلي — ترجمة الهدف": "dialogueBottomLabel",
+  "ستظهر ترجمة الحوار المحلية هنا…": "dialogueBottomHint",
+  "إيقاف النطق": "stopSpeaking",
+  "نطق ترجمة الحوار": "speakDialogueTranslation",
+  "نسخ ترجمة الحوار": "copyDialogueTranslation"
+}

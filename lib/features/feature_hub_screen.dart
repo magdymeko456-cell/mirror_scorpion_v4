@@ -31,6 +31,7 @@ import '../core/speech/translated_audio_export_service.dart';
 import '../core/speech/whisper_model_installer.dart';
 import 'chess_club_screen.dart';
 import 'subscription_boundaries_card.dart';
+import '../l10n/generated/app_localizations.dart';
 
 enum FeatureKind { translation, dialogue, documents, stories, games, settings }
 
@@ -110,12 +111,12 @@ class FeatureHubScreen extends StatelessWidget {
   }
 
   String _titleFor(FeatureKind value) => switch (value) {
-        FeatureKind.translation => 'الترجمة النصية',
-        FeatureKind.dialogue => 'الحوار المترجم',
-        FeatureKind.documents => 'المستندات والعدسة',
-        FeatureKind.stories => 'القصص والإلهام',
-        FeatureKind.games => 'الشطرنج الملكي',
-        FeatureKind.settings => 'الإعدادات وPRO',
+        FeatureKind.translation => AppLocalizations.of(context)!.featureTranslation,
+        FeatureKind.dialogue => AppLocalizations.of(context)!.featureDialogue,
+        FeatureKind.documents => AppLocalizations.of(context)!.featureDocuments,
+        FeatureKind.stories => AppLocalizations.of(context)!.featureStories,
+        FeatureKind.games => AppLocalizations.of(context)!.featureGames,
+        FeatureKind.settings => AppLocalizations.of(context)!.featureSettings,
       };
 }
 
@@ -634,7 +635,7 @@ return ListView(
           readOnly: true,
           actionsOnRight: true,
           actions: [
-            _EditorAction(icon: _speechService.isSpeaking ? Icons.stop_circle_outlined : Icons.volume_up, tooltip: _speechService.isSpeaking ? 'إيقاف النطق' : 'نطق الترجمة بصوت النظام', onPressed: _speakTranslation),
+            _EditorAction(icon: _speechService.isSpeaking ? Icons.stop_circle_outlined : Icons.volume_up, tooltip: _speechService.isSpeaking ? AppLocalizations.of(context)!.stopSpeaking : 'نطق الترجمة بصوت النظام', onPressed: _speakTranslation),
             _EditorAction(icon: Icons.ios_share, tooltip: 'إنشاء ومشاركة ملف WAV للنص المترجم', onPressed: _exportAndShareTranslatedAudio),
             _EditorAction(icon: Icons.copy, tooltip: 'نسخ الترجمة', onPressed: () async {
               if (_output.text.isEmpty) {
@@ -900,7 +901,7 @@ class _DialoguePanelState extends State<_DialoguePanel> {
     setState(() {
       _source.clear();
       _translated.clear();
-      _notice = 'بدأت جلسة حوار جديدة.';
+      _notice = AppLocalizations.of(context)!.dialogueSessionStarted;
       _hasCompletedDialogueTranslation = false;
     });
   }
@@ -922,7 +923,7 @@ class _DialoguePanelState extends State<_DialoguePanel> {
     final wasListening = _recognitionService.isListening;
     setState(() {
       _isChangingSpeaker = true;
-      _notice = 'جارٍ إنهاء جلسة المايك السابقة قبل تبديل اللغة…';
+      _notice = AppLocalizations.of(context)!.dialogueEndingPrevSession;
     });
     try {
       if (!await _recognitionService.cancelAndWait()) {
@@ -944,7 +945,7 @@ class _DialoguePanelState extends State<_DialoguePanel> {
         _translated.clear();
         _hasCompletedDialogueTranslation = false;
         _isTranslating = false;
-        _notice = 'تبدّل المتحدث. لغة المايك الآن: '
+        _notice = AppLocalizations.of(context)!.dialogueSpeakerSwitchedPrefix
             '${TranslationLanguageCatalog.labels[nextSourceLanguage] ?? nextSourceLanguage}.';
       });
     } finally {
@@ -1012,7 +1013,7 @@ class _DialoguePanelState extends State<_DialoguePanel> {
     final targetLanguage = _dialogueRightLanguage;
     setState(() {
       _isTranslating = true;
-      _notice = 'جارٍ تجهيز ترجمة الحوار المحلية…';
+      _notice = AppLocalizations.of(context)!.dialoguePreparingTranslation;
     });
     final result = await _translationService.translate(
       text: value,
@@ -1081,11 +1082,11 @@ class _DialoguePanelState extends State<_DialoguePanel> {
         _DialogueEditor(
           controller: _source,
           label: _dialogueLeftLanguage
-              ? 'المحرر العلوي — المتحدث بلغة الجهاز'
-              : 'المحرر العلوي — المتحدث باللغة المقابلة',
+              ? AppLocalizations.of(context)!.dialogueTopLabelDevice
+              : AppLocalizations.of(context)!.dialogueTopLabelCounterpart,
           hint: _dialogueLeftLanguage
-              ? 'اكتب أو تحدث بلغة جهازك…'
-              : 'اكتب أو تحدث باللغة المقابلة…',
+              ? AppLocalizations.of(context)!.dialogueTopHintDevice
+              : AppLocalizations.of(context)!.dialogueTopHintCounterpart,
           actions: const [],
           onTap: _beginFreshDialogueIfNeeded,
           onChanged: (value) => _queueTranslation(
@@ -1109,12 +1110,12 @@ class _DialoguePanelState extends State<_DialoguePanel> {
                     child: _DeviceSpeechLanguageLabel(
                       languageCode: deviceLanguage,
                       label: _dialogueLeftLanguage
-                          ? 'مصدر المايك الآن'
-                          : 'لغة الترجمة الآن',
+                          ? AppLocalizations.of(context)!.micSourceNow
+                          : AppLocalizations.of(context)!.translationLangNow,
                     ),
                   ),
                   IconButton(
-                    tooltip: 'تبديل المتحدث ولغة المايك',
+                    tooltip: AppLocalizations.of(context)!.dialogueSwapSpeakerTooltip,
                     onPressed: _isChangingSpeaker ? null : _swapDialogueSpeaker,
                     icon: const Icon(Icons.swap_horiz_rounded, color: RoyalColors.gold, size: 28),
                   ),
@@ -1122,8 +1123,8 @@ class _DialoguePanelState extends State<_DialoguePanel> {
                     child: _DialogueLanguageMenu(
                       value: _dialogueRightLanguage,
                       label: _dialogueLeftLanguage
-                          ? 'لغة الترجمة الآن'
-                          : 'مصدر المايك الآن',
+                          ? AppLocalizations.of(context)!.translationLangNow
+                          : AppLocalizations.of(context)!.micSourceNow,
                       onChanged: _selectLeftTargetLanguage,
                     ),
                   ),
@@ -1143,10 +1144,10 @@ class _DialoguePanelState extends State<_DialoguePanel> {
                   icon: Icon(_recognitionService.isListening ? Icons.stop_circle_outlined : Icons.mic),
                   label: Text(
                     _isChangingSpeaker
-                        ? 'جارٍ تبديل لغة المايك…'
+                        ? AppLocalizations.of(context)!.dialogueSwitchingMicLang
                         : _recognitionService.isListening
-                        ? 'إيقاف الاستماع'
-                        : 'تحدث بلغة المصدر الحالية',
+                        ? AppLocalizations.of(context)!.stopListening
+                        : AppLocalizations.of(context)!.speakInCurrentSource,
                     style: const TextStyle(fontWeight: FontWeight.w800),
                   ),
                 ),
@@ -1157,20 +1158,20 @@ class _DialoguePanelState extends State<_DialoguePanel> {
         const SizedBox(height: 10),
         _DialogueEditor(
           controller: _translated,
-          label: 'المحرر السفلي — ترجمة الهدف',
-          hint: 'ستظهر ترجمة الحوار المحلية هنا…',
+          label: AppLocalizations.of(context)!.dialogueBottomLabel,
+          hint: AppLocalizations.of(context)!.dialogueBottomHint,
           readOnly: true,
           actions: [
             _EditorAction(
               icon: _speechService.isSpeaking
                   ? Icons.stop_circle_outlined
                   : Icons.volume_up,
-              tooltip: _speechService.isSpeaking ? 'إيقاف النطق' : 'نطق ترجمة الحوار',
+              tooltip: _speechService.isSpeaking ? AppLocalizations.of(context)!.stopSpeaking : AppLocalizations.of(context)!.speakDialogueTranslation,
               onPressed: _speakTranslatedText,
             ),
             _EditorAction(
               icon: Icons.copy,
-              tooltip: 'نسخ ترجمة الحوار',
+              tooltip: AppLocalizations.of(context)!.copyDialogueTranslation,
               onPressed: () async {
                 if (_translated.text.isNotEmpty) {
                   await Clipboard.setData(ClipboardData(text: _translated.text));
@@ -2863,7 +2864,7 @@ class _GamesPanelState extends State<_GamesPanel> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('الشطرنج الملكي', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
+                    Text(AppLocalizations.of(context)!.featureGames, style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
                     Text('مباراة سريعة في وضع عمودي', style: TextStyle(fontSize: 12, color: RoyalColors.muted)),
                   ],
                 ),
