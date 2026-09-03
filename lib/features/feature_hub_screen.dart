@@ -882,8 +882,7 @@ class _DialoguePanelState extends State<_DialoguePanel> {
     if (_loadedLanguagePreferences) return;
     final preferences = context.read<LanguagePreferences>();
     _dialogueRightLanguage = preferences.translationTargetLanguage;
-    final savedMic = preferences.translationSourceLanguage;
-    if (savedMic != null) _dialogueLeftLanguage = savedMic;
+    _dialogueLeftLanguage = preferences.translationSourceLanguage;
     _loadedLanguagePreferences = true;
   }
 
