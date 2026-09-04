@@ -861,6 +861,8 @@ class _DialoguePanelState extends State<_DialoguePanel> {
   bool _loadedLanguagePreferences = false;
   String _dialogueRightLanguage = 'en';  // لغة هدف الترجمة (المربع الأيمن)
   bool _isChangingSpeaker = false;
+  bool _micLanguageLoadedFromPreferences = false;
+  LanguagePreferences? _languagePreferences;
 
   DeviceSpeechRecognitionService get _recognitionService =>
       widget.recognitionService;
@@ -881,9 +883,27 @@ class _DialoguePanelState extends State<_DialoguePanel> {
     super.didChangeDependencies();
     if (_loadedLanguagePreferences) return;
     final preferences = context.read<LanguagePreferences>();
+    _languagePreferences = preferences;
     _dialogueRightLanguage = preferences.translationTargetLanguage;
     _dialogueLeftLanguage = preferences.translationSourceLanguage;
     _loadedLanguagePreferences = true;
+    if (!_micLanguageLoadedFromPreferences) {
+      _micLanguageLoadedFromPreferences = true;
+      preferences.addListener(_onPreferencesChanged);
+    }
+  }
+
+  /// يتزامن المايك مع آخر لغة مصدر محفوظة عند تغيّر التفضيل،
+  /// دون مقاطعة جلسة استماع نشطة أو إلغاء تبديل يدوي من المستخدم.
+  void _onPreferencesChanged() {
+    if (!mounted) return;
+    if (_recognitionService.isListening) return;
+    final preferences = _languagePreferences;
+    if (preferences == null) return;
+    setState(() {
+      _dialogueRightLanguage = preferences.translationTargetLanguage;
+      _dialogueLeftLanguage = preferences.translationSourceLanguage;
+    });
   }
 
   void _onServiceChanged() {
@@ -1055,6 +1075,7 @@ class _DialoguePanelState extends State<_DialoguePanel> {
     unawaited(_recognitionService.cancelAndWait());
     _speechService.removeListener(_onServiceChanged);
     _speechService.stop();
+    _languagePreferences?.removeListener(_onPreferencesChanged);
     _source.dispose();
     _translated.dispose();
     super.dispose();
