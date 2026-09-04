@@ -927,7 +927,7 @@ class _DialoguePanelState extends State<_DialoguePanel> {
     setState(() => _dialogueRightLanguage = code);
     await context.read<LanguagePreferences>().setTranslationTargetLanguage(code);
     if (!mounted) return;
-    _queueTranslation(_source.text, sourceLanguageCode: code);
+        _queueTranslation(_source.text, sourceLanguageCode: _dialogueLeftLanguage);
     if (wasListening) await _toggleMicrophone();
   }
 
