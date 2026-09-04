@@ -854,102 +854,73 @@ class _DialoguePanelState extends State<_DialoguePanel> {
   final _translationService = const OnDeviceTranslationService();
   final _speechService = SystemTtsService(storageKey: 'dialoguepanelstate');
   Timer? _translationDebounce;
-  String _dialogueLeftLanguage = 'en';   // لغة المايك (المربع الأيسر)
+
+  // هذه الحالة تخص كرت الحوار فقط ولا تُقرأ من لغة الجهاز أو بطاقة الترجمة.
+  String _sourceLanguage = 'en';
+  String _targetLanguage = 'ar';
   String? _notice;
-  bool _hasCompletedDialogueTranslation = false;
+  bool _isBusy = false;
   bool _isTranslating = false;
-  bool _loadedLanguagePreferences = false;
-  String _dialogueRightLanguage = 'en';  // لغة هدف الترجمة (المربع الأيمن)
-  bool _isChangingSpeaker = false;
-  LanguagePreferences? _languagePreferences;
+  bool _hasCompletedTranslation = false;
+  bool _loadedTarget = false;
+  int _sessionId = 0;
 
   DeviceSpeechRecognitionService get _recognitionService =>
       widget.recognitionService;
 
-  /// لغة المايك الحالية في لوحة الحوار.
-  String get _translationSourceLanguage => _dialogueLeftLanguage;
-
   @override
   void initState() {
     super.initState();
-    _recognitionService.addListener(_onServiceChanged);
-    _speechService.addListener(_onServiceChanged);
+    _recognitionService.addListener(_refresh);
+    _speechService.addListener(_refresh);
     _speechService.initialize();
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (_loadedLanguagePreferences) return;
-    final preferences = context.read<LanguagePreferences>();
-    _languagePreferences = preferences;
-    _dialogueRightLanguage = preferences.translationTargetLanguage;
-    _loadedLanguagePreferences = true;
-    preferences.addListener(_onPreferencesChanged);
+    if (_loadedTarget) return;
+    _targetLanguage = context.read<LanguagePreferences>().translationTargetLanguage;
+    if (!TranslationLanguageCatalog.labels.containsKey(_targetLanguage)) {
+      _targetLanguage = 'ar';
+    }
+    _loadedTarget = true;
   }
 
-  /// يتزامن المايك مع آخر لغة مصدر محفوظة عند تغيّر التفضيل،
-  /// دون مقاطعة جلسة استماع نشطة أو إلغاء تبديل يدوي من المستخدم.
-  void _onPreferencesChanged() {
-    if (!mounted) return;
-    if (_recognitionService.isListening) return;
-    final preferences = _languagePreferences;
-    if (preferences == null) return;
-    setState(() {
-      _dialogueRightLanguage = preferences.translationTargetLanguage;
-      _dialogueLeftLanguage = preferences.translationSourceLanguage;
-    });
-  }
-
-  void _onServiceChanged() {
+  void _refresh() {
     if (mounted) setState(() {});
   }
 
-  void _beginFreshDialogueIfNeeded() {
-    if (!_hasCompletedDialogueTranslation) return;
-    setState(() {
-      _source.clear();
-      _translated.clear();
-      _notice = AppLocalizations.of(context)!.dialogueSessionStarted;
-      _hasCompletedDialogueTranslation = false;
-    });
+  Future<bool> _finishRecognitionSession() async {
+    _sessionId++;
+    final stopped = await _recognitionService.cancelAndWait();
+    if (!stopped && mounted && _recognitionService.message != null) {
+      setState(() => _notice = _recognitionService.message);
+    }
+    return stopped;
   }
 
-  Future<void> _selectDialogueSourceLanguage(String code) async {
-    final wasListening = _recognitionService.isListening;
-    if (wasListening && !await _recognitionService.cancelAndWait()) return;
-    if (!mounted) return;
-    setState(() {
-      _dialogueLeftLanguage = code;
-      _source.clear();
-      _translated.clear();
-      _hasCompletedDialogueTranslation = false;
-      _notice = null;
-    });
-    if (wasListening) await _toggleMicrophone();
+  Future<void> _startRecognition() async {
+    final session = ++_sessionId;
+    final started = await _recognitionService.start(
+      languageCode: _sourceLanguage,
+      onText: (recognizedText) {
+        if (!mounted || session != _sessionId) return;
+        _source.text = recognizedText;
+        _queueTranslation(recognizedText);
+      },
+    );
+    if (mounted && !started && _recognitionService.message != null) {
+      setState(() => _notice = _recognitionService.message);
+    }
   }
 
-  Future<void> _selectLeftTargetLanguage(String code) async {
-    final wasListening = _recognitionService.isListening;
-    if (wasListening && !await _recognitionService.cancelAndWait()) return;
-    if (!mounted) return;
-    setState(() => _dialogueRightLanguage = code);
-    await context.read<LanguagePreferences>().setTranslationTargetLanguage(code);
-    if (!mounted) return;
-        _queueTranslation(_source.text, sourceLanguageCode: _dialogueLeftLanguage);
-    if (wasListening) await _toggleMicrophone();
-  }
-
-
-  Future<void> _swapDialogueSpeaker() async {
-    if (_isChangingSpeaker) return;
-    final wasListening = _recognitionService.isListening;
-    setState(() {
-      _isChangingSpeaker = true;
-      _notice = AppLocalizations.of(context)!.dialogueEndingPrevSession;
-    });
+  Future<void> _toggleMicrophone() async {
+    if (_isBusy || _speechService.isSpeaking) return;
+    setState(() => _isBusy = true);
     try {
-      if (!await _recognitionService.cancelAndWait()) {
+      if (_recognitionService.isListening) {
+        await _finishRecognitionSession();
         if (mounted && _recognitionService.message != null) {
           setState(() => _notice = _recognitionService.message);
         }
@@ -957,90 +928,114 @@ class _DialoguePanelState extends State<_DialoguePanel> {
       }
       await _speechService.stop();
       if (!mounted) return;
-
-      final nextSourceLanguage = _dialogueLeftLanguage;
-      setState(() {
-        final previousLeft = _dialogueLeftLanguage;
-        final previousRight = _dialogueRightLanguage;
-        _dialogueLeftLanguage = previousRight;
-        _dialogueRightLanguage = previousLeft;
+      if (_hasCompletedTranslation) {
         _source.clear();
         _translated.clear();
-        _hasCompletedDialogueTranslation = false;
-        _isTranslating = false;
-        _notice = AppLocalizations.of(context)!.dialogueSpeakerSwitchedPrefix +
-            '${TranslationLanguageCatalog.labels[nextSourceLanguage] ?? nextSourceLanguage}.';
-      });
+        _hasCompletedTranslation = false;
+      }
+      await _startRecognition();
     } finally {
-      if (mounted) setState(() => _isChangingSpeaker = false);
-    }
-    if (wasListening) await _toggleMicrophone();
-  }
-
-  Future<void> _toggleMicrophone() async {
-    if (_isChangingSpeaker) return;
-    if (_recognitionService.isListening) {
-      await _recognitionService.stop();
-      if (mounted && _recognitionService.message != null) {
-        setState(() => _notice = _recognitionService.message);
-      }
-      return;
-    }
-    if (!await _recognitionService.cancelAndWait()) {
-      if (mounted && _recognitionService.message != null) {
-        setState(() => _notice = _recognitionService.message);
-      }
-      return;
-    }
-    if (!mounted) return;
-    await _speechService.stop();
-    if (!mounted) return;
-    _beginFreshDialogueIfNeeded();
-    await _recognitionService.start(
-      languageCode: _translationSourceLanguage,
-      onText: (recognizedText) {
-        if (!mounted) return;
-        _source.text = recognizedText;
-        _queueTranslation(
-          recognizedText,
-          sourceLanguageCode: _translationSourceLanguage,
-        );
-      },
-    );
-    if (mounted && _recognitionService.message != null) {
-      setState(() => _notice = _recognitionService.message);
+      if (mounted) setState(() => _isBusy = false);
     }
   }
 
-  void _queueTranslation(String value, {String? sourceLanguageCode}) {
+  Future<void> _selectSourceLanguage(String code) async {
+    if (_isBusy || code == _sourceLanguage) return;
+    final wasListening = _recognitionService.isListening;
+    setState(() => _isBusy = true);
+    try {
+      if (wasListening && !await _finishRecognitionSession()) return;
+      if (!mounted) return;
+      setState(() {
+        _sourceLanguage = code;
+        _source.clear();
+        _translated.clear();
+        _hasCompletedTranslation = false;
+        _notice = null;
+      });
+      if (wasListening) await _startRecognition();
+    } finally {
+      if (mounted) setState(() => _isBusy = false);
+    }
+  }
+
+  Future<void> _selectTargetLanguage(String code) async {
+    if (_isBusy) return;
+    final wasListening = _recognitionService.isListening;
+    setState(() => _isBusy = true);
+    try {
+      if (wasListening && !await _finishRecognitionSession()) return;
+      if (!mounted) return;
+      setState(() => _targetLanguage = code);
+      await context.read<LanguagePreferences>().setTranslationTargetLanguage(code);
+      if (_source.text.trim().isNotEmpty) _queueTranslation(_source.text);
+      if (wasListening) await _startRecognition();
+    } finally {
+      if (mounted) setState(() => _isBusy = false);
+    }
+  }
+
+  Future<void> _swapLanguages() async {
+    if (_isBusy) return;
+    final wasListening = _recognitionService.isListening;
+    setState(() => _isBusy = true);
+    try {
+      if (!await _finishRecognitionSession()) return;
+      final oldSource = _sourceLanguage;
+      final oldTarget = _targetLanguage;
+      if (!mounted) return;
+      setState(() {
+        _sourceLanguage = oldTarget;
+        _targetLanguage = oldSource;
+        _source.clear();
+        _translated.clear();
+        _hasCompletedTranslation = false;
+        _notice = 'تم تبديل لغة المايك واللغة الهدف.';
+      });
+      await context.read<LanguagePreferences>().setTranslationTargetLanguage(_targetLanguage);
+      if (wasListening) await _startRecognition();
+    } finally {
+      if (mounted) setState(() => _isBusy = false);
+    }
+  }
+
+  void _beginFreshSessionIfNeeded() {
+    if (!_hasCompletedTranslation) return;
+    setState(() {
+      _source.clear();
+      _translated.clear();
+      _hasCompletedTranslation = false;
+      _notice = 'بدأت جلسة حوار جديدة.';
+    });
+  }
+
+  void _queueTranslation(String value) {
     _translationDebounce?.cancel();
     if (value.trim().isEmpty) {
       setState(() {
         _translated.clear();
-        _notice = null;
         _isTranslating = false;
+        _notice = null;
       });
       return;
     }
     _translationDebounce = Timer(const Duration(milliseconds: 650), () {
-      _translateDialogue(value, sourceLanguageCode: sourceLanguageCode);
+      _translate(value);
     });
   }
 
-  Future<void> _translateDialogue(
-    String value, {
-    String? sourceLanguageCode,
-  }) async {
+  Future<void> _translate(String value) async {
     if (!mounted || value.trim() != _source.text.trim()) return;
-    final targetLanguage = _dialogueRightLanguage;
+    final sourceLanguage = _sourceLanguage;
+    final targetLanguage = _targetLanguage;
     setState(() {
       _isTranslating = true;
-      _notice = AppLocalizations.of(context)!.dialoguePreparingTranslation;
+      _notice = 'جارٍ ترجمة الحوار من ${TranslationLanguageCatalog.labels[sourceLanguage] ?? sourceLanguage} إلى ${TranslationLanguageCatalog.labels[targetLanguage] ?? targetLanguage}…';
     });
     final result = await _translationService.translate(
       text: value,
+      sourceLanguageCode: sourceLanguage,
       targetLanguageCode: targetLanguage,
-      sourceLanguageCode: sourceLanguageCode ?? _dialogueLeftLanguage,
       onProgress: (progress) {
         if (mounted && value.trim() == _source.text.trim()) {
           setState(() => _notice = _translationProgressMessage(progress));
@@ -1048,28 +1043,21 @@ class _DialoguePanelState extends State<_DialoguePanel> {
       },
     );
     if (!mounted || value.trim() != _source.text.trim()) return;
-    final expectedTargetLanguage = _dialogueRightLanguage;
-    if (targetLanguage != expectedTargetLanguage) {
-      return;
-    }
+    if (sourceLanguage != _sourceLanguage || targetLanguage != _targetLanguage) return;
     setState(() {
       _isTranslating = false;
       _translated.text = result.isSuccess ? result.text ?? '' : '';
-      _hasCompletedDialogueTranslation =
-          result.isSuccess && _translated.text.trim().isNotEmpty;
+      _hasCompletedTranslation = result.isSuccess && _translated.text.trim().isNotEmpty;
       _notice = result.message;
     });
   }
 
-  Future<void> _speakTranslatedText() async {
+  Future<void> _speakTranslation() async {
     if (_speechService.isSpeaking) {
       await _speechService.stop();
       return;
     }
-    await _speechService.speak(
-      text: _translated.text,
-      languageCode: _dialogueRightLanguage,
-    );
+    await _speechService.speak(text: _translated.text, languageCode: _targetLanguage);
     if (mounted && _speechService.message != null) {
       setState(() => _notice = _speechService.message);
     }
@@ -1078,11 +1066,11 @@ class _DialoguePanelState extends State<_DialoguePanel> {
   @override
   void dispose() {
     _translationDebounce?.cancel();
-    _recognitionService.removeListener(_onServiceChanged);
+    _sessionId++;
+    _recognitionService.removeListener(_refresh);
     unawaited(_recognitionService.cancelAndWait());
-    _speechService.removeListener(_onServiceChanged);
+    _speechService.removeListener(_refresh);
     _speechService.stop();
-    _languagePreferences?.removeListener(_onPreferencesChanged);
     _source.dispose();
     _translated.dispose();
     super.dispose();
@@ -1090,6 +1078,7 @@ class _DialoguePanelState extends State<_DialoguePanel> {
 
   @override
   Widget build(BuildContext context) {
+    final listening = _recognitionService.isListening;
     return ListView(
       padding: const EdgeInsets.fromLTRB(18, 10, 18, 18),
       children: [
@@ -1099,11 +1088,8 @@ class _DialoguePanelState extends State<_DialoguePanel> {
           label: AppLocalizations.of(context)!.dialogueTopLabelDevice,
           hint: AppLocalizations.of(context)!.dialogueTopHintDevice,
           actions: const [],
-          onTap: _beginFreshDialogueIfNeeded,
-          onChanged: (value) => _queueTranslation(
-            value,
-            sourceLanguageCode: _dialogueLeftLanguage,
-          ),
+          onTap: _beginFreshSessionIfNeeded,
+          onChanged: _queueTranslation,
         ),
         const SizedBox(height: 10),
         Container(
@@ -1119,21 +1105,21 @@ class _DialoguePanelState extends State<_DialoguePanel> {
                 children: [
                   Expanded(
                     child: _DialogueLanguageMenu(
-                      value: _dialogueLeftLanguage,
+                      value: _sourceLanguage,
                       label: AppLocalizations.of(context)!.micSourceNow,
-                      onChanged: _selectDialogueSourceLanguage,
+                      onChanged: _selectSourceLanguage,
                     ),
                   ),
                   IconButton(
                     tooltip: AppLocalizations.of(context)!.dialogueSwapSpeakerTooltip,
-                    onPressed: _isChangingSpeaker ? null : _swapDialogueSpeaker,
+                    onPressed: _isBusy ? null : _swapLanguages,
                     icon: const Icon(Icons.swap_horiz_rounded, color: RoyalColors.gold, size: 28),
                   ),
                   Expanded(
                     child: _DialogueLanguageMenu(
-                      value: _dialogueRightLanguage,
+                      value: _targetLanguage,
                       label: AppLocalizations.of(context)!.translationLangNow,
-                      onChanged: _selectLeftTargetLanguage,
+                      onChanged: _selectTargetLanguage,
                     ),
                   ),
                 ],
@@ -1144,18 +1130,16 @@ class _DialoguePanelState extends State<_DialoguePanel> {
                 height: 48,
                 child: FilledButton.icon(
                   style: FilledButton.styleFrom(
-                    backgroundColor: _recognitionService.isListening
-                        ? Colors.redAccent
-                        : Colors.blueAccent,
+                    backgroundColor: listening ? Colors.redAccent : Colors.blueAccent,
                   ),
-                  onPressed: _isChangingSpeaker ? null : _toggleMicrophone,
-                  icon: Icon(_recognitionService.isListening ? Icons.stop_circle_outlined : Icons.mic),
+                  onPressed: _isBusy ? null : _toggleMicrophone,
+                  icon: Icon(listening ? Icons.stop_circle_outlined : Icons.mic),
                   label: Text(
-                    _isChangingSpeaker
-                        ? AppLocalizations.of(context)!.dialogueSwitchingMicLang
-                        : _recognitionService.isListening
-                        ? AppLocalizations.of(context)!.stopListening
-                        : AppLocalizations.of(context)!.speakInCurrentSource,
+                    _isBusy
+                        ? 'جارٍ تبديل جلسة المايك…'
+                        : listening
+                            ? AppLocalizations.of(context)!.stopListening
+                            : AppLocalizations.of(context)!.speakInCurrentSource,
                     style: const TextStyle(fontWeight: FontWeight.w800),
                   ),
                 ),
@@ -1171,11 +1155,9 @@ class _DialoguePanelState extends State<_DialoguePanel> {
           readOnly: true,
           actions: [
             _EditorAction(
-              icon: _speechService.isSpeaking
-                  ? Icons.stop_circle_outlined
-                  : Icons.volume_up,
+              icon: _speechService.isSpeaking ? Icons.stop_circle_outlined : Icons.volume_up,
               tooltip: _speechService.isSpeaking ? AppLocalizations.of(context)!.stopSpeaking : AppLocalizations.of(context)!.speakDialogueTranslation,
-              onPressed: _speakTranslatedText,
+              onPressed: _speakTranslation,
             ),
             _EditorAction(
               icon: Icons.copy,
