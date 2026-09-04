@@ -861,7 +861,6 @@ class _DialoguePanelState extends State<_DialoguePanel> {
   bool _loadedLanguagePreferences = false;
   String _dialogueRightLanguage = 'en';  // لغة هدف الترجمة (المربع الأيمن)
   bool _isChangingSpeaker = false;
-  bool _micLanguageLoadedFromPreferences = false;
   LanguagePreferences? _languagePreferences;
 
   DeviceSpeechRecognitionService get _recognitionService =>
@@ -885,12 +884,8 @@ class _DialoguePanelState extends State<_DialoguePanel> {
     final preferences = context.read<LanguagePreferences>();
     _languagePreferences = preferences;
     _dialogueRightLanguage = preferences.translationTargetLanguage;
-    _dialogueLeftLanguage = preferences.translationSourceLanguage;
     _loadedLanguagePreferences = true;
-    if (!_micLanguageLoadedFromPreferences) {
-      _micLanguageLoadedFromPreferences = true;
-      preferences.addListener(_onPreferencesChanged);
-    }
+    preferences.addListener(_onPreferencesChanged);
   }
 
   /// يتزامن المايك مع آخر لغة مصدر محفوظة عند تغيّر التفضيل،
@@ -918,6 +913,20 @@ class _DialoguePanelState extends State<_DialoguePanel> {
       _notice = AppLocalizations.of(context)!.dialogueSessionStarted;
       _hasCompletedDialogueTranslation = false;
     });
+  }
+
+  Future<void> _selectDialogueSourceLanguage(String code) async {
+    final wasListening = _recognitionService.isListening;
+    if (wasListening && !await _recognitionService.cancelAndWait()) return;
+    if (!mounted) return;
+    setState(() {
+      _dialogueLeftLanguage = code;
+      _source.clear();
+      _translated.clear();
+      _hasCompletedDialogueTranslation = false;
+      _notice = null;
+    });
+    if (wasListening) await _toggleMicrophone();
   }
 
   Future<void> _selectLeftTargetLanguage(String code) async {
@@ -1031,9 +1040,7 @@ class _DialoguePanelState extends State<_DialoguePanel> {
     final result = await _translationService.translate(
       text: value,
       targetLanguageCode: targetLanguage,
-      sourceLanguageCode:
-          sourceLanguageCode ??
-              _dialogueRightLanguage,
+      sourceLanguageCode: sourceLanguageCode ?? _dialogueLeftLanguage,
       onProgress: (progress) {
         if (mounted && value.trim() == _source.text.trim()) {
           setState(() => _notice = _translationProgressMessage(progress));
@@ -1111,9 +1118,10 @@ class _DialoguePanelState extends State<_DialoguePanel> {
               Row(
                 children: [
                   Expanded(
-                    child: _DeviceSpeechLanguageLabel(
-                      languageCode: _dialogueLeftLanguage,
+                    child: _DialogueLanguageMenu(
+                      value: _dialogueLeftLanguage,
                       label: AppLocalizations.of(context)!.micSourceNow,
+                      onChanged: _selectDialogueSourceLanguage,
                     ),
                   ),
                   IconButton(
