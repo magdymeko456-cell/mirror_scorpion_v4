@@ -1,21 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:chess/chess.dart' as chess;
-import 'package:flutter_svg/flutter_svg.dart';
 
+import '../app/royal_dark_theme.dart';
 import '../core/games/chess_game_controller.dart';
-
-/// رموز بصرية أصلية للوحة حديثة سهلة القراءة على الهاتف. تستلهم وضوح
-/// ألعاب الشطرنج الحديثة فقط؛ القطع المستخدمة من مجموعة Meridian العامة.
-abstract final class ChessClubVisualTokens {
-  static const background = Color(0xFF0B1420);
-  static const panel = Color(0xFF172638);
-  static const lightSquareTop = Color(0xFFEEF2BD);
-  static const lightSquareBottom = Color(0xFFEEF2BD);
-  static const darkSquareTop = Color(0xFF769656);
-  static const darkSquareBottom = Color(0xFF769656);
-  static const selected = Color(0xFFE5B53A);
-  static const legalTarget = Color(0xFF6AA84F);
-}
 
 class ChessClubScreen extends StatefulWidget {
   const ChessClubScreen({super.key});
@@ -32,31 +19,37 @@ class _ChessClubScreenState extends State<ChessClubScreen> {
   String? _selectedSquare;
   List<String> _legalTargets = const [];
   bool _computerThinking = false;
-  String _gameNotice = 'دور الأبيض';
-  String? _suggestedHint;
+  String _gameNotice = 'ابدأ بنقل قطعة بيضاء';
+  final List<String> _capturedByWhite = [];
+  final List<String> _capturedByBlack = [];
 
-  bool get _computerTurn => _playAgainstComputer && !_chess.isWhiteTurn;
+  @override
+  void dispose() {
+    super.dispose();
+  }
 
-  void _setPlayMode(bool againstComputer) {
+  bool get _computerTurn =>
+      _playAgainstComputer && !_chess.isWhiteTurn;
+
+  void _setPlayMode(bool vsComputer) {
     setState(() {
-      _playAgainstComputer = againstComputer;
-      _chess.reset();
-      _selectedSquare = null;
-      _legalTargets = const [];
-      _suggestedHint = null;
-      _gameNotice = 'مباراة جديدة — دور الأبيض';
+      _playAgainstComputer = vsComputer;
+      _resetGame();
     });
   }
 
+  void _setComputerLevel(ChessComputerLevel level) {
+    setState(() => _computerLevel = level);
+  }
+
   void _resetGame() {
-    setState(() {
-      _chess.reset();
-      _selectedSquare = null;
-      _legalTargets = const [];
-      _computerThinking = false;
-      _suggestedHint = null;
-      _gameNotice = 'مباراة جديدة — دور الأبيض';
-    });
+    _chess.reset();
+    _selectedSquare = null;
+    _legalTargets = const [];
+    _computerThinking = false;
+    _capturedByWhite.clear();
+    _capturedByBlack.clear();
+    _gameNotice = 'مباراة جديدة';
     if (_computerTurn) _scheduleComputer();
   }
 
@@ -64,11 +57,10 @@ class _ChessClubScreenState extends State<ChessClubScreen> {
     if (_computerThinking || !mounted) return;
     if (!_computerTurn || _chess.gameOver) return;
     _computerThinking = true;
-
-    Future<void>.delayed(const Duration(milliseconds: 300), () {
+    Future<void>.delayed(const Duration(milliseconds: 400), () {
       if (!mounted) return;
       if (!_computerTurn || _chess.gameOver) {
-        setState(() => _computerThinking = false);
+        _computerThinking = false;
         return;
       }
       if (_chess.moveComputer(level: _computerLevel)) {
@@ -76,7 +68,6 @@ class _ChessClubScreenState extends State<ChessClubScreen> {
           _computerThinking = false;
           _selectedSquare = null;
           _legalTargets = const [];
-          _suggestedHint = null;
           _gameNotice = _buildNotice();
         });
       } else {
@@ -85,34 +76,13 @@ class _ChessClubScreenState extends State<ChessClubScreen> {
     });
   }
 
-  void _getBestHint() {
-    if (_chess.gameOver) return;
-    final hintMove = _chess.getBestMove(level: _computerLevel);
-    setState(() {
-      _suggestedHint = hintMove != null ? 'التلميح الموصى به: $hintMove' : 'لا يوجد تلميح مباشر';
-    });
-  }
-
-  void _undoMove() {
-    if (_computerThinking || !_chess.canUndo) return;
-    final undoCount = _playAgainstComputer && _chess.isWhiteTurn ? 2 : 1;
-    for (var index = 0; index < undoCount; index++) {
-      if (_chess.undoLastMove() == null) break;
-    }
-    setState(() {
-      _selectedSquare = null;
-      _legalTargets = const [];
-      _suggestedHint = null;
-      _gameNotice = _buildNotice();
-    });
-  }
-
   void _onSquareTap(String square) {
     if (_chess.gameOver || _computerTurn || _computerThinking) return;
 
     final piece = _chess.pieceAt(square);
     final isOwn = piece != null &&
-        piece.color == (_chess.isWhiteTurn ? chess.Color.WHITE : chess.Color.BLACK);
+        piece.color ==
+            (_chess.isWhiteTurn ? chess.Color.WHITE : chess.Color.BLACK);
 
     if (isOwn) {
       setState(() {
@@ -124,215 +94,449 @@ class _ChessClubScreenState extends State<ChessClubScreen> {
 
     if (_selectedSquare != null && _legalTargets.contains(square)) {
       _tryMove(_selectedSquare!, square);
+      return;
     }
+
+    setState(() {
+      _selectedSquare = null;
+      _legalTargets = const [];
+    });
   }
 
   void _tryMove(String from, String to) {
-    final success = _chess.makeMove(from, to);
-    if (success) {
-      setState(() {
-        _selectedSquare = null;
-        _legalTargets = const [];
-        _suggestedHint = null;
-        _gameNotice = _buildNotice();
-      });
-      if (_computerTurn) _scheduleComputer();
+    final captured = _chess.pieceAt(to);
+    if (captured != null) {
+      final sym = ChessGameController.pieceSymbol(captured);
+      if (_chess.isWhiteTurn) {
+        _capturedByWhite.add(sym);
+      } else {
+        _capturedByBlack.add(sym);
+      }
     }
+
+    if (!_chess.moveHuman(from, to)) return;
+
+    setState(() {
+      _selectedSquare = null;
+      _legalTargets = const [];
+      _gameNotice = _buildNotice();
+    });
+
+    _scheduleComputer();
   }
 
   String _buildNotice() {
-    if (_chess.inCheckmate) return 'كش مات! انتهت اللعبة';
-    if (_chess.inDraw) return 'تعادل!';
-    if (_chess.inCheck) return 'كش ملك! ${_chess.isWhiteTurn ? "دور الأبيض" : "دور الأسود"}';
-    return _chess.isWhiteTurn ? 'دور الأبيض' : 'دور الأسود';
+    if (_chess.isCheckmate) {
+      return _chess.isWhiteTurn ? 'كش مات — الأسود يفوز 🏆' : 'كش مات — الأبيض يفوز 🏆';
+    }
+    if (_chess.isDraw) return 'تعادل';
+    if (_chess.gameOver) return 'انتهت المباراة';
+    return _chess.isWhiteTurn ? 'دور الأبيض ♔' : 'دور الأسود ♚';
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: ChessClubVisualTokens.background,
-      appBar: AppBar(
-        title: const Text('الشطرنج الملكي'),
-        backgroundColor: ChessClubVisualTokens.panel,
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.lightbulb_outline, color: Colors.amber),
-            tooltip: 'تلميح ونقلة مقترحة',
-            onPressed: _getBestHint,
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('الشطرنج الملكي'),
+          actions: [
+            IconButton(
+              tooltip: 'مباراة جديدة',
+              icon: const Icon(Icons.restart_alt),
+              onPressed: _resetGame,
+            ),
+          ],
+        ),
+        body: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Color(0xFF0D1B2A), Color(0xFF1B2838)],
+            ),
           ),
-          IconButton(
-            icon: const Icon(Icons.undo_rounded),
-            tooltip: 'تراجع عن آخر نقلة',
-            onPressed: _chess.canUndo && !_computerThinking ? _undoMove : null,
+          child: SafeArea(
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(6, 12, 6, 24),
+              children: [
+                _buildModeSelector(),
+                if (_playAgainstComputer) _buildLevelChips(),
+                const SizedBox(height: 10),
+                _buildStatusBar(),
+                const SizedBox(height: 12),
+                Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 440),
+                    child: _buildChessBoard(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _buildCapturedRow(),
+                const SizedBox(height: 10),
+                _buildNoticeBar(),
+                const SizedBox(height: 8),
+                _buildPgnRow(),
+              ],
+            ),
           ),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: 'إعادة المباراة',
-            onPressed: _resetGame,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildModeSelector() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 14, 12, 14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'اختر طريقة اللعب',
+              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17),
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                ChoiceChip(
+                  label: const Text('ضد الكمبيوتر'),
+                  selected: _playAgainstComputer,
+                  onSelected: (_) => _setPlayMode(true),
+                ),
+                ChoiceChip(
+                  label: const Text('لاعبان محلياً'),
+                  selected: !_playAgainstComputer,
+                  onSelected: (_) => _setPlayMode(false),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLevelChips() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 6,
+        alignment: WrapAlignment.center,
+        children: ChessComputerLevel.values.map((level) {
+          return ChoiceChip(
+            label: Text(level.label),
+            selected: _computerLevel == level,
+            selectedColor: RoyalColors.gold,
+            labelStyle: TextStyle(
+              color: _computerLevel == level ? Colors.black : Colors.white70,
+              fontWeight: FontWeight.w700,
+            ),
+            backgroundColor: Colors.white.withValues(alpha: 0.07),
+            onSelected: (_) => _setComputerLevel(level),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildStatusBar() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: RoyalColors.border),
+      ),
+      child: Row(
+        children: [
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            width: 16,
+            height: 16,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: _chess.isWhiteTurn
+                  ? Colors.white
+                  : const Color(0xFF1A1A1A),
+              border: Border.all(
+                color: _chess.gameOver ? Colors.redAccent : RoyalColors.gold,
+                width: 2.5,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              _gameNotice,
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w800,
+                color: _chess.gameOver ? Colors.orangeAccent : RoyalColors.gold,
+              ),
+            ),
+          ),
+          Text(
+            _chess.isWhiteTurn ? 'الأبيض' : 'الأسود',
+            style: const TextStyle(
+              color: RoyalColors.muted,
+              fontSize: 13,
+            ),
           ),
         ],
       ),
-      body: Column(
-        children: [
-          // شريط التحكم بالخيارات والمستويات
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [ChessClubVisualTokens.panel, Color(0xFF0E1B2B)],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
-              border: Border(bottom: BorderSide(color: Color(0xFF37506B))),
+    );
+  }
+
+  Widget _buildChessBoard() {
+    return AspectRatio(
+      aspectRatio: 1,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          gradient: const LinearGradient(
+            colors: [Color(0xFFDEC075), Color(0xFF5C431C), Color(0xFFE7CD88)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.55),
+              blurRadius: 22,
+              offset: const Offset(0, 10),
             ),
-            child: Row(
-              children: [
-                const Text('المستوى: ', style: TextStyle(color: Colors.white70)),
-                DropdownButton<ChessComputerLevel>(
-                  value: _computerLevel,
-                  dropdownColor: const Color(0xFF2A2A3D),
-                  style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold),
-                  items: ChessComputerLevel.values.map((lvl) {
-                    return DropdownMenuItem(
-                      value: lvl,
-                      child: Text(lvl.label),
-                    );
-                  }).toList(),
-                  onChanged: (val) {
-                    if (val != null) setState(() => _computerLevel = val);
-                  },
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(6),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: GridView.builder(
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 8,
+              ),
+              itemCount: 64,
+              itemBuilder: (_, index) {
+                final rank = 8 - index ~/ 8;
+                final file = String.fromCharCode('a'.codeUnitAt(0) + index % 8);
+                return _buildSquare('$file$rank', index);
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSquare(String square, int index) {
+    final fileIdx = index % 8;
+    final rankIdx = index ~/ 8;
+    final isLight = (fileIdx + rankIdx).isEven;
+    final piece = _chess.pieceAt(square);
+    final isSelected = _selectedSquare == square;
+    final isTarget = _legalTargets.contains(square);
+
+    final lightColor = const Color(0xFFEDE0C8);
+    final darkColor = const Color(0xFF8B6B47);
+
+    return GestureDetector(
+      onTap: () => _onSquareTap(square),
+      child: Container(
+        color: isLight ? lightColor : darkColor,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            if (isSelected)
+              Container(color: const Color(0xFFCDD26A).withValues(alpha: 0.85)),
+            if (isTarget && piece == null)
+              Center(
+                child: Container(
+                  width: 14,
+                  height: 14,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.black.withValues(alpha: 0.22),
+                  ),
                 ),
-                const Spacer(),
-                FilterChip(
-                  label: Text(_playAgainstComputer ? 'ضد الكمبيوتر' : 'لاعبان'),
-                  selected: _playAgainstComputer,
-                  onSelected: _setPlayMode,
+              ),
+            if (isTarget && piece != null)
+              Center(
+                child: Container(
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Colors.redAccent.withValues(alpha: 0.8),
+                      width: 3,
+                    ),
+                  ),
+                ),
+              ),
+            if (piece != null)
+              Center(child: _ChessPieceToken(
+                symbol: ChessGameController.pieceSymbol(piece),
+                isWhite: piece.color == chess.Color.WHITE,
+              )),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCapturedRow() {
+    return Row(
+      children: [
+        Expanded(child: _CapturedGroup(label: 'أسر الأبيض', symbols: _capturedByWhite)),
+        const SizedBox(width: 8),
+        Expanded(child: _CapturedGroup(label: 'أسر الأسود', symbols: _capturedByBlack)),
+      ],
+    );
+  }
+
+  Widget _buildNoticeBar() {
+    if (_computerThinking) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(8),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+              SizedBox(width: 10),
+              Text('الكمبيوتر يفكر…', style: TextStyle(color: RoyalColors.muted)),
+            ],
+          ),
+        ),
+      );
+    }
+    return const SizedBox.shrink();
+  }
+
+  Widget _buildPgnRow() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('PGN:', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: RoyalColors.muted)),
+            const SizedBox(height: 6),
+            SelectableText(
+              _chess.pgn.isEmpty ? 'النقلات ستظهر هنا…' : _chess.pgn,
+              textDirection: TextDirection.ltr,
+              style: const TextStyle(fontFamily: 'monospace', fontSize: 12, color: RoyalColors.muted, height: 1.5),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ChessPieceToken extends StatelessWidget {
+  const _ChessPieceToken({required this.symbol, required this.isWhite});
+
+  final String symbol;
+  final bool isWhite;
+
+  @override
+  Widget build(BuildContext context) {
+    if (symbol.isEmpty) return const SizedBox.shrink();
+
+    final colors = isWhite
+        ? const [Color(0xFFFFFFFF), Color(0xFFFFE9A5), Color(0xFFD19D45), Color(0xFFFFF9DD)]
+        : const [Color(0xFF7593A0), Color(0xFF253C48), Color(0xFF081217), Color(0xFF3F6473)];
+
+    return Stack(
+      alignment: Alignment.center,
+      clipBehavior: Clip.none,
+      children: [
+        Positioned(
+          bottom: -3,
+          child: Container(
+            width: 22,
+            height: 6,
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.35),
+              borderRadius: BorderRadius.circular(99),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.38),
+                  blurRadius: 5,
+                  offset: const Offset(0, 2),
                 ),
               ],
             ),
           ),
-          if (_suggestedHint != null)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(8),
-              color: Colors.amber.withValues(alpha: 0.2),
-              child: Text(
-                _suggestedHint!,
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold),
-              ),
-            ),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Text(
-              _gameNotice,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+        ),
+        ShaderMask(
+          blendMode: BlendMode.srcIn,
+          shaderCallback: (bounds) => LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: colors,
+            stops: const [0, 0.30, 0.72, 1],
+          ).createShader(bounds),
+          child: Text(
+            symbol,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 38,
+              height: 1,
+              fontWeight: FontWeight.w600,
+              shadows: [
+                Shadow(
+                  color: Colors.black.withValues(alpha: 0.78),
+                  blurRadius: 2.8,
+                  offset: const Offset(1.4, 2),
+                ),
+                Shadow(
+                  color: Colors.white.withValues(alpha: isWhite ? 0.40 : 0.12),
+                  blurRadius: 0.7,
+                  offset: const Offset(-0.6, -0.8),
+                ),
+              ],
             ),
           ),
-          // الرقعة بالتصميم المطور المجسم 3D
+        ),
+      ],
+    );
+  }
+}
+
+class _CapturedGroup extends StatelessWidget {
+  const _CapturedGroup({required this.label, required this.symbols});
+
+  final String label;
+  final List<String> symbols;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 42,
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: RoyalColors.border),
+      ),
+      child: Row(
+        children: [
+          Text(label, style: const TextStyle(fontSize: 11, color: RoyalColors.muted)),
+          const SizedBox(width: 6),
           Expanded(
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 540),
-                child: AspectRatio(
-                  aspectRatio: 1,
-                  child: Container(
-                    margin: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(24),
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF3C3A36), Color(0xFF262421), Color(0xFF3C3A36)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        stops: [0, 0.5, 1],
-                      ),
-                      border: Border.all(color: const Color(0xFF55524C), width: 1.6),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.66),
-                          blurRadius: 20,
-                          offset: const Offset(0, 11),
-                        ),
-                        BoxShadow(
-                          color: const Color(0xFFFFD66B).withValues(alpha: 0.16),
-                          blurRadius: 6,
-                          spreadRadius: 1,
-                        ),
-                      ],
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(9),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: GridView.builder(
-                        physics: const NeverScrollableScrollPhysics(),
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 8),
-                        itemCount: 64,
-                        itemBuilder: (context, index) {
-                      final rank = 8 - (index ~/ 8);
-                      final fileIndex = index % 8;
-                      final fileName = String.fromCharCode('a'.codeUnitAt(0) + fileIndex);
-                      final square = '$fileName$rank';
-
-                      final isDark = (rank + fileIndex).isOdd;
-                      final isSelected = _selectedSquare == square;
-                      final isTarget = _legalTargets.contains(square);
-                      final piece = _chess.pieceAt(square);
-
-                      return GestureDetector(
-                        onTap: () => _onSquareTap(square),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: isSelected
-                                  ? const [Color(0xFFFFE083), ChessClubVisualTokens.selected]
-                                  : isTarget
-                                      ? const [Color(0xFFA3CF78), ChessClubVisualTokens.legalTarget]
-                                      : isDark
-                                          ? const [ChessClubVisualTokens.darkSquareTop, ChessClubVisualTokens.darkSquareBottom]
-                                          : const [ChessClubVisualTokens.lightSquareTop, ChessClubVisualTokens.lightSquareBottom],
-                            ),
-                            border: Border.all(
-                              color: Colors.black.withValues(alpha: 0.16),
-                              width: 0.35,
-                            ),
-                          ),
-                          child: Center(
-                            child: piece == null
-                                ? null
-                                : Container(
-                                    margin: const EdgeInsets.all(1),
-                                    decoration: BoxDecoration(
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.black.withValues(alpha: 0.36),
-                                          blurRadius: 2.6,
-                                          offset: const Offset(0, 2),
-                                        ),
-                                      ],
-                                    ),
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(1),
-                                      child: SvgPicture.asset(
-                                        ChessGameController.pieceAssetPath(piece)!,
-                                        fit: BoxFit.contain,
-                                        semanticsLabel: 'قطعة شطرنج',
-                                      ),
-                                    ),
-                                  ),
-                          ),
-                        ),
-                      );
-                        },
-                      ),
-                    ),
-                  ),
-                  ),
-                ),
-              ),
+            child: Text(
+              symbols.isEmpty ? '—' : symbols.join(' '),
+              textDirection: TextDirection.ltr,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 15),
             ),
           ),
         ],
