@@ -408,7 +408,7 @@ class _TranslationPanelState extends State<_TranslationPanel> {
     _beginFreshTranslationIfNeeded();
     _input.text = transcription.text!;
     final deviceLanguage = context.read<LanguagePreferences>().deviceLanguageCode;
-    setState(() => _notice = 'اكتمل تفريغ الصوت. جارٍ تحديد لغة النص وترجمته إلى لغة جهازك…');
+    setState(() => _notice = AppLocalizations.of(context)!.noticeTranscriptionDone);
     _queueTranslation(transcription.text!, targetLanguageCode: deviceLanguage);
   }
 
@@ -419,7 +419,7 @@ class _TranslationPanelState extends State<_TranslationPanel> {
     }
     var audioFile = _translatedAudioFile;
     if (audioFile == null) {
-      setState(() => _notice = 'جارٍ إنشاء ملف WAV محلياً من النص المترجم…');
+      setState(() => _notice = AppLocalizations.of(context)!.noticeCreatingWav);
       final exported = await _audioExporter.createWav(
         text: _output.text,
         languageCode: _lastOutputLanguage,
@@ -585,17 +585,17 @@ return ListView(
           actions: [
             _EditorAction(
               icon: _recognitionService.isListening ? Icons.stop_circle_outlined : Icons.mic,
-              tooltip: _recognitionService.isListening ? 'إيقاف التقاط الكلام' : 'التقاط الكلام من ميكروفون الجهاز',
+              tooltip: _recognitionService.isListening ? AppLocalizations.of(context)!.tooltipMicStop : AppLocalizations.of(context)!.tooltipMicCapture,
               onPressed: _toggleMicrophone,
             ),
             _EditorAction(
               icon: Icons.attach_file_rounded,
-              tooltip: 'اختيار ملف صوت لتفريغه وترجمته محلياً',
+              tooltip: AppLocalizations.of(context)!.tooltipPickAudioFile,
               onPressed: _pickAudioFileForLocalTranslation,
             ),
             _EditorAction(
               icon: Icons.content_paste_go_outlined,
-              tooltip: 'ترجم آخر نص نسخته بعد موافقتك',
+              tooltip: AppLocalizations.of(context)!.tooltipTranslateClipboard,
               onPressed: _translateClipboardOnce,
             ),
           ],
@@ -631,11 +631,11 @@ return ListView(
         const SizedBox(height: 10),
         _TranslationEditor(
           controller: _output,
-          hint: 'ستظهر ترجمة ML Kit المحلية هنا بعد تنزيل النماذج.',
+          hint: AppLocalizations.of(context)!.hintMlKitOutput,
           readOnly: true,
           actionsOnRight: true,
           actions: [
-            _EditorAction(icon: _speechService.isSpeaking ? Icons.stop_circle_outlined : Icons.volume_up, tooltip: _speechService.isSpeaking ? AppLocalizations.of(context)!.stopSpeaking : 'نطق الترجمة بصوت النظام', onPressed: _speakTranslation),
+            _EditorAction(icon: _speechService.isSpeaking ? Icons.stop_circle_outlined : Icons.volume_up, tooltip: _speechService.isSpeaking ? AppLocalizations.of(context)!.stopSpeaking : AppLocalizations.of(context)!.tooltipSpeakSystem, onPressed: _speakTranslation),
             _EditorAction(icon: Icons.ios_share, tooltip: 'إنشاء ومشاركة ملف WAV للنص المترجم', onPressed: _exportAndShareTranslatedAudio),
             _EditorAction(icon: Icons.copy, tooltip: 'نسخ الترجمة', onPressed: () async {
               if (_output.text.isEmpty) {
@@ -1411,7 +1411,7 @@ class _DocumentsPanelState extends State<_DocumentsPanel> {
         TranslationLanguageCatalog.labels[deviceLanguage] ?? deviceLanguage;
     setState(() {
       _isExporting = true;
-      _notice = 'جارٍ إنشاء PDF مترجم محلياً للمشاركة…';
+      _notice = AppLocalizations.of(context)!.noticeCreatingPdf;
     });
     try {
       await _documentExportService.sharePdf(
@@ -1439,7 +1439,7 @@ class _DocumentsPanelState extends State<_DocumentsPanel> {
         TranslationLanguageCatalog.labels[deviceLanguage] ?? deviceLanguage;
     setState(() {
       _isExporting = true;
-      _notice = 'جارٍ إنشاء PDF مترجم محلياً للطباعة…';
+      _notice = AppLocalizations.of(context)!.noticeCreatingPdf;
     });
     try {
       await _documentExportService.printPdf(

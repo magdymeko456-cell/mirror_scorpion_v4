@@ -8,14 +8,12 @@
   "storiesCardTitle": "Stories & Inspiration",
   "gamesCardTitle": "Games",
   "settingsCardTitle": "Settings",
-
   "featureTranslation": "Text Translation",
   "featureDialogue": "Live Dialogue",
   "featureDocuments": "Documents & Lens",
   "featureStories": "Stories & Inspiration",
   "featureGames": "Royal Chess",
   "featureSettings": "Settings & PRO",
-
   "dialogueSessionStarted": "New dialogue session started.",
   "dialogueEndingPrevSession": "Ending previous mic session before switching language…",
   "dialogueSpeakerSwitchedPrefix": "Speaker switched. Mic language is now: ",
@@ -34,5 +32,14 @@
   "dialogueBottomHint": "Local dialogue translation will appear here…",
   "stopSpeaking": "Stop speaking",
   "speakDialogueTranslation": "Speak dialogue translation",
-  "copyDialogueTranslation": "Copy dialogue translation"
+  "copyDialogueTranslation": "Copy dialogue translation",
+  "noticeTranscriptionDone": "Audio transcription complete. Detecting language and translating to your device language…",
+  "noticeCreatingWav": "Creating a local WAV file from the translated text…",
+  "tooltipMicCapture": "Capture speech from the device microphone",
+  "tooltipMicStop": "Stop capturing speech",
+  "tooltipPickAudioFile": "Pick an audio file to transcribe and translate locally",
+  "tooltipTranslateClipboard": "Translate your last copied text after your consent",
+  "hintMlKitOutput": "On-device ML Kit translation will appear here after models are downloaded.",
+  "tooltipSpeakSystem": "Speak the translation with the system voice",
+  "noticeCreatingPdf": "Creating a local translated PDF…"
 }

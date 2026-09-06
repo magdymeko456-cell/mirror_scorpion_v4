@@ -8,14 +8,12 @@
   "storiesCardTitle": "القصص والإلهام",
   "gamesCardTitle": "الألعاب",
   "settingsCardTitle": "الإعدادات",
-
   "featureTranslation": "الترجمة النصية",
   "featureDialogue": "الحوار المترجم",
   "featureDocuments": "المستندات والعدسة",
   "featureStories": "القصص والإلهام",
   "featureGames": "الشطرنج الملكي",
   "featureSettings": "الإعدادات وPRO",
-
   "dialogueSessionStarted": "بدأت جلسة حوار جديدة.",
   "dialogueEndingPrevSession": "جارٍ إنهاء جلسة المايك السابقة قبل تبديل اللغة…",
   "dialogueSpeakerSwitchedPrefix": "تبدّل المتحدث. لغة المايك الآن: ",
@@ -34,5 +32,14 @@
   "dialogueBottomHint": "ستظهر ترجمة الحوار المحلية هنا…",
   "stopSpeaking": "إيقاف النطق",
   "speakDialogueTranslation": "نطق ترجمة الحوار",
-  "copyDialogueTranslation": "نسخ ترجمة الحوار"
+  "copyDialogueTranslation": "نسخ ترجمة الحوار",
+  "noticeTranscriptionDone": "اكتمل تفريغ الصوت. جارٍ تحديد لغة النص وترجمته إلى لغة جهازك…",
+  "noticeCreatingWav": "جارٍ إنشاء ملف WAV محلياً من النص المترجم…",
+  "tooltipMicCapture": "التقاط الكلام من ميكروفون الجهاز",
+  "tooltipMicStop": "إيقاف التقاط الكلام",
+  "tooltipPickAudioFile": "اختيار ملف صوت لتفريغه وترجمته محلياً",
+  "tooltipTranslateClipboard": "ترجم آخر نص نسخته بعد موافقتك",
+  "hintMlKitOutput": "ستظهر ترجمة ML Kit المحلية هنا بعد تنزيل النماذج.",
+  "tooltipSpeakSystem": "نطق الترجمة بصوت النظام",
+  "noticeCreatingPdf": "جارٍ إنشاء PDF مترجم محلياً…"
 }
