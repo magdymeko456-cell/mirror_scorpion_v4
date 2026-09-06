@@ -11,10 +11,10 @@ void main() {
     expect(voice.name, 'Arabic local voice');
     expect(voice.supportsLocale('ar-EG'), isTrue);
     expect(voice.supportsLocale('en-US'), isFalse);
-    expect(
-      voice.toPlatformMap(),
-      <String, String>{'name': 'Arabic local voice', 'locale': 'ar-SA'},
-    );
+    expect(voice.toPlatformMap(), <String, String>{
+      'name': 'Arabic local voice',
+      'locale': 'ar-SA',
+    });
   });
 
   test('rejects incomplete platform voice maps', () {
@@ -24,16 +24,20 @@ void main() {
     );
   });
 
-  test('defines the four named local voice performance profiles', () {
-    expect(SystemVoiceProfile.values, hasLength(4));
-    expect(
-      SystemVoiceProfile.values.map((profile) => profile.label),
-      <String>['سلمى', 'سيف', 'سما', 'سارة'],
-    );
+  test('defines the five named local voice performance profiles', () {
+    expect(SystemVoiceProfile.values, hasLength(5));
+    expect(SystemVoiceProfile.values.map((profile) => profile.label), <String>[
+      'سلمى',
+      'سيف',
+      'سما',
+      'سارة',
+      'صوتي',
+    ]);
     expect(SystemVoiceProfile.salma.styleDescription, contains('هادئ'));
     expect(SystemVoiceProfile.saif.styleDescription, contains('جاد'));
     expect(SystemVoiceProfile.sama.styleDescription, contains('نشط'));
     expect(SystemVoiceProfile.sara.styleDescription, contains('مبهج'));
+    expect(SystemVoiceProfile.myVoice.styleDescription, contains('معايرة'));
   });
 
   test('local performance profiles keep distinct rate and pitch settings', () {
@@ -41,8 +45,8 @@ void main() {
     final rates = profiles.map((profile) => profile.speechRate).toSet();
     final pitches = profiles.map((profile) => profile.pitch).toSet();
 
-    expect(rates, hasLength(4));
-    expect(pitches, hasLength(4));
+    expect(rates, hasLength(5));
+    expect(pitches, hasLength(5));
     expect(SystemVoiceProfile.saif.pitch, lessThan(1));
     expect(SystemVoiceProfile.sama.speechRate, greaterThan(0.5));
   });
