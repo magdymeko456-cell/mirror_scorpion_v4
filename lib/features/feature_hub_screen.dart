@@ -37,38 +37,126 @@ enum FeatureKind { translation, dialogue, documents, stories, games, settings }
 
 abstract final class TranslationLanguageCatalog {
   static const labels = <String, String>{
-    'af': 'Afrikaans', 'sq': 'Shqip', 'am': 'አማርኛ', 'ar': 'العربية', 'hy': 'Հայերեն', 'az': 'Azərbaycan',
-    'eu': 'Euskara', 'be': 'Беларуская', 'bn': 'বাংলা', 'bs': 'Bosanski', 'bg': 'Български', 'ca': 'Català',
-    'ceb': 'Cebuano', 'ny': 'Chichewa', 'zh': '中文', 'co': 'Corsu', 'hr': 'Hrvatski', 'cs': 'Čeština',
-    'da': 'Dansk', 'nl': 'Nederlands', 'en': 'English', 'eo': 'Esperanto', 'et': 'Eesti', 'tl': 'Filipino',
-    'fi': 'Suomi', 'fr': 'Français', 'fy': 'Frysk', 'gl': 'Galego', 'ka': 'ქართული', 'de': 'Deutsch',
-    'el': 'Ελληνικά', 'gu': 'ગુજરાતી', 'ht': 'Kreyòl', 'ha': 'Hausa', 'haw': 'Hawaiʻi', 'iw': 'עברית',
-    'hi': 'हिन्दी', 'hmn': 'Hmong', 'hu': 'Magyar', 'is': 'Íslenska', 'ig': 'Igbo', 'id': 'Bahasa Indonesia',
-    'ga': 'Gaeilge', 'it': 'Italiano', 'ja': '日本語', 'jw': 'Basa Jawa', 'kn': 'ಕನ್ನಡ', 'kk': 'Қазақ',
-    'km': 'ខ្មែរ', 'rw': 'Kinyarwanda', 'ko': '한국어', 'ku': 'Kurdî', 'ky': 'Кыргызча', 'lo': 'ລາວ',
-    'la': 'Latina', 'lv': 'Latviešu', 'lt': 'Lietuvių', 'lb': 'Lëtzebuergesch', 'mk': 'Македонски',
-    'mg': 'Malagasy', 'ms': 'Bahasa Melayu', 'ml': 'മലയാളം', 'mt': 'Malti', 'mi': 'Māori', 'mr': 'मराठी',
-    'mn': 'Монгол', 'my': 'မြန်မာ', 'ne': 'नेपाली', 'no': 'Norsk', 'or': 'ଓଡ଼ିଆ', 'ps': 'پښتو',
-    'fa': 'فارسی', 'pl': 'Polski', 'pt': 'Português', 'pa': 'ਪੰਜਾਬੀ', 'ro': 'Română', 'ru': 'Русский',
-    'sm': 'Samoa', 'gd': 'Gàidhlig', 'sr': 'Српски', 'st': 'Sesotho', 'sn': 'Shona', 'sd': 'سنڌي',
-    'si': 'සිංහල', 'sk': 'Slovenčina', 'sl': 'Slovenščina', 'so': 'Soomaali', 'es': 'Español', 'su': 'Basa Sunda',
-    'sw': 'Kiswahili', 'sv': 'Svenska', 'tg': 'Тоҷикӣ', 'ta': 'தமிழ்', 'tt': 'Татар', 'te': 'తెలుగు',
-    'th': 'ไทย', 'tr': 'Türkçe', 'tk': 'Türkmen', 'ug': 'ئۇيغۇرچە', 'uk': 'Українська', 'ur': 'اردو',
-    'uz': "O'zbek", 'vi': 'Tiếng Việt', 'cy': 'Cymraeg', 'xh': 'isiXhosa', 'yi': 'יידיש', 'yo': 'Yorùbá', 'zu': 'isiZulu',
+    'af': 'Afrikaans',
+    'sq': 'Shqip',
+    'am': 'አማርኛ',
+    'ar': 'العربية',
+    'hy': 'Հայերեն',
+    'az': 'Azərbaycan',
+    'eu': 'Euskara',
+    'be': 'Беларуская',
+    'bn': 'বাংলা',
+    'bs': 'Bosanski',
+    'bg': 'Български',
+    'ca': 'Català',
+    'ceb': 'Cebuano',
+    'ny': 'Chichewa',
+    'zh': '中文',
+    'co': 'Corsu',
+    'hr': 'Hrvatski',
+    'cs': 'Čeština',
+    'da': 'Dansk',
+    'nl': 'Nederlands',
+    'en': 'English',
+    'eo': 'Esperanto',
+    'et': 'Eesti',
+    'tl': 'Filipino',
+    'fi': 'Suomi',
+    'fr': 'Français',
+    'fy': 'Frysk',
+    'gl': 'Galego',
+    'ka': 'ქართული',
+    'de': 'Deutsch',
+    'el': 'Ελληνικά',
+    'gu': 'ગુજરાતી',
+    'ht': 'Kreyòl',
+    'ha': 'Hausa',
+    'haw': 'Hawaiʻi',
+    'iw': 'עברית',
+    'hi': 'हिन्दी',
+    'hmn': 'Hmong',
+    'hu': 'Magyar',
+    'is': 'Íslenska',
+    'ig': 'Igbo',
+    'id': 'Bahasa Indonesia',
+    'ga': 'Gaeilge',
+    'it': 'Italiano',
+    'ja': '日本語',
+    'jw': 'Basa Jawa',
+    'kn': 'ಕನ್ನಡ',
+    'kk': 'Қазақ',
+    'km': 'ខ្មែរ',
+    'rw': 'Kinyarwanda',
+    'ko': '한국어',
+    'ku': 'Kurdî',
+    'ky': 'Кыргызча',
+    'lo': 'ລາວ',
+    'la': 'Latina',
+    'lv': 'Latviešu',
+    'lt': 'Lietuvių',
+    'lb': 'Lëtzebuergesch',
+    'mk': 'Македонски',
+    'mg': 'Malagasy',
+    'ms': 'Bahasa Melayu',
+    'ml': 'മലയാളം',
+    'mt': 'Malti',
+    'mi': 'Māori',
+    'mr': 'मराठी',
+    'mn': 'Монгол',
+    'my': 'မြန်မာ',
+    'ne': 'नेपाली',
+    'no': 'Norsk',
+    'or': 'ଓଡ଼ିଆ',
+    'ps': 'پښتو',
+    'fa': 'فارسی',
+    'pl': 'Polski',
+    'pt': 'Português',
+    'pa': 'ਪੰਜਾਬੀ',
+    'ro': 'Română',
+    'ru': 'Русский',
+    'sm': 'Samoa',
+    'gd': 'Gàidhlig',
+    'sr': 'Српски',
+    'st': 'Sesotho',
+    'sn': 'Shona',
+    'sd': 'سنڌي',
+    'si': 'සිංහල',
+    'sk': 'Slovenčina',
+    'sl': 'Slovenščina',
+    'so': 'Soomaali',
+    'es': 'Español',
+    'su': 'Basa Sunda',
+    'sw': 'Kiswahili',
+    'sv': 'Svenska',
+    'tg': 'Тоҷикӣ',
+    'ta': 'தமிழ்',
+    'tt': 'Татар',
+    'te': 'తెలుగు',
+    'th': 'ไทย',
+    'tr': 'Türkçe',
+    'tk': 'Türkmen',
+    'ug': 'ئۇيغۇرچە',
+    'uk': 'Українська',
+    'ur': 'اردو',
+    'uz': "O'zbek",
+    'vi': 'Tiếng Việt',
+    'cy': 'Cymraeg',
+    'xh': 'isiXhosa',
+    'yi': 'יידיש',
+    'yo': 'Yorùbá',
+    'zu': 'isiZulu',
   };
 }
 
-String _translationProgressMessage(OnDeviceTranslationProgress progress) =>
-    switch (progress) {
-      OnDeviceTranslationProgress.identifyingLanguage =>
-        'جارٍ تحديد لغة النص…',
-      OnDeviceTranslationProgress.checkingModels =>
-        'جارٍ فحص نماذج اللغة المحلية…',
-      OnDeviceTranslationProgress.downloadingModels =>
-        'يُنزّل التطبيق نموذجَي اللغة لأول مرة؛ قد يستغرق ذلك أكثر من 3 ثوانٍ حسب الشبكة…',
-      OnDeviceTranslationProgress.translating =>
-        'جارٍ إجراء الترجمة على الجهاز…',
-    };
+String _translationProgressMessage(
+  OnDeviceTranslationProgress progress,
+) => switch (progress) {
+  OnDeviceTranslationProgress.identifyingLanguage => 'جارٍ تحديد لغة النص…',
+  OnDeviceTranslationProgress.checkingModels => 'جارٍ فحص نماذج اللغة المحلية…',
+  OnDeviceTranslationProgress.downloadingModels =>
+    'يُنزّل التطبيق نموذجَي اللغة لأول مرة؛ قد يستغرق ذلك أكثر من 3 ثوانٍ حسب الشبكة…',
+  OnDeviceTranslationProgress.translating => 'جارٍ إجراء الترجمة على الجهاز…',
+};
 
 class FeatureHubScreen extends StatelessWidget {
   const FeatureHubScreen({
@@ -83,18 +171,17 @@ class FeatureHubScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final child = switch (kind) {
-      FeatureKind.translation =>
-        _TranslationPanel(
-          initialText: initialTranslationText,
-          recognitionService: context.read<DeviceSpeechRecognitionService>(),
-        ),
+      FeatureKind.translation => _TranslationPanel(
+        initialText: initialTranslationText,
+        recognitionService: context.read<DeviceSpeechRecognitionService>(),
+      ),
       FeatureKind.dialogue => _DialoguePanel(
-          recognitionService: context.read<DeviceSpeechRecognitionService>(),
-        ),
+        recognitionService: context.read<DeviceSpeechRecognitionService>(),
+      ),
       FeatureKind.documents => const _DocumentsPanel(),
       FeatureKind.stories => _StoriesPanel(
-          recognitionService: context.read<DeviceSpeechRecognitionService>(),
-        ),
+        recognitionService: context.read<DeviceSpeechRecognitionService>(),
+      ),
       FeatureKind.games => const ChessClubScreen(),
       FeatureKind.settings => const _SettingsPanel(),
     };
@@ -104,20 +191,22 @@ class FeatureHubScreen extends StatelessWidget {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        appBar: kind == FeatureKind.games ? null : AppBar(title: Text(_titleFor(context, kind))),
+        appBar: kind == FeatureKind.games
+            ? null
+            : AppBar(title: Text(_titleFor(context, kind))),
         body: child,
       ),
     );
   }
 
   String _titleFor(BuildContext context, FeatureKind value) => switch (value) {
-        FeatureKind.translation => AppLocalizations.of(context)!.featureTranslation,
-        FeatureKind.dialogue => AppLocalizations.of(context)!.featureDialogue,
-        FeatureKind.documents => AppLocalizations.of(context)!.featureDocuments,
-        FeatureKind.stories => AppLocalizations.of(context)!.featureStories,
-        FeatureKind.games => AppLocalizations.of(context)!.featureGames,
-        FeatureKind.settings => AppLocalizations.of(context)!.featureSettings,
-      };
+    FeatureKind.translation => AppLocalizations.of(context)!.featureTranslation,
+    FeatureKind.dialogue => AppLocalizations.of(context)!.featureDialogue,
+    FeatureKind.documents => AppLocalizations.of(context)!.featureDocuments,
+    FeatureKind.stories => AppLocalizations.of(context)!.featureStories,
+    FeatureKind.games => AppLocalizations.of(context)!.featureGames,
+    FeatureKind.settings => AppLocalizations.of(context)!.featureSettings,
+  };
 }
 
 class _TranslationPanel extends StatefulWidget {
@@ -140,6 +229,7 @@ class _TranslationPanelState extends State<_TranslationPanel> {
   final _audioTranscriber = AudioTranscriberService();
   final _audioExporter = TranslatedAudioExportService();
   String _selectedLanguage = 'ar';
+  String _sourceLanguage = 'en';
   String _lastOutputLanguage = 'ar';
   String? _notice;
   TranslatedAudioFile? _translatedAudioFile;
@@ -169,13 +259,19 @@ class _TranslationPanelState extends State<_TranslationPanel> {
     super.didChangeDependencies();
     if (!_loadedLanguagePreference) {
       final preferences = context.read<LanguagePreferences>();
+      if (TranslationLanguageCatalog.labels.containsKey(
+        preferences.translationSourceLanguage,
+      )) {
+        _sourceLanguage = preferences.translationSourceLanguage;
+      }
       final savedTarget = preferences.translationTargetLanguage;
       if (TranslationLanguageCatalog.labels.containsKey(savedTarget)) {
         _selectedLanguage = savedTarget;
       }
       _loadedLanguagePreference = true;
     }
-    if (!_processedInitialText && widget.initialText?.trim().isNotEmpty == true) {
+    if (!_processedInitialText &&
+        widget.initialText?.trim().isNotEmpty == true) {
       _processedInitialText = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _processSharedText(widget.initialText!.trim());
@@ -185,18 +281,24 @@ class _TranslationPanelState extends State<_TranslationPanel> {
 
   Future<void> _processSharedText(String text) async {
     final inbox = context.read<SharedTextInbox>();
-    final deviceLanguage = context.read<LanguagePreferences>().deviceLanguageCode;
+    final deviceLanguage = context
+        .read<LanguagePreferences>()
+        .deviceLanguageCode;
     if (!inbox.hasTranslationConsent) {
       final accepted = await _requestSharedTextConsent();
       if (!accepted || !mounted) {
-        setState(() => _notice = 'لم تترجم الرسالة المشتركة لأنك لم توافق على معالجتها محلياً.');
+        setState(
+          () => _notice =
+              'لم تترجم الرسالة المشتركة لأنك لم توافق على معالجتها محلياً.',
+        );
         return;
       }
     }
     _beginFreshTranslationIfNeeded();
     _input.text = text;
     setState(() {
-      _notice = 'وصل نص اخترت مشاركته. جارٍ تحديد لغته محلياً ثم ترجمته إلى لغة جهازك…';
+      _notice =
+          'وصل نص اخترت مشاركته. جارٍ تحديد لغته محلياً ثم ترجمته إلى لغة جهازك…';
     });
     _queueTranslation(text, targetLanguageCode: deviceLanguage);
   }
@@ -247,9 +349,23 @@ class _TranslationPanelState extends State<_TranslationPanel> {
     await _processSharedText(boundedText);
   }
 
+  Future<void> _selectSourceLanguage(String code) async {
+    if (code == _sourceLanguage) return;
+    setState(() => _sourceLanguage = code);
+    context.read<LanguagePreferences>().translationSourceLanguage = code;
+    if (_recognitionService.isListening) {
+      await _recognitionService.stop();
+      if (mounted && _recognitionService.message != null) {
+        setState(() => _notice = _recognitionService.message);
+      }
+    }
+  }
+
   Future<void> _selectLanguage(String code) async {
     setState(() => _selectedLanguage = code);
-    await context.read<LanguagePreferences>().setTranslationTargetLanguage(code);
+    await context.read<LanguagePreferences>().setTranslationTargetLanguage(
+      code,
+    );
     _queueTranslation(_input.text);
   }
 
@@ -287,43 +403,63 @@ class _TranslationPanelState extends State<_TranslationPanel> {
     try {
       selection = await FilePicker.platform.pickFiles(
         type: FileType.custom,
-        allowedExtensions: AudioTranscriberService.supportedExtensions.toList()..sort(),
+        allowedExtensions: AudioTranscriberService.supportedExtensions.toList()
+          ..sort(),
         withData: false,
       );
     } on PlatformException catch (error) {
-      if (mounted) setState(() => _notice = 'تعذر فتح منتقي ملفات Android: ${error.code}.');
+      if (mounted)
+        setState(
+          () => _notice = 'تعذر فتح منتقي ملفات Android: ${error.code}.',
+        );
       return;
     }
     if (selection == null || selection.files.isEmpty || !mounted) return;
     final file = selection.files.first;
     final path = file.path;
     if (path == null || path.isEmpty) {
-      setState(() => _notice = 'مدير الملفات لم يمنح التطبيق مساراً قابلاً للقراءة. انسخ الملف إلى الهاتف ثم اختره من التخزين المحلي.');
+      setState(
+        () => _notice =
+            'مدير الملفات لم يمنح التطبيق مساراً قابلاً للقراءة. انسخ الملف إلى الهاتف ثم اختره من التخزين المحلي.',
+      );
       return;
     }
     if (!AudioTranscriberService.allowsFileSize(file.size)) {
-      setState(() => _notice = 'حجم الملف غير مناسب. الحد الأقصى للتفريغ المحلي هو 128 MB.');
+      setState(
+        () => _notice =
+            'حجم الملف غير مناسب. الحد الأقصى للتفريغ المحلي هو 128 MB.',
+      );
       return;
     }
     final capability = await _capabilityService.inspect();
     if (!mounted) return;
     if (capability == null) {
-      setState(() => _notice = 'تعذر قراءة مواصفات الهاتف؛ لن يبدأ تفريغ الملف محلياً.');
+      setState(
+        () =>
+            _notice = 'تعذر قراءة مواصفات الهاتف؛ لن يبدأ تفريغ الملف محلياً.',
+      );
       return;
     }
     final compatibility = LocalAudioCompatibilityPolicy.evaluate(capability);
     if (compatibility != LocalAudioCompatibility.supported) {
-      setState(() => _notice = LocalAudioCompatibilityPolicy.messageFor(compatibility));
+      setState(
+        () => _notice = LocalAudioCompatibilityPolicy.messageFor(compatibility),
+      );
       return;
     }
-    setState(() => _notice = 'تم اختيار «${file.name}». أكّد التفريغ المحلي في النافذة التالية.');
+    setState(
+      () => _notice =
+          'تم اختيار «${file.name}». أكّد التفريغ المحلي في النافذة التالية.',
+    );
     final accepted = await _confirmLocalAudioTranscription(file);
     if (accepted != true || !mounted) return;
     await _transcribeAndTranslateLocalAudio(path);
   }
 
   Future<bool?> _confirmLocalAudioTranscription(PlatformFile file) async {
-    final installed = await _modelInstaller.verifiedInstalledModel(WhisperModelDescriptor.baseMultilingual);
+    final installed = await _modelInstaller.verifiedInstalledModel(
+      WhisperModelDescriptor.baseMultilingual,
+    );
     if (!mounted) return false;
     final sizeInMb = (file.size / (1024 * 1024)).toStringAsFixed(1);
     return showDialog<bool>(
@@ -337,8 +473,16 @@ class _TranslationPanelState extends State<_TranslationPanel> {
           'لا توجد شروط استخدام إضافية هنا. بعد التأكيد يبدأ التنزيل أو التفريغ المحلي مباشرة. يعمل المسار ابتداءً من 4 GB RAM، لكن الملفات الطويلة تكون أسرع وأكثر استقراراً على ذاكرة أعلى؛ تعتمد السرعة أيضاً على المعالج وطول التسجيل.',
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('إلغاء')),
-          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: Text(installed == null ? 'نزّل النموذج وتابع' : 'ابدأ التفريغ المحلي')),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(
+              installed == null ? 'نزّل النموذج وتابع' : 'ابدأ التفريغ المحلي',
+            ),
+          ),
         ],
       ),
     );
@@ -348,15 +492,22 @@ class _TranslationPanelState extends State<_TranslationPanel> {
     final capability = await _capabilityService.inspect();
     if (!mounted) return;
     if (capability == null) {
-      setState(() => _notice = 'تعذر قراءة مواصفات الهاتف؛ لن يبدأ تفريغ الملف محلياً.');
+      setState(
+        () =>
+            _notice = 'تعذر قراءة مواصفات الهاتف؛ لن يبدأ تفريغ الملف محلياً.',
+      );
       return;
     }
     final compatibility = LocalAudioCompatibilityPolicy.evaluate(capability);
     if (compatibility != LocalAudioCompatibility.supported) {
-      setState(() => _notice = LocalAudioCompatibilityPolicy.messageFor(compatibility));
+      setState(
+        () => _notice = LocalAudioCompatibilityPolicy.messageFor(compatibility),
+      );
       return;
     }
-    var model = await _modelInstaller.verifiedInstalledModel(WhisperModelDescriptor.baseMultilingual);
+    var model = await _modelInstaller.verifiedInstalledModel(
+      WhisperModelDescriptor.baseMultilingual,
+    );
     if (model == null) {
       setState(() {
         _isInstallingAudioModel = true;
@@ -367,7 +518,12 @@ class _TranslationPanelState extends State<_TranslationPanel> {
         descriptor: WhisperModelDescriptor.baseMultilingual,
         onProgress: (received, expected) {
           if (!mounted) return;
-          setState(() => _audioModelDownloadPercent = ((received * 100) / expected).floor().clamp(0, 100).toInt());
+          setState(
+            () => _audioModelDownloadPercent = ((received * 100) / expected)
+                .floor()
+                .clamp(0, 100)
+                .toInt(),
+          );
         },
       );
       if (!mounted) return;
@@ -389,9 +545,12 @@ class _TranslationPanelState extends State<_TranslationPanel> {
       onProgress: (stage, percentage) {
         if (!mounted) return;
         final message = switch (stage) {
-          AudioTranscriptionStage.preparing => 'جارٍ تجهيز نسخة عمل محلية من الملف…',
-          AudioTranscriptionStage.transcribing => 'جارٍ تفريغ الصوت محلياً${percentage == null ? '…' : ' ($percentage%)'}',
-          AudioTranscriptionStage.cleaning => 'جارٍ تنظيف ملفات المعالجة المؤقتة…',
+          AudioTranscriptionStage.preparing =>
+            'جارٍ تجهيز نسخة عمل محلية من الملف…',
+          AudioTranscriptionStage.transcribing =>
+            'جارٍ تفريغ الصوت محلياً${percentage == null ? '…' : ' ($percentage%)'}',
+          AudioTranscriptionStage.cleaning =>
+            'جارٍ تنظيف ملفات المعالجة المؤقتة…',
         };
         setState(() {
           _notice = message;
@@ -407,8 +566,12 @@ class _TranslationPanelState extends State<_TranslationPanel> {
     }
     _beginFreshTranslationIfNeeded();
     _input.text = transcription.text!;
-    final deviceLanguage = context.read<LanguagePreferences>().deviceLanguageCode;
-    setState(() => _notice = AppLocalizations.of(context)!.noticeTranscriptionDone);
+    final deviceLanguage = context
+        .read<LanguagePreferences>()
+        .deviceLanguageCode;
+    setState(
+      () => _notice = AppLocalizations.of(context)!.noticeTranscriptionDone,
+    );
     _queueTranslation(transcription.text!, targetLanguageCode: deviceLanguage);
   }
 
@@ -446,7 +609,7 @@ class _TranslationPanelState extends State<_TranslationPanel> {
       }
       return;
     }
-    final sourceLanguage = context.read<LanguagePreferences>().deviceLanguageCode;
+    final sourceLanguage = _sourceLanguage;
     await _speechService.stop();
     if (!mounted) return;
     _beginFreshTranslationIfNeeded();
@@ -455,10 +618,7 @@ class _TranslationPanelState extends State<_TranslationPanel> {
       onText: (recognizedText) {
         if (!mounted) return;
         _input.text = recognizedText;
-        _queueTranslation(
-          recognizedText,
-          sourceLanguageCode: sourceLanguage,
-        );
+        _queueTranslation(recognizedText, sourceLanguageCode: sourceLanguage);
       },
     );
     if (mounted && _recognitionService.message != null) {
@@ -543,13 +703,27 @@ class _TranslationPanelState extends State<_TranslationPanel> {
     super.dispose();
   }
 
-@override
-Widget build(BuildContext context) {
-    final deviceLanguage = context.watch<LanguagePreferences>().deviceLanguageCode;
-return ListView(
+  @override
+  Widget build(BuildContext context) {
+    final deviceLanguage = context
+        .watch<LanguagePreferences>()
+        .deviceLanguageCode;
+    return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
       children: [
         VoiceProfileBar(ttsService: _speechService),
+        Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 280),
+            child: _TranslationLanguageMenu(
+              value: _sourceLanguage,
+              label: 'لغة المصدر',
+              icon: Icons.record_voice_over,
+              onChanged: _selectSourceLanguage,
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
         Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 280),
@@ -578,14 +752,16 @@ return ListView(
           readOnly: false,
           actionsOnRight: false,
           onTap: _beginFreshTranslationIfNeeded,
-          onChanged: (value) => _queueTranslation(
-            value,
-            sourceLanguageCode: deviceLanguage,
-          ),
+          onChanged: (value) =>
+              _queueTranslation(value, sourceLanguageCode: deviceLanguage),
           actions: [
             _EditorAction(
-              icon: _recognitionService.isListening ? Icons.stop_circle_outlined : Icons.mic,
-              tooltip: _recognitionService.isListening ? AppLocalizations.of(context)!.tooltipMicStop : AppLocalizations.of(context)!.tooltipMicCapture,
+              icon: _recognitionService.isListening
+                  ? Icons.stop_circle_outlined
+                  : Icons.mic,
+              tooltip: _recognitionService.isListening
+                  ? AppLocalizations.of(context)!.tooltipMicStop
+                  : AppLocalizations.of(context)!.tooltipMicCapture,
               onPressed: _toggleMicrophone,
             ),
             _EditorAction(
@@ -614,19 +790,28 @@ return ListView(
                       child: CircularProgressIndicator(strokeWidth: 2),
                     ),
                   ),
-                Expanded(child: Text(_notice!, style: const TextStyle(color: RoyalColors.gold))),
+                Expanded(
+                  child: Text(
+                    _notice!,
+                    style: const TextStyle(color: RoyalColors.gold),
+                  ),
+                ),
               ],
             ),
           ),
         if (_isInstallingAudioModel && _audioModelDownloadPercent != null)
           Padding(
             padding: const EdgeInsets.only(top: 6),
-            child: LinearProgressIndicator(value: _audioModelDownloadPercent! / 100),
+            child: LinearProgressIndicator(
+              value: _audioModelDownloadPercent! / 100,
+            ),
           ),
         if (_isTranscribingAudio && _audioTranscriptionPercent != null)
           Padding(
             padding: const EdgeInsets.only(top: 6),
-            child: LinearProgressIndicator(value: _audioTranscriptionPercent! / 100),
+            child: LinearProgressIndicator(
+              value: _audioTranscriptionPercent! / 100,
+            ),
           ),
         const SizedBox(height: 10),
         _TranslationEditor(
@@ -635,24 +820,42 @@ return ListView(
           readOnly: true,
           actionsOnRight: true,
           actions: [
-            _EditorAction(icon: _speechService.isSpeaking ? Icons.stop_circle_outlined : Icons.volume_up, tooltip: _speechService.isSpeaking ? AppLocalizations.of(context)!.stopSpeaking : AppLocalizations.of(context)!.tooltipSpeakSystem, onPressed: _speakTranslation),
-            _EditorAction(icon: Icons.ios_share, tooltip: 'إنشاء ومشاركة ملف WAV للنص المترجم', onPressed: _exportAndShareTranslatedAudio),
-            _EditorAction(icon: Icons.copy, tooltip: 'نسخ الترجمة', onPressed: () async {
-              if (_output.text.isEmpty) {
+            _EditorAction(
+              icon: _speechService.isSpeaking
+                  ? Icons.stop_circle_outlined
+                  : Icons.volume_up,
+              tooltip: _speechService.isSpeaking
+                  ? AppLocalizations.of(context)!.stopSpeaking
+                  : AppLocalizations.of(context)!.tooltipSpeakSystem,
+              onPressed: _speakTranslation,
+            ),
+            _EditorAction(
+              icon: Icons.ios_share,
+              tooltip: 'إنشاء ومشاركة ملف WAV للنص المترجم',
+              onPressed: _exportAndShareTranslatedAudio,
+            ),
+            _EditorAction(
+              icon: Icons.copy,
+              tooltip: 'نسخ الترجمة',
+              onPressed: () async {
+                if (_output.text.isEmpty) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('لا يوجد نص مترجم لنسخه بعد.'),
+                      ),
+                    );
+                  }
+                  return;
+                }
+                await Clipboard.setData(ClipboardData(text: _output.text));
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('لا يوجد نص مترجم لنسخه بعد.')),
+                    const SnackBar(content: Text('تم نسخ الترجمة.')),
                   );
                 }
-                return;
-              }
-              await Clipboard.setData(ClipboardData(text: _output.text));
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('تم نسخ الترجمة.')),
-                );
-              }
-            }),
+              },
+            ),
           ],
         ),
       ],
@@ -689,7 +892,10 @@ class _TranslationLanguageMenu extends StatelessWidget {
             children: [
               Icon(icon, size: 14, color: Colors.cyanAccent),
               const SizedBox(width: 5),
-              Text(label, style: const TextStyle(color: RoyalColors.muted, fontSize: 11)),
+              Text(
+                label,
+                style: const TextStyle(color: RoyalColors.muted, fontSize: 11),
+              ),
             ],
           ),
           DropdownButtonHideUnderline(
@@ -697,9 +903,17 @@ class _TranslationLanguageMenu extends StatelessWidget {
               value: value,
               isExpanded: true,
               dropdownColor: const Color(0xFF1B2838),
-              icon: const Icon(Icons.keyboard_arrow_down, color: Colors.cyanAccent),
+              icon: const Icon(
+                Icons.keyboard_arrow_down,
+                color: Colors.cyanAccent,
+              ),
               items: TranslationLanguageCatalog.labels.entries
-                  .map((entry) => DropdownMenuItem(value: entry.key, child: Text(entry.value, overflow: TextOverflow.ellipsis)))
+                  .map(
+                    (entry) => DropdownMenuItem(
+                      value: entry.key,
+                      child: Text(entry.value, overflow: TextOverflow.ellipsis),
+                    ),
+                  )
                   .toList(),
               onChanged: (code) {
                 if (code != null) onChanged(code);
@@ -743,7 +957,10 @@ class _DeviceSpeechLanguageLabel extends StatelessWidget {
                 child: Text(
                   label,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: RoyalColors.muted, fontSize: 11),
+                  style: const TextStyle(
+                    color: RoyalColors.muted,
+                    fontSize: 11,
+                  ),
                 ),
               ),
             ],
@@ -752,7 +969,10 @@ class _DeviceSpeechLanguageLabel extends StatelessWidget {
           Text(
             languageLabel,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ],
       ),
@@ -832,7 +1052,11 @@ class _TranslationEditor extends StatelessWidget {
 }
 
 class _EditorAction {
-  const _EditorAction({required this.icon, required this.tooltip, required this.onPressed});
+  const _EditorAction({
+    required this.icon,
+    required this.tooltip,
+    required this.onPressed,
+  });
 
   final IconData icon;
   final String tooltip;
@@ -880,7 +1104,9 @@ class _DialoguePanelState extends State<_DialoguePanel> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_loadedTarget) return;
-    _targetLanguage = context.read<LanguagePreferences>().translationTargetLanguage;
+    _targetLanguage = context
+        .read<LanguagePreferences>()
+        .translationTargetLanguage;
     if (!TranslationLanguageCatalog.labels.containsKey(_targetLanguage)) {
       _targetLanguage = 'ar';
     }
@@ -967,7 +1193,9 @@ class _DialoguePanelState extends State<_DialoguePanel> {
       if (wasListening && !await _finishRecognitionSession()) return;
       if (!mounted) return;
       setState(() => _targetLanguage = code);
-      await context.read<LanguagePreferences>().setTranslationTargetLanguage(code);
+      await context.read<LanguagePreferences>().setTranslationTargetLanguage(
+        code,
+      );
       if (_source.text.trim().isNotEmpty) _queueTranslation(_source.text);
       if (wasListening) await _startRecognition();
     } finally {
@@ -992,7 +1220,9 @@ class _DialoguePanelState extends State<_DialoguePanel> {
         _hasCompletedTranslation = false;
         _notice = 'تم تبديل لغة المايك واللغة الهدف.';
       });
-      await context.read<LanguagePreferences>().setTranslationTargetLanguage(_targetLanguage);
+      await context.read<LanguagePreferences>().setTranslationTargetLanguage(
+        _targetLanguage,
+      );
       if (wasListening) await _startRecognition();
     } finally {
       if (mounted) setState(() => _isBusy = false);
@@ -1030,7 +1260,8 @@ class _DialoguePanelState extends State<_DialoguePanel> {
     final targetLanguage = _targetLanguage;
     setState(() {
       _isTranslating = true;
-      _notice = 'جارٍ ترجمة الحوار من ${TranslationLanguageCatalog.labels[sourceLanguage] ?? sourceLanguage} إلى ${TranslationLanguageCatalog.labels[targetLanguage] ?? targetLanguage}…';
+      _notice =
+          'جارٍ ترجمة الحوار من ${TranslationLanguageCatalog.labels[sourceLanguage] ?? sourceLanguage} إلى ${TranslationLanguageCatalog.labels[targetLanguage] ?? targetLanguage}…';
     });
     final result = await _translationService.translate(
       text: value,
@@ -1043,11 +1274,13 @@ class _DialoguePanelState extends State<_DialoguePanel> {
       },
     );
     if (!mounted || value.trim() != _source.text.trim()) return;
-    if (sourceLanguage != _sourceLanguage || targetLanguage != _targetLanguage) return;
+    if (sourceLanguage != _sourceLanguage || targetLanguage != _targetLanguage)
+      return;
     setState(() {
       _isTranslating = false;
       _translated.text = result.isSuccess ? result.text ?? '' : '';
-      _hasCompletedTranslation = result.isSuccess && _translated.text.trim().isNotEmpty;
+      _hasCompletedTranslation =
+          result.isSuccess && _translated.text.trim().isNotEmpty;
       _notice = result.message;
     });
   }
@@ -1057,7 +1290,10 @@ class _DialoguePanelState extends State<_DialoguePanel> {
       await _speechService.stop();
       return;
     }
-    await _speechService.speak(text: _translated.text, languageCode: _targetLanguage);
+    await _speechService.speak(
+      text: _translated.text,
+      languageCode: _targetLanguage,
+    );
     if (mounted && _speechService.message != null) {
       setState(() => _notice = _speechService.message);
     }
@@ -1097,7 +1333,9 @@ class _DialoguePanelState extends State<_DialoguePanel> {
           decoration: BoxDecoration(
             color: const Color(0xFF1B2838),
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: Colors.blueAccent.withValues(alpha: 0.35)),
+            border: Border.all(
+              color: Colors.blueAccent.withValues(alpha: 0.35),
+            ),
           ),
           child: Column(
             children: [
@@ -1111,9 +1349,15 @@ class _DialoguePanelState extends State<_DialoguePanel> {
                     ),
                   ),
                   IconButton(
-                    tooltip: AppLocalizations.of(context)!.dialogueSwapSpeakerTooltip,
+                    tooltip: AppLocalizations.of(
+                      context,
+                    )!.dialogueSwapSpeakerTooltip,
                     onPressed: _isBusy ? null : _swapLanguages,
-                    icon: const Icon(Icons.swap_horiz_rounded, color: RoyalColors.gold, size: 28),
+                    icon: const Icon(
+                      Icons.swap_horiz_rounded,
+                      color: RoyalColors.gold,
+                      size: 28,
+                    ),
                   ),
                   Expanded(
                     child: _DialogueLanguageMenu(
@@ -1130,16 +1374,20 @@ class _DialoguePanelState extends State<_DialoguePanel> {
                 height: 48,
                 child: FilledButton.icon(
                   style: FilledButton.styleFrom(
-                    backgroundColor: listening ? Colors.redAccent : Colors.blueAccent,
+                    backgroundColor: listening
+                        ? Colors.redAccent
+                        : Colors.blueAccent,
                   ),
                   onPressed: _isBusy ? null : _toggleMicrophone,
-                  icon: Icon(listening ? Icons.stop_circle_outlined : Icons.mic),
+                  icon: Icon(
+                    listening ? Icons.stop_circle_outlined : Icons.mic,
+                  ),
                   label: Text(
                     _isBusy
                         ? 'جارٍ تبديل جلسة المايك…'
                         : listening
-                            ? AppLocalizations.of(context)!.stopListening
-                            : AppLocalizations.of(context)!.speakInCurrentSource,
+                        ? AppLocalizations.of(context)!.stopListening
+                        : AppLocalizations.of(context)!.speakInCurrentSource,
                     style: const TextStyle(fontWeight: FontWeight.w800),
                   ),
                 ),
@@ -1155,8 +1403,12 @@ class _DialoguePanelState extends State<_DialoguePanel> {
           readOnly: true,
           actions: [
             _EditorAction(
-              icon: _speechService.isSpeaking ? Icons.stop_circle_outlined : Icons.volume_up,
-              tooltip: _speechService.isSpeaking ? AppLocalizations.of(context)!.stopSpeaking : AppLocalizations.of(context)!.speakDialogueTranslation,
+              icon: _speechService.isSpeaking
+                  ? Icons.stop_circle_outlined
+                  : Icons.volume_up,
+              tooltip: _speechService.isSpeaking
+                  ? AppLocalizations.of(context)!.stopSpeaking
+                  : AppLocalizations.of(context)!.speakDialogueTranslation,
               onPressed: _speakTranslation,
             ),
             _EditorAction(
@@ -1164,7 +1416,9 @@ class _DialoguePanelState extends State<_DialoguePanel> {
               tooltip: AppLocalizations.of(context)!.copyDialogueTranslation,
               onPressed: () async {
                 if (_translated.text.isNotEmpty) {
-                  await Clipboard.setData(ClipboardData(text: _translated.text));
+                  await Clipboard.setData(
+                    ClipboardData(text: _translated.text),
+                  );
                 }
               },
             ),
@@ -1178,9 +1432,18 @@ class _DialoguePanelState extends State<_DialoguePanel> {
                 if (_isTranslating)
                   const Padding(
                     padding: EdgeInsetsDirectional.only(end: 8),
-                    child: SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+                    child: SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
                   ),
-                Expanded(child: Text(_notice!, style: const TextStyle(color: RoyalColors.gold))),
+                Expanded(
+                  child: Text(
+                    _notice!,
+                    style: const TextStyle(color: RoyalColors.gold),
+                  ),
+                ),
               ],
             ),
           ),
@@ -1205,14 +1468,22 @@ class _DialogueLanguageMenu extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(label, style: const TextStyle(color: RoyalColors.muted, fontSize: 10)),
+        Text(
+          label,
+          style: const TextStyle(color: RoyalColors.muted, fontSize: 10),
+        ),
         DropdownButtonHideUnderline(
           child: DropdownButton<String>(
             value: value,
             isExpanded: true,
             dropdownColor: const Color(0xFF1B2838),
             items: TranslationLanguageCatalog.labels.entries
-                .map((entry) => DropdownMenuItem(value: entry.key, child: Text(entry.value, overflow: TextOverflow.ellipsis)))
+                .map(
+                  (entry) => DropdownMenuItem(
+                    value: entry.key,
+                    child: Text(entry.value, overflow: TextOverflow.ellipsis),
+                  ),
+                )
                 .toList(),
             onChanged: (code) {
               if (code != null) onChanged(code);
@@ -1256,7 +1527,10 @@ class _DialogueEditor extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(label, style: const TextStyle(color: RoyalColors.teal, fontSize: 12)),
+          Text(
+            label,
+            style: const TextStyle(color: RoyalColors.teal, fontSize: 12),
+          ),
           const SizedBox(height: 8),
           Expanded(
             child: TextField(
@@ -1281,11 +1555,13 @@ class _DialogueEditor extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: actions
-                  .map((action) => IconButton(
-                        tooltip: action.tooltip,
-                        onPressed: action.onPressed,
-                        icon: Icon(action.icon, color: Colors.cyanAccent),
-                      ))
+                  .map(
+                    (action) => IconButton(
+                      tooltip: action.tooltip,
+                      onPressed: action.onPressed,
+                      icon: Icon(action.icon, color: Colors.cyanAccent),
+                    ),
+                  )
                   .toList(),
             ),
         ],
@@ -1357,7 +1633,8 @@ class _DocumentsPanelState extends State<_DocumentsPanel> {
     setState(() {
       _isTranslating = true;
       _translatedText = null;
-      _notice = 'جارٍ اكتشاف لغة المستند وترجمته إلى لغة جهازك: '
+      _notice =
+          'جارٍ اكتشاف لغة المستند وترجمته إلى لغة جهازك: '
           '${TranslationLanguageCatalog.labels[targetLanguage] ?? targetLanguage}…';
     });
     final result = await _translationService.translate(
@@ -1394,19 +1671,24 @@ class _DocumentsPanelState extends State<_DocumentsPanel> {
         builder: (_) => _TranslatedTextPreviewPage(
           originalText: originalText,
           translatedText: translatedText,
-          documentName: _selectedDocumentName ?? _selectedFileName ?? 'نص مستخرج',
+          documentName:
+              _selectedDocumentName ?? _selectedFileName ?? 'نص مستخرج',
         ),
       ),
     );
   }
 
   String get _exportDocumentName =>
-      _selectedDocumentName ?? _selectedFileName ?? 'mirror_scorpion_translation';
+      _selectedDocumentName ??
+      _selectedFileName ??
+      'mirror_scorpion_translation';
 
   Future<void> _shareTranslatedDocument() async {
     final translatedText = _translatedText;
     if (translatedText == null || translatedText.trim().isEmpty) return;
-    final deviceLanguage = context.read<LanguagePreferences>().deviceLanguageCode;
+    final deviceLanguage = context
+        .read<LanguagePreferences>()
+        .deviceLanguageCode;
     final languageLabel =
         TranslationLanguageCatalog.labels[deviceLanguage] ?? deviceLanguage;
     setState(() {
@@ -1434,7 +1716,9 @@ class _DocumentsPanelState extends State<_DocumentsPanel> {
   Future<void> _printTranslatedDocument() async {
     final translatedText = _translatedText;
     if (translatedText == null || translatedText.trim().isEmpty) return;
-    final deviceLanguage = context.read<LanguagePreferences>().deviceLanguageCode;
+    final deviceLanguage = context
+        .read<LanguagePreferences>()
+        .deviceLanguageCode;
     final languageLabel =
         TranslationLanguageCatalog.labels[deviceLanguage] ?? deviceLanguage;
     setState(() {
@@ -1465,7 +1749,9 @@ class _DocumentsPanelState extends State<_DocumentsPanel> {
       allowedExtensions: const ['pdf', 'txt'],
     );
     if (!mounted) return;
-    final file = (picked == null || picked.files.isEmpty) ? null : picked.files.first;
+    final file = (picked == null || picked.files.isEmpty)
+        ? null
+        : picked.files.first;
     if (file == null) {
       setState(() => _notice = 'لم يتم اختيار مستند.');
       return;
@@ -1492,7 +1778,9 @@ class _DocumentsPanelState extends State<_DocumentsPanel> {
       _extractedText = result.isSuccess ? result.text : null;
       _notice = result.message;
     });
-    if (result.isSuccess && result.text != null && result.text!.trim().isNotEmpty) {
+    if (result.isSuccess &&
+        result.text != null &&
+        result.text!.trim().isNotEmpty) {
       await _translateExtractedText(result.text!);
     }
   }
@@ -1502,7 +1790,11 @@ class _DocumentsPanelState extends State<_DocumentsPanel> {
     return ListView(
       padding: const EdgeInsets.all(18),
       children: [
-        const _SectionNotice(title: 'عدسة وPDF ومستندات محلية', detail: 'تستخرج العدسة أو المستند النص محلياً، ثم تكتشف لغته وتترجمه دائماً إلى لغة جهازك. لا توجد لغة هدف قابلة للتغيير في هذا القسم.'),
+        const _SectionNotice(
+          title: 'عدسة وPDF ومستندات محلية',
+          detail:
+              'تستخرج العدسة أو المستند النص محلياً، ثم تكتشف لغته وتترجمه دائماً إلى لغة جهازك. لا توجد لغة هدف قابلة للتغيير في هذا القسم.',
+        ),
         const SizedBox(height: 20),
         _DeviceSpeechLanguageLabel(
           languageCode: context.watch<LanguagePreferences>().deviceLanguageCode,
@@ -1511,7 +1803,10 @@ class _DocumentsPanelState extends State<_DocumentsPanel> {
         const SizedBox(height: 12),
         Card(
           child: ListTile(
-            leading: const Icon(Icons.camera_alt_outlined, color: RoyalColors.gold),
+            leading: const Icon(
+              Icons.camera_alt_outlined,
+              color: RoyalColors.gold,
+            ),
             title: const Text('عدسة ذكية'),
             subtitle: const Text('التقاط صورة وفحص النص محلياً'),
             trailing: const Icon(Icons.chevron_left),
@@ -1521,7 +1816,10 @@ class _DocumentsPanelState extends State<_DocumentsPanel> {
         const SizedBox(height: 12),
         Card(
           child: ListTile(
-            leading: const Icon(Icons.photo_library_outlined, color: RoyalColors.gold),
+            leading: const Icon(
+              Icons.photo_library_outlined,
+              color: RoyalColors.gold,
+            ),
             title: const Text('اختيار صورة من الجهاز'),
             subtitle: const Text('OCR محلي ثم ترجمة إلى لغة جهازك'),
             trailing: const Icon(Icons.chevron_left),
@@ -1531,9 +1829,16 @@ class _DocumentsPanelState extends State<_DocumentsPanel> {
         const SizedBox(height: 12),
         Card(
           child: ListTile(
-            leading: const Icon(Icons.picture_as_pdf_outlined, color: RoyalColors.gold),
+            leading: const Icon(
+              Icons.picture_as_pdf_outlined,
+              color: RoyalColors.gold,
+            ),
             title: const Text('اختيار PDF أو ملف نصي محلي'),
-            subtitle: Text(_selectedDocumentName == null ? 'PDF نصي أو TXT: استخراج محلي ثم ترجمة إلى لغة جهازك' : 'المستند المختار: $_selectedDocumentName'),
+            subtitle: Text(
+              _selectedDocumentName == null
+                  ? 'PDF نصي أو TXT: استخراج محلي ثم ترجمة إلى لغة جهازك'
+                  : 'المستند المختار: $_selectedDocumentName',
+            ),
             trailing: const Icon(Icons.chevron_left),
             onTap: _isScanning || _isTranslating || _isExporting
                 ? null
@@ -1543,7 +1848,10 @@ class _DocumentsPanelState extends State<_DocumentsPanel> {
         if (_selectedFileName != null)
           Padding(
             padding: const EdgeInsets.only(top: 18),
-            child: Text('الصورة المختارة: $_selectedFileName', style: const TextStyle(color: RoyalColors.muted)),
+            child: Text(
+              'الصورة المختارة: $_selectedFileName',
+              style: const TextStyle(color: RoyalColors.muted),
+            ),
           ),
         if (_isScanning || _isTranslating || _isExporting)
           const Padding(
@@ -1553,7 +1861,10 @@ class _DocumentsPanelState extends State<_DocumentsPanel> {
         if (_notice != null)
           Padding(
             padding: const EdgeInsets.only(top: 14),
-            child: Text(_notice!, style: const TextStyle(color: RoyalColors.gold, height: 1.5)),
+            child: Text(
+              _notice!,
+              style: const TextStyle(color: RoyalColors.gold, height: 1.5),
+            ),
           ),
         if (_translatedText != null)
           Card(
@@ -1564,9 +1875,15 @@ class _DocumentsPanelState extends State<_DocumentsPanel> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text('الترجمة إلى لغة جهازك: ${TranslationLanguageCatalog.labels[context.read<LanguagePreferences>().deviceLanguageCode] ?? context.read<LanguagePreferences>().deviceLanguageCode}', style: const TextStyle(color: RoyalColors.gold)),
+                  Text(
+                    'الترجمة إلى لغة جهازك: ${TranslationLanguageCatalog.labels[context.read<LanguagePreferences>().deviceLanguageCode] ?? context.read<LanguagePreferences>().deviceLanguageCode}',
+                    style: const TextStyle(color: RoyalColors.gold),
+                  ),
                   const SizedBox(height: 8),
-                  SelectableText(_translatedText!, style: const TextStyle(height: 1.6)),
+                  SelectableText(
+                    _translatedText!,
+                    style: const TextStyle(height: 1.6),
+                  ),
                   const SizedBox(height: 12),
                   FilledButton.icon(
                     onPressed: () => _openTranslatedPreview(
@@ -1717,9 +2034,18 @@ class _PreviewTextSheet extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(heading, style: const TextStyle(color: RoyalColors.gold, fontWeight: FontWeight.w700)),
+                Text(
+                  heading,
+                  style: const TextStyle(
+                    color: RoyalColors.gold,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
                 const SizedBox(height: 12),
-                SelectableText(text, style: const TextStyle(fontSize: 17, height: 1.7)),
+                SelectableText(
+                  text,
+                  style: const TextStyle(fontSize: 17, height: 1.7),
+                ),
               ],
             ),
           ),
@@ -1733,7 +2059,10 @@ class _PreviewTextSheet extends StatelessWidget {
                     child: Text(
                       'تُرجِم بواسطة ميرور سكربيون',
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900),
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
                   ),
                 ),
@@ -1771,9 +2100,11 @@ class _StoriesPanelState extends State<_StoriesPanel> {
       'assets/data/owner_inspiration_ar.json',
     ];
     final packages = await Future.wait(
-      assets.map((asset) async => jsonDecode(
-            await rootBundle.loadString(asset),
-          ) as Map<String, dynamic>),
+      assets.map(
+        (asset) async =>
+            jsonDecode(await rootBundle.loadString(asset))
+                as Map<String, dynamic>,
+      ),
     );
     return packages
         .expand((package) => package['stories'] as List<dynamic>? ?? const [])
@@ -1807,8 +2138,9 @@ class _StoriesPanelState extends State<_StoriesPanel> {
       context,
       MaterialPageRoute<void>(
         builder: (_) => _CreatorPage(
-          deviceLanguageCode:
-              context.read<LanguagePreferences>().deviceLanguageCode,
+          deviceLanguageCode: context
+              .read<LanguagePreferences>()
+              .deviceLanguageCode,
           recognitionService: widget.recognitionService,
         ),
       ),
@@ -1831,10 +2163,14 @@ class _StoriesPanelState extends State<_StoriesPanel> {
           child: Column(
             children: [
               ListTile(
-                leading: const Icon(Icons.auto_awesome_outlined,
-                    color: RoyalColors.gold),
+                leading: const Icon(
+                  Icons.auto_awesome_outlined,
+                  color: RoyalColors.gold,
+                ),
                 title: const Text('الإلهام'),
-                subtitle: const Text('رسائل إنسانية مرفقة محلياً وقابلة للقراءة بصوت الجهاز'),
+                subtitle: const Text(
+                  'رسائل إنسانية مرفقة محلياً وقابلة للقراءة بصوت الجهاز',
+                ),
                 trailing: const Icon(Icons.chevron_left),
                 onTap: _openInspirationLibrary,
               ),
@@ -1843,7 +2179,9 @@ class _StoriesPanelState extends State<_StoriesPanel> {
                 value: _threeHourReminder,
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16),
                 title: const Text('إشعار إلهام كل 3 ساعات'),
-                subtitle: const Text('سيطلب إذن Android عند التفعيل في الدفعة التالية.'),
+                subtitle: const Text(
+                  'سيطلب إذن Android عند التفعيل في الدفعة التالية.',
+                ),
                 onChanged: null,
               ),
             ],
@@ -1867,9 +2205,14 @@ class _StoriesPanelState extends State<_StoriesPanel> {
         Card(
           color: Colors.teal.withValues(alpha: 0.06),
           child: ListTile(
-            leading: const Icon(Icons.edit_note_outlined, color: RoyalColors.teal),
+            leading: const Icon(
+              Icons.edit_note_outlined,
+              color: RoyalColors.teal,
+            ),
             title: const Text('الإبداع'),
-            subtitle: const Text('اكتب أو أملِ قصة من شاشة كبيرة، واستمع إلى ما كتبته'),
+            subtitle: const Text(
+              'اكتب أو أملِ قصة من شاشة كبيرة، واستمع إلى ما كتبته',
+            ),
             trailing: const Icon(Icons.chevron_left),
             onTap: _openCreator,
           ),
@@ -1877,20 +2220,30 @@ class _StoriesPanelState extends State<_StoriesPanel> {
         const SizedBox(height: 12),
         Card(
           child: ListTile(
-            leading: const Icon(Icons.folder_copy_outlined, color: RoyalColors.gold),
+            leading: const Icon(
+              Icons.folder_copy_outlined,
+              color: RoyalColors.gold,
+            ),
             title: const Text('الحزم والمصادر'),
-            subtitle: const Text('نزّل أو استورد حزمة بعد مراجعة المصدر والرخصة'),
+            subtitle: const Text(
+              'نزّل أو استورد حزمة بعد مراجعة المصدر والرخصة',
+            ),
             trailing: const Icon(Icons.chevron_left),
             onTap: () => Navigator.push<void>(
               context,
-              MaterialPageRoute<void>(builder: (_) => const _OfflinePackagesPage()),
+              MaterialPageRoute<void>(
+                builder: (_) => const _OfflinePackagesPage(),
+              ),
             ),
           ),
         ),
         if (_notice != null)
           Padding(
             padding: const EdgeInsets.only(top: 12),
-            child: Text(_notice!, style: const TextStyle(color: RoyalColors.gold, height: 1.5)),
+            child: Text(
+              _notice!,
+              style: const TextStyle(color: RoyalColors.gold, height: 1.5),
+            ),
           ),
       ],
     );
@@ -1915,13 +2268,13 @@ class _StoryEntry {
   final String citation;
 
   factory _StoryEntry.fromJson(Map<String, dynamic> json) => _StoryEntry(
-        title: json['title'] as String? ?? 'قصة بلا عنوان',
-        category: json['category'] as String? ?? '',
-        summary: json['summary'] as String? ?? '',
-        body: json['body'] as String? ?? '',
-        source: json['source'] as String? ?? 'غير محدد',
-        citation: json['citation'] as String? ?? 'غير محدد',
-      );
+    title: json['title'] as String? ?? 'قصة بلا عنوان',
+    category: json['category'] as String? ?? '',
+    summary: json['summary'] as String? ?? '',
+    body: json['body'] as String? ?? '',
+    source: json['source'] as String? ?? 'غير محدد',
+    citation: json['citation'] as String? ?? 'غير محدد',
+  );
 }
 
 class _StoryCatalogDefinition {
@@ -2021,11 +2374,12 @@ class _StoryCatalogPage extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(entry.title,
-                    style: Theme.of(sheetContext).textTheme.titleLarge),
+                Text(
+                  entry.title,
+                  style: Theme.of(sheetContext).textTheme.titleLarge,
+                ),
                 const SizedBox(height: 10),
-                Text(catalog.sourceStatus,
-                    style: const TextStyle(height: 1.6)),
+                Text(catalog.sourceStatus, style: const TextStyle(height: 1.6)),
                 const SizedBox(height: 14),
                 OutlinedButton.icon(
                   onPressed: () => Navigator.push<void>(
@@ -2089,7 +2443,9 @@ class _InspirationLibraryPage extends StatefulWidget {
 }
 
 class _InspirationLibraryPageState extends State<_InspirationLibraryPage> {
-  final _speechService = SystemTtsService(storageKey: 'inspirationlibrarypagestate');
+  final _speechService = SystemTtsService(
+    storageKey: 'inspirationlibrarypagestate',
+  );
 
   @override
   void initState() {
@@ -2190,13 +2546,19 @@ class _StoryReaderPage extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                SelectableText(story.body,
-                    style: const TextStyle(fontSize: 18, height: 1.85)),
+                SelectableText(
+                  story.body,
+                  style: const TextStyle(fontSize: 18, height: 1.85),
+                ),
                 const SizedBox(height: 24),
-                Text('المصدر: ${story.source}',
-                    style: const TextStyle(color: RoyalColors.muted)),
-                Text('الإحالة: ${story.citation}',
-                    style: const TextStyle(color: RoyalColors.muted)),
+                Text(
+                  'المصدر: ${story.source}',
+                  style: const TextStyle(color: RoyalColors.muted),
+                ),
+                Text(
+                  'الإحالة: ${story.citation}',
+                  style: const TextStyle(color: RoyalColors.muted),
+                ),
               ],
             ),
           ),
@@ -2262,7 +2624,8 @@ class _CreatorPageState extends State<_CreatorPage> {
     if (!mounted) return;
     setState(() {
       _termsAccepted = true;
-      _notice = 'تم حفظ الموافقة على هذا الجهاز. محرر الإبداع محلي ولا يرسل نصك تلقائياً.';
+      _notice =
+          'تم حفظ الموافقة على هذا الجهاز. محرر الإبداع محلي ولا يرسل نصك تلقائياً.';
     });
   }
 
@@ -2332,11 +2695,14 @@ class _CreatorPageState extends State<_CreatorPage> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   VoiceProfileBar(ttsService: _ttsService),
-                  const Text('اكتب قصة تحترم الآخرين',
-                      style: TextStyle(
-                          color: RoyalColors.gold,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w800)),
+                  const Text(
+                    'اكتب قصة تحترم الآخرين',
+                    style: TextStyle(
+                      color: RoyalColors.gold,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
                   const SizedBox(height: 14),
                   const Text(
                     'لا تكتب محتوى يحرض على الكراهية أو العنف أو التنمر، ولا ألفاظاً مسيئة أو تلميحات جنسية. لا يقرأ التطبيق ما تكتبه ولا يرسله إلى خدمة خارجية من هذه الشاشة.',
@@ -2398,12 +2764,16 @@ class _CreatorPageState extends State<_CreatorPage> {
                     Expanded(
                       child: FilledButton.icon(
                         onPressed: _toggleDictation,
-                        icon: Icon(_speechService.isListening
-                            ? Icons.stop_circle_outlined
-                            : Icons.mic_none_outlined),
-                        label: Text(_speechService.isListening
-                            ? 'إيقاف الإملاء'
-                            : 'إملاء صوتي'),
+                        icon: Icon(
+                          _speechService.isListening
+                              ? Icons.stop_circle_outlined
+                              : Icons.mic_none_outlined,
+                        ),
+                        label: Text(
+                          _speechService.isListening
+                              ? 'إيقاف الإملاء'
+                              : 'إملاء صوتي',
+                        ),
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -2412,12 +2782,16 @@ class _CreatorPageState extends State<_CreatorPage> {
                         onPressed: _draftController.text.trim().isEmpty
                             ? null
                             : _toggleDraftSpeech,
-                        icon: Icon(_ttsService.isSpeaking
-                            ? Icons.stop_circle_outlined
-                            : Icons.volume_up_outlined),
-                        label: Text(_ttsService.isSpeaking
-                            ? 'إيقاف السماع'
-                            : 'اسمع ما كتبت'),
+                        icon: Icon(
+                          _ttsService.isSpeaking
+                              ? Icons.stop_circle_outlined
+                              : Icons.volume_up_outlined,
+                        ),
+                        label: Text(
+                          _ttsService.isSpeaking
+                              ? 'إيقاف السماع'
+                              : 'اسمع ما كتبت',
+                        ),
                       ),
                     ),
                   ],
@@ -2430,9 +2804,13 @@ class _CreatorPageState extends State<_CreatorPage> {
                 ),
                 if (_notice != null) ...[
                   const SizedBox(height: 8),
-                  Text(_notice!,
-                      style: const TextStyle(
-                          color: RoyalColors.gold, height: 1.45)),
+                  Text(
+                    _notice!,
+                    style: const TextStyle(
+                      color: RoyalColors.gold,
+                      height: 1.45,
+                    ),
+                  ),
                 ],
               ],
             ),
@@ -2444,39 +2822,168 @@ class _CreatorPageState extends State<_CreatorPage> {
 }
 
 const _surahNames = <String>[
-  'الفاتحة', 'البقرة', 'آل عمران', 'النساء', 'المائدة', 'الأنعام', 'الأعراف',
-  'الأنفال', 'التوبة', 'يونس', 'هود', 'يوسف', 'الرعد', 'إبراهيم', 'الحجر',
-  'النحل', 'الإسراء', 'الكهف', 'مريم', 'طه', 'الأنبياء', 'الحج', 'المؤمنون',
-  'النور', 'الفرقان', 'الشعراء', 'النمل', 'القصص', 'العنكبوت', 'الروم', 'لقمان',
-  'السجدة', 'الأحزاب', 'سبأ', 'فاطر', 'يس', 'الصافات', 'ص', 'الزمر', 'غافر',
-  'فصلت', 'الشورى', 'الزخرف', 'الدخان', 'الجاثية', 'الأحقاف', 'محمد', 'الفتح',
-  'الحجرات', 'ق', 'الذاريات', 'الطور', 'النجم', 'القمر', 'الرحمن', 'الواقعة',
-  'الحديد', 'المجادلة', 'الحشر', 'الممتحنة', 'الصف', 'الجمعة', 'المنافقون',
-  'التغابن', 'الطلاق', 'التحريم', 'الملك', 'القلم', 'الحاقة', 'المعارج', 'نوح',
-  'الجن', 'المزمل', 'المدثر', 'القيامة', 'الإنسان', 'المرسلات', 'النبأ',
-  'النازعات', 'عبس', 'التكوير', 'الانفطار', 'المطففين', 'الانشقاق', 'البروج',
-  'الطارق', 'الأعلى', 'الغاشية', 'الفجر', 'البلد', 'الشمس', 'الليل', 'الضحى',
-  'الشرح', 'التين', 'العلق', 'القدر', 'البينة', 'الزلزلة', 'العاديات', 'القارعة',
-  'التكاثر', 'العصر', 'الهمزة', 'الفيل', 'قريش', 'الماعون', 'الكوثر', 'الكافرون',
-  'النصر', 'المسد', 'الإخلاص', 'الفلق', 'الناس',
+  'الفاتحة',
+  'البقرة',
+  'آل عمران',
+  'النساء',
+  'المائدة',
+  'الأنعام',
+  'الأعراف',
+  'الأنفال',
+  'التوبة',
+  'يونس',
+  'هود',
+  'يوسف',
+  'الرعد',
+  'إبراهيم',
+  'الحجر',
+  'النحل',
+  'الإسراء',
+  'الكهف',
+  'مريم',
+  'طه',
+  'الأنبياء',
+  'الحج',
+  'المؤمنون',
+  'النور',
+  'الفرقان',
+  'الشعراء',
+  'النمل',
+  'القصص',
+  'العنكبوت',
+  'الروم',
+  'لقمان',
+  'السجدة',
+  'الأحزاب',
+  'سبأ',
+  'فاطر',
+  'يس',
+  'الصافات',
+  'ص',
+  'الزمر',
+  'غافر',
+  'فصلت',
+  'الشورى',
+  'الزخرف',
+  'الدخان',
+  'الجاثية',
+  'الأحقاف',
+  'محمد',
+  'الفتح',
+  'الحجرات',
+  'ق',
+  'الذاريات',
+  'الطور',
+  'النجم',
+  'القمر',
+  'الرحمن',
+  'الواقعة',
+  'الحديد',
+  'المجادلة',
+  'الحشر',
+  'الممتحنة',
+  'الصف',
+  'الجمعة',
+  'المنافقون',
+  'التغابن',
+  'الطلاق',
+  'التحريم',
+  'الملك',
+  'القلم',
+  'الحاقة',
+  'المعارج',
+  'نوح',
+  'الجن',
+  'المزمل',
+  'المدثر',
+  'القيامة',
+  'الإنسان',
+  'المرسلات',
+  'النبأ',
+  'النازعات',
+  'عبس',
+  'التكوير',
+  'الانفطار',
+  'المطففين',
+  'الانشقاق',
+  'البروج',
+  'الطارق',
+  'الأعلى',
+  'الغاشية',
+  'الفجر',
+  'البلد',
+  'الشمس',
+  'الليل',
+  'الضحى',
+  'الشرح',
+  'التين',
+  'العلق',
+  'القدر',
+  'البينة',
+  'الزلزلة',
+  'العاديات',
+  'القارعة',
+  'التكاثر',
+  'العصر',
+  'الهمزة',
+  'الفيل',
+  'قريش',
+  'الماعون',
+  'الكوثر',
+  'الكافرون',
+  'النصر',
+  'المسد',
+  'الإخلاص',
+  'الفلق',
+  'الناس',
 ];
 
 const _prophetCatalog = <_StoryCatalogEntry>[
-  _StoryCatalogEntry(title: 'آدم عليه السلام', subtitle: 'قصة نبي — محتوى مرخص مطلوب'),
-  _StoryCatalogEntry(title: 'نوح عليه السلام', subtitle: 'قصة نبي — محتوى مرخص مطلوب'),
-  _StoryCatalogEntry(title: 'إبراهيم عليه السلام', subtitle: 'قصة نبي — محتوى مرخص مطلوب'),
-  _StoryCatalogEntry(title: 'يوسف عليه السلام', subtitle: 'قصة نبي — محتوى مرخص مطلوب'),
-  _StoryCatalogEntry(title: 'موسى عليه السلام', subtitle: 'قصة نبي — محتوى مرخص مطلوب'),
-  _StoryCatalogEntry(title: 'داود عليه السلام', subtitle: 'قصة نبي — محتوى مرخص مطلوب'),
-  _StoryCatalogEntry(title: 'سليمان عليه السلام', subtitle: 'قصة نبي — محتوى مرخص مطلوب'),
-  _StoryCatalogEntry(title: 'عيسى عليه السلام', subtitle: 'قصة نبي — محتوى مرخص مطلوب'),
+  _StoryCatalogEntry(
+    title: 'آدم عليه السلام',
+    subtitle: 'قصة نبي — محتوى مرخص مطلوب',
+  ),
+  _StoryCatalogEntry(
+    title: 'نوح عليه السلام',
+    subtitle: 'قصة نبي — محتوى مرخص مطلوب',
+  ),
+  _StoryCatalogEntry(
+    title: 'إبراهيم عليه السلام',
+    subtitle: 'قصة نبي — محتوى مرخص مطلوب',
+  ),
+  _StoryCatalogEntry(
+    title: 'يوسف عليه السلام',
+    subtitle: 'قصة نبي — محتوى مرخص مطلوب',
+  ),
+  _StoryCatalogEntry(
+    title: 'موسى عليه السلام',
+    subtitle: 'قصة نبي — محتوى مرخص مطلوب',
+  ),
+  _StoryCatalogEntry(
+    title: 'داود عليه السلام',
+    subtitle: 'قصة نبي — محتوى مرخص مطلوب',
+  ),
+  _StoryCatalogEntry(
+    title: 'سليمان عليه السلام',
+    subtitle: 'قصة نبي — محتوى مرخص مطلوب',
+  ),
+  _StoryCatalogEntry(
+    title: 'عيسى عليه السلام',
+    subtitle: 'قصة نبي — محتوى مرخص مطلوب',
+  ),
   _StoryCatalogEntry(title: 'محمد ﷺ', subtitle: 'سيرة نبي — محتوى مرخص مطلوب'),
 ];
 
 const _womenCatalog = <_StoryCatalogEntry>[
-  _StoryCatalogEntry(title: 'مريم عليها السلام', subtitle: 'موضوع في انتظار حزمة مرخصة'),
+  _StoryCatalogEntry(
+    title: 'مريم عليها السلام',
+    subtitle: 'موضوع في انتظار حزمة مرخصة',
+  ),
   _StoryCatalogEntry(title: 'أم موسى', subtitle: 'موضوع في انتظار حزمة مرخصة'),
-  _StoryCatalogEntry(title: 'امرأة فرعون', subtitle: 'موضوع في انتظار حزمة مرخصة'),
+  _StoryCatalogEntry(
+    title: 'امرأة فرعون',
+    subtitle: 'موضوع في انتظار حزمة مرخصة',
+  ),
   _StoryCatalogEntry(title: 'بلقيس', subtitle: 'موضوع في انتظار حزمة مرخصة'),
   _StoryCatalogEntry(title: 'هاجر', subtitle: 'موضوع في انتظار حزمة مرخصة'),
 ];
@@ -2486,15 +2993,30 @@ const _peoplesCatalog = <_StoryCatalogEntry>[
   _StoryCatalogEntry(title: 'عاد', subtitle: 'موضوع في انتظار حزمة مرخصة'),
   _StoryCatalogEntry(title: 'ثمود', subtitle: 'موضوع في انتظار حزمة مرخصة'),
   _StoryCatalogEntry(title: 'قوم لوط', subtitle: 'موضوع في انتظار حزمة مرخصة'),
-  _StoryCatalogEntry(title: 'أصحاب مدين', subtitle: 'موضوع في انتظار حزمة مرخصة'),
+  _StoryCatalogEntry(
+    title: 'أصحاب مدين',
+    subtitle: 'موضوع في انتظار حزمة مرخصة',
+  ),
 ];
 
 const _animalsCatalog = <_StoryCatalogEntry>[
-  _StoryCatalogEntry(title: 'نملة سليمان', subtitle: 'موضوع في انتظار حزمة مرخصة'),
-  _StoryCatalogEntry(title: 'هدهد سليمان', subtitle: 'موضوع في انتظار حزمة مرخصة'),
-  _StoryCatalogEntry(title: 'ناقة صالح', subtitle: 'موضوع في انتظار حزمة مرخصة'),
+  _StoryCatalogEntry(
+    title: 'نملة سليمان',
+    subtitle: 'موضوع في انتظار حزمة مرخصة',
+  ),
+  _StoryCatalogEntry(
+    title: 'هدهد سليمان',
+    subtitle: 'موضوع في انتظار حزمة مرخصة',
+  ),
+  _StoryCatalogEntry(
+    title: 'ناقة صالح',
+    subtitle: 'موضوع في انتظار حزمة مرخصة',
+  ),
   _StoryCatalogEntry(title: 'حوت يونس', subtitle: 'موضوع في انتظار حزمة مرخصة'),
-  _StoryCatalogEntry(title: 'كلب أصحاب الكهف', subtitle: 'موضوع في انتظار حزمة مرخصة'),
+  _StoryCatalogEntry(
+    title: 'كلب أصحاب الكهف',
+    subtitle: 'موضوع في انتظار حزمة مرخصة',
+  ),
 ];
 
 class _GamesPanel extends StatefulWidget {
@@ -2530,8 +3052,9 @@ class _GamesPanelState extends State<_GamesPanel> {
   void _recordLastCapture() {
     final move = _chess.lastMove;
     if (move == null || !move.isCapture) return;
-    (move.movedByWhite ? _capturedByWhite : _capturedByBlack)
-        .add(move.capturedSymbol);
+    (move.movedByWhite ? _capturedByWhite : _capturedByBlack).add(
+      move.capturedSymbol,
+    );
   }
 
   Future<void> _tapSquare(String square) async {
@@ -2544,7 +3067,9 @@ class _GamesPanelState extends State<_GamesPanel> {
       setState(() {
         _selectedSquare = square;
         _legalTargets = _chess.legalMovesFrom(square);
-        _gameNotice = _legalTargets.isEmpty ? 'لا توجد حركة قانونية لهذه القطعة.' : 'اختر مربعاً مميزاً للحركة.';
+        _gameNotice = _legalTargets.isEmpty
+            ? 'لا توجد حركة قانونية لهذه القطعة.'
+            : 'اختر مربعاً مميزاً للحركة.';
       });
       return;
     }
@@ -2602,7 +3127,8 @@ class _GamesPanelState extends State<_GamesPanel> {
   String _outcomeMessage() {
     if (_chess.isCheckmate) return 'كش مات. انتهت المباراة.';
     if (_chess.isDraw) return 'تعادل وفق قواعد الشطرنج.';
-    if (_chess.isWhiteTurn) return 'دور الأبيض. اختر قطعة ثم مربعاً مميزاً للحركة.';
+    if (_chess.isWhiteTurn)
+      return 'دور الأبيض. اختر قطعة ثم مربعاً مميزاً للحركة.';
     return _playAgainstComputer
         ? 'دور الكمبيوتر الأسود.'
         : 'دور الأسود. اختر قطعة ثم مربعاً مميزاً للحركة.';
@@ -2653,14 +3179,14 @@ class _GamesPanelState extends State<_GamesPanel> {
     final title = _chess.isCheckmate
         ? 'كش مات — فاز ${isWhiteTurn ? 'الأسود' : 'الأبيض'}'
         : _chess.isDraw
-            ? 'تعادل وفق قواعد الشطرنج'
-            : _computerThinking
-                ? 'الكمبيوتر يفكر — ${_computerLevel.label}'
-                : isWhiteTurn
-                    ? 'دور الأبيض'
-                    : _playAgainstComputer
-                        ? 'دور الكمبيوتر الأسود'
-                        : 'دور الأسود';
+        ? 'تعادل وفق قواعد الشطرنج'
+        : _computerThinking
+        ? 'الكمبيوتر يفكر — ${_computerLevel.label}'
+        : isWhiteTurn
+        ? 'دور الأبيض'
+        : _playAgainstComputer
+        ? 'دور الكمبيوتر الأسود'
+        : 'دور الأسود';
     final subtitle = _playAgainstComputer
         ? 'أنت بالأبيض • الكمبيوتر بالأسود'
         : 'تناوب الجهاز بين اللاعب الأبيض والأسود';
@@ -2668,7 +3194,10 @@ class _GamesPanelState extends State<_GamesPanel> {
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [const Color(0xFF172938), const Color(0xFF0E1A24).withValues(alpha: 0.86)],
+          colors: [
+            const Color(0xFF172938),
+            const Color(0xFF0E1A24).withValues(alpha: 0.86),
+          ],
         ),
         borderRadius: BorderRadius.circular(15),
         border: Border.all(color: RoyalColors.gold.withValues(alpha: 0.42)),
@@ -2680,9 +3209,16 @@ class _GamesPanelState extends State<_GamesPanel> {
             height: 31,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: isWhiteTurn ? const Color(0xFFFFF8E6) : const Color(0xFF14222B),
+              color: isWhiteTurn
+                  ? const Color(0xFFFFF8E6)
+                  : const Color(0xFF14222B),
               border: Border.all(color: RoyalColors.gold, width: 1.5),
-              boxShadow: [BoxShadow(color: RoyalColors.gold.withValues(alpha: 0.22), blurRadius: 8)],
+              boxShadow: [
+                BoxShadow(
+                  color: RoyalColors.gold.withValues(alpha: 0.22),
+                  blurRadius: 8,
+                ),
+              ],
             ),
           ),
           const SizedBox(width: 10),
@@ -2690,9 +3226,22 @@ class _GamesPanelState extends State<_GamesPanel> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: RoyalColors.gold)),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                    color: RoyalColors.gold,
+                  ),
+                ),
                 const SizedBox(height: 2),
-                Text(subtitle, style: const TextStyle(fontSize: 12, color: RoyalColors.muted)),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: RoyalColors.muted,
+                  ),
+                ),
               ],
             ),
           ),
@@ -2705,9 +3254,21 @@ class _GamesPanelState extends State<_GamesPanel> {
   Widget _buildCapturedPieces() {
     return Row(
       children: [
-        Expanded(child: _CapturedPiecesPane(label: 'أسر الأبيض', symbols: _capturedByWhite, isWhiteSide: true)),
+        Expanded(
+          child: _CapturedPiecesPane(
+            label: 'أسر الأبيض',
+            symbols: _capturedByWhite,
+            isWhiteSide: true,
+          ),
+        ),
         const SizedBox(width: 8),
-        Expanded(child: _CapturedPiecesPane(label: 'أسر الأسود', symbols: _capturedByBlack, isWhiteSide: false)),
+        Expanded(
+          child: _CapturedPiecesPane(
+            label: 'أسر الأسود',
+            symbols: _capturedByBlack,
+            isWhiteSide: false,
+          ),
+        ),
       ],
     );
   }
@@ -2720,14 +3281,27 @@ class _GamesPanelState extends State<_GamesPanel> {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),
           gradient: const LinearGradient(
-            colors: [Color(0xFFF1D889), Color(0xFF714B1D), Color(0xFF251609), Color(0xFFCD9F43)],
+            colors: [
+              Color(0xFFF1D889),
+              Color(0xFF714B1D),
+              Color(0xFF251609),
+              Color(0xFFCD9F43),
+            ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           border: Border.all(color: const Color(0xFFFFE7A0), width: 1.25),
           boxShadow: [
-            BoxShadow(color: Colors.black.withValues(alpha: 0.68), blurRadius: 24, offset: const Offset(0, 12)),
-            BoxShadow(color: const Color(0xFFFFD768).withValues(alpha: 0.12), blurRadius: 24, spreadRadius: 1),
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.68),
+              blurRadius: 24,
+              offset: const Offset(0, 12),
+            ),
+            BoxShadow(
+              color: const Color(0xFFFFD768).withValues(alpha: 0.12),
+              blurRadius: 24,
+              spreadRadius: 1,
+            ),
           ],
         ),
         child: Padding(
@@ -2741,7 +3315,10 @@ class _GamesPanelState extends State<_GamesPanel> {
                   child: GridView.builder(
                     physics: const NeverScrollableScrollPhysics(),
                     itemCount: 64,
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 8),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 8,
+                        ),
                     itemBuilder: (context, index) {
                       final rank = 8 - (index ~/ 8);
                       final file = files[index % 8];
@@ -2751,16 +3328,19 @@ class _GamesPanelState extends State<_GamesPanel> {
                       final isSelected = _selectedSquare == square;
                       final isTarget = _legalTargets.contains(square);
                       final lastMove = _chess.lastMove;
-                      final isLastMove = lastMove?.from == square || lastMove?.to == square;
+                      final isLastMove =
+                          lastMove?.from == square || lastMove?.to == square;
                       final squareColor = isSelected
                           ? const Color(0xFFE6B948)
                           : isTarget
-                              ? const Color(0xFF77AE80)
-                              : isLastMove
-                                  ? (isLight ? const Color(0xFFE9C96E) : const Color(0xFF567866))
-                                  : isLight
-                                      ? const Color(0xFFE4D5B4)
-                                      : const Color(0xFF3C5A67);
+                          ? const Color(0xFF77AE80)
+                          : isLastMove
+                          ? (isLight
+                                ? const Color(0xFFE9C96E)
+                                : const Color(0xFF567866))
+                          : isLight
+                          ? const Color(0xFFE4D5B4)
+                          : const Color(0xFF3C5A67);
                       return GestureDetector(
                         onTap: () => _tapSquare(square),
                         child: AnimatedContainer(
@@ -2768,7 +3348,9 @@ class _GamesPanelState extends State<_GamesPanel> {
                           decoration: BoxDecoration(
                             color: squareColor,
                             border: Border.all(
-                              color: Colors.black.withValues(alpha: isLight ? 0.035 : 0.10),
+                              color: Colors.black.withValues(
+                                alpha: isLight ? 0.035 : 0.10,
+                              ),
                               width: 0.3,
                             ),
                           ),
@@ -2781,13 +3363,17 @@ class _GamesPanelState extends State<_GamesPanel> {
                                   height: piece == null ? 12 : 35,
                                   decoration: BoxDecoration(
                                     color: piece == null
-                                        ? const Color(0xFF133B2B).withValues(alpha: 0.72)
+                                        ? const Color(
+                                            0xFF133B2B,
+                                          ).withValues(alpha: 0.72)
                                         : Colors.transparent,
                                     shape: BoxShape.circle,
                                     border: piece == null
                                         ? null
                                         : Border.all(
-                                            color: const Color(0xFFB63737).withValues(alpha: 0.86),
+                                            color: const Color(
+                                              0xFFB63737,
+                                            ).withValues(alpha: 0.86),
                                             width: 2.4,
                                           ),
                                   ),
@@ -2796,7 +3382,9 @@ class _GamesPanelState extends State<_GamesPanel> {
                                 duration: const Duration(milliseconds: 130),
                                 scale: isSelected ? 1.08 : 1,
                                 child: _ChessPieceToken(
-                                  symbol: ChessGameController.pieceSymbol(piece),
+                                  symbol: ChessGameController.pieceSymbol(
+                                    piece,
+                                  ),
                                   isWhite: piece?.color.name == 'WHITE',
                                 ),
                               ),
@@ -2815,7 +3403,14 @@ class _GamesPanelState extends State<_GamesPanel> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: List<Widget>.generate(
                       8,
-                      (index) => Text('${8 - index}', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Color(0xFFFFE2A1))),
+                      (index) => Text(
+                        '${8 - index}',
+                        style: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900,
+                          color: Color(0xFFFFE2A1),
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -2825,7 +3420,18 @@ class _GamesPanelState extends State<_GamesPanel> {
                   bottom: 2,
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: files.map((file) => Text(file, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Color(0xFFFFE2A1)))).toList(),
+                    children: files
+                        .map(
+                          (file) => Text(
+                            file,
+                            style: const TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w900,
+                              color: Color(0xFFFFE2A1),
+                            ),
+                          ),
+                        )
+                        .toList(),
                   ),
                 ),
               ],
@@ -2847,15 +3453,28 @@ class _GamesPanelState extends State<_GamesPanel> {
               IconButton(
                 tooltip: 'رجوع',
                 onPressed: () => Navigator.maybePop(context),
-                icon: const Icon(Icons.arrow_forward_ios_rounded, color: RoyalColors.gold, size: 20),
+                icon: const Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  color: RoyalColors.gold,
+                  size: 20,
+                ),
               ),
               const SizedBox(width: 2),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(AppLocalizations.of(context)!.featureGames, style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
-                    Text('مباراة سريعة في وضع عمودي', style: TextStyle(fontSize: 12, color: RoyalColors.muted)),
+                    Text(
+                      AppLocalizations.of(context)!.featureGames,
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    Text(
+                      'مباراة سريعة في وضع عمودي',
+                      style: TextStyle(fontSize: 12, color: RoyalColors.muted),
+                    ),
                   ],
                 ),
               ),
@@ -2875,12 +3494,16 @@ class _GamesPanelState extends State<_GamesPanel> {
               ChoiceChip(
                 label: const Text('ضد الكمبيوتر'),
                 selected: _playAgainstComputer,
-                onSelected: (selected) { if (selected) _setPlayMode(true); },
+                onSelected: (selected) {
+                  if (selected) _setPlayMode(true);
+                },
               ),
               ChoiceChip(
                 label: const Text('لاعبان محلياً'),
                 selected: !_playAgainstComputer,
-                onSelected: (selected) { if (selected) _setPlayMode(false); },
+                onSelected: (selected) {
+                  if (selected) _setPlayMode(false);
+                },
               ),
             ],
           ),
@@ -2890,17 +3513,28 @@ class _GamesPanelState extends State<_GamesPanel> {
               spacing: 7,
               runSpacing: 5,
               alignment: WrapAlignment.center,
-              children: ChessComputerLevel.values.map((level) => ChoiceChip(
-                label: Text(level.label),
-                selected: _computerLevel == level,
-                onSelected: (selected) { if (selected) _setComputerLevel(level); },
-              )).toList(),
+              children: ChessComputerLevel.values
+                  .map(
+                    (level) => ChoiceChip(
+                      label: Text(level.label),
+                      selected: _computerLevel == level,
+                      onSelected: (selected) {
+                        if (selected) _setComputerLevel(level);
+                      },
+                    ),
+                  )
+                  .toList(),
             ),
           ],
           const SizedBox(height: 9),
           _buildMatchStatus(),
           const SizedBox(height: 10),
-          Center(child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 520), child: _buildChessBoard())),
+          Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 520),
+              child: _buildChessBoard(),
+            ),
+          ),
           const SizedBox(height: 9),
           _buildCapturedPieces(),
           const SizedBox(height: 6),
@@ -2911,13 +3545,20 @@ class _GamesPanelState extends State<_GamesPanel> {
                   _gameNotice,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: RoyalColors.gold, height: 1.35, fontSize: 12),
+                  style: const TextStyle(
+                    color: RoyalColors.gold,
+                    height: 1.35,
+                    fontSize: 12,
+                  ),
                 ),
               ),
               IconButton(
                 tooltip: 'مباراة جديدة',
                 onPressed: _resetGame,
-                icon: const Icon(Icons.refresh_rounded, color: RoyalColors.gold),
+                icon: const Icon(
+                  Icons.refresh_rounded,
+                  color: RoyalColors.gold,
+                ),
               ),
             ],
           ),
@@ -2925,14 +3566,22 @@ class _GamesPanelState extends State<_GamesPanel> {
             data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
             child: ExpansionTile(
               tilePadding: const EdgeInsets.symmetric(horizontal: 6),
-              title: const Text('سجل النقلات PGN', style: TextStyle(color: RoyalColors.muted, fontSize: 12)),
+              title: const Text(
+                'سجل النقلات PGN',
+                style: TextStyle(color: RoyalColors.muted, fontSize: 12),
+              ),
               children: [
                 Padding(
                   padding: const EdgeInsets.fromLTRB(10, 0, 10, 8),
                   child: SelectableText(
-                    _chess.pgn.isEmpty ? 'ستظهر النقلات هنا بعد بدء المباراة.' : _chess.pgn,
+                    _chess.pgn.isEmpty
+                        ? 'ستظهر النقلات هنا بعد بدء المباراة.'
+                        : _chess.pgn,
                     textDirection: TextDirection.ltr,
-                    style: const TextStyle(color: RoyalColors.muted, fontSize: 11),
+                    style: const TextStyle(
+                      color: RoyalColors.muted,
+                      fontSize: 11,
+                    ),
                   ),
                 ),
               ],
@@ -2954,8 +3603,18 @@ class _ChessPieceToken extends StatelessWidget {
   Widget build(BuildContext context) {
     if (symbol.isEmpty) return const SizedBox.shrink();
     final colors = isWhite
-        ? const [Color(0xFFFFFFFF), Color(0xFFFFE9A5), Color(0xFFD19D45), Color(0xFFFFF9DD)]
-        : const [Color(0xFF7593A0), Color(0xFF253C48), Color(0xFF081217), Color(0xFF3F6473)];
+        ? const [
+            Color(0xFFFFFFFF),
+            Color(0xFFFFE9A5),
+            Color(0xFFD19D45),
+            Color(0xFFFFF9DD),
+          ]
+        : const [
+            Color(0xFF7593A0),
+            Color(0xFF253C48),
+            Color(0xFF081217),
+            Color(0xFF3F6473),
+          ];
     return Stack(
       alignment: Alignment.center,
       clipBehavior: Clip.none,
@@ -2968,7 +3627,13 @@ class _ChessPieceToken extends StatelessWidget {
             decoration: BoxDecoration(
               color: Colors.black.withValues(alpha: 0.28),
               borderRadius: BorderRadius.circular(99),
-              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.30), blurRadius: 3.5, offset: const Offset(0, 1.5))],
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.30),
+                  blurRadius: 3.5,
+                  offset: const Offset(0, 1.5),
+                ),
+              ],
             ),
           ),
         ),
@@ -2991,8 +3656,18 @@ class _ChessPieceToken extends StatelessWidget {
                 height: 1,
                 fontWeight: FontWeight.w600,
                 shadows: [
-                  Shadow(color: Colors.black.withValues(alpha: 0.64), blurRadius: 1.8, offset: const Offset(1, 1.2)),
-                  Shadow(color: Colors.white.withValues(alpha: isWhite ? 0.32 : 0.09), blurRadius: 0.45, offset: const Offset(-0.4, -0.5)),
+                  Shadow(
+                    color: Colors.black.withValues(alpha: 0.64),
+                    blurRadius: 1.8,
+                    offset: const Offset(1, 1.2),
+                  ),
+                  Shadow(
+                    color: Colors.white.withValues(
+                      alpha: isWhite ? 0.32 : 0.09,
+                    ),
+                    blurRadius: 0.45,
+                    offset: const Offset(-0.4, -0.5),
+                  ),
                 ],
               ),
             ),
@@ -3027,7 +3702,14 @@ class _CapturedPiecesPane extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(fontSize: 11, color: RoyalColors.muted, fontWeight: FontWeight.w700)),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 11,
+              color: RoyalColors.muted,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
           const SizedBox(height: 3),
           Text(
             symbols.isEmpty ? '—' : symbols.join(' '),
@@ -3037,8 +3719,16 @@ class _CapturedPiecesPane extends StatelessWidget {
             style: TextStyle(
               fontSize: 18,
               height: 1,
-              color: isWhiteSide ? const Color(0xFFFFF1C9) : const Color(0xFF9DB9C5),
-              shadows: [Shadow(color: Colors.black.withValues(alpha: 0.58), blurRadius: 2, offset: const Offset(1, 1))],
+              color: isWhiteSide
+                  ? const Color(0xFFFFF1C9)
+                  : const Color(0xFF9DB9C5),
+              shadows: [
+                Shadow(
+                  color: Colors.black.withValues(alpha: 0.58),
+                  blurRadius: 2,
+                  offset: const Offset(1, 1),
+                ),
+              ],
             ),
           ),
         ],
@@ -3056,7 +3746,11 @@ class _SettingsPanel extends StatelessWidget {
       builder: (context, premium, _) => ListView(
         padding: const EdgeInsets.all(18),
         children: [
-          const _SectionNotice(title: 'PRO بتوقيع خادمي', detail: 'لا يصدر التطبيق كود تفعيل ولا يحمل مفتاحاً خاصاً. يعرض معرّف تثبيت محلياً ويرسل الباتش الموقّع إلى الخادم عند ربط API.'),
+          const _SectionNotice(
+            title: 'PRO بتوقيع خادمي',
+            detail:
+                'لا يصدر التطبيق كود تفعيل ولا يحمل مفتاحاً خاصاً. يعرض معرّف تثبيت محلياً ويرسل الباتش الموقّع إلى الخادم عند ربط API.',
+          ),
           const SizedBox(height: 16),
           const SubscriptionBoundariesCard(),
           const SizedBox(height: 12),
@@ -3067,8 +3761,13 @@ class _SettingsPanel extends StatelessWidget {
               trailing: IconButton(
                 icon: const Icon(Icons.copy, color: RoyalColors.gold),
                 onPressed: () async {
-                  await Clipboard.setData(ClipboardData(text: premium.installationId));
-                  if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم نسخ المعرّف.')));
+                  await Clipboard.setData(
+                    ClipboardData(text: premium.installationId),
+                  );
+                  if (context.mounted)
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('تم نسخ المعرّف.')),
+                    );
                 },
               ),
             ),
@@ -3077,10 +3776,21 @@ class _SettingsPanel extends StatelessWidget {
           SizedBox(
             height: 54,
             child: FilledButton.icon(
-              style: FilledButton.styleFrom(backgroundColor: RoyalColors.gold, foregroundColor: Colors.black),
-              onPressed: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const _ProActivationPage())),
+              style: FilledButton.styleFrom(
+                backgroundColor: RoyalColors.gold,
+                foregroundColor: Colors.black,
+              ),
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute<void>(
+                  builder: (_) => const _ProActivationPage(),
+                ),
+              ),
               icon: const Icon(Icons.workspace_premium),
-              label: const Text('تفعيل النسخة PRO', style: TextStyle(fontWeight: FontWeight.w800)),
+              label: const Text(
+                'تفعيل النسخة PRO',
+                style: TextStyle(fontWeight: FontWeight.w800),
+              ),
             ),
           ),
           const SizedBox(height: 12),
@@ -3106,21 +3816,41 @@ class _SettingsPanel extends StatelessWidget {
           const SizedBox(height: 12),
           Card(
             child: ListTile(
-              leading: const Icon(Icons.download_outlined, color: RoyalColors.cyan),
+              leading: const Icon(
+                Icons.download_outlined,
+                color: RoyalColors.cyan,
+              ),
               title: const Text('حزم المحتوى واللغات أوف لاين'),
-              subtitle: const Text('عرض المساحة المحلية وحزم JSON المستوردة وتجهيز نموذجَي لغة الترجمة بموافقة صريحة.'),
+              subtitle: const Text(
+                'عرض المساحة المحلية وحزم JSON المستوردة وتجهيز نموذجَي لغة الترجمة بموافقة صريحة.',
+              ),
               trailing: const Icon(Icons.chevron_left),
-              onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const _OfflinePackagesPage())),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute<void>(
+                  builder: (_) => const _OfflinePackagesPage(),
+                ),
+              ),
             ),
           ),
           const SizedBox(height: 12),
           Card(
             child: ListTile(
-              leading: const Icon(Icons.bubble_chart_outlined, color: RoyalColors.teal),
+              leading: const Icon(
+                Icons.bubble_chart_outlined,
+                color: RoyalColors.teal,
+              ),
               title: const Text('الفقاعة العائمة والخصوصية'),
-              subtitle: const Text('Android فقط: إذن صريح وفقاعة قابلة للسحب، بلا قراءة للتطبيقات الأخرى.'),
+              subtitle: const Text(
+                'Android فقط: إذن صريح وفقاعة قابلة للسحب، بلا قراءة للتطبيقات الأخرى.',
+              ),
               trailing: const Icon(Icons.chevron_left),
-              onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const _BubblePrivacyPage())),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute<void>(
+                  builder: (_) => const _BubblePrivacyPage(),
+                ),
+              ),
             ),
           ),
           const SizedBox(height: 12),
@@ -3134,24 +3864,58 @@ class _SettingsPanel extends StatelessWidget {
                     children: [
                       Icon(Icons.info_outline, color: RoyalColors.gold),
                       SizedBox(width: 10),
-                      Text('نبذة عن التطبيق', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
+                      Text(
+                        'نبذة عن التطبيق',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 18,
+                        ),
+                      ),
                     ],
                   ),
                   SizedBox(height: 12),
-                  Text('ميرور سكربيون: حيث تُصنع البدايات', style: TextStyle(color: RoyalColors.cyan, fontWeight: FontWeight.w700, fontSize: 17)),
+                  Text(
+                    'ميرور سكربيون: حيث تُصنع البدايات',
+                    style: TextStyle(
+                      color: RoyalColors.cyan,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 17,
+                    ),
+                  ),
                   SizedBox(height: 10),
-                  Text('الوقت هو العملة الأغلى التي مُنحت للإنسان. هنا، نحن لا نقيس أعمارنا بالسنوات، بل بكل ثانية نصنع فيها إنجازاً حقيقياً.\n\nهنا ستكتشف أن كل انكسار مررت به لم يكن إلا تمهيداً لانطلاقة أعظم؛ فالماضي ليس للمحو، بل للتعلّم، والمستقبل هو ما يستحق انتباهك الآن.\n\nتذكّر دائماً: قصتك لا تزال تُكتب، والنهاية لم يحن وقتها بعد.', style: TextStyle(color: RoyalColors.muted, height: 1.65, fontSize: 15)),
+                  Text(
+                    'الوقت هو العملة الأغلى التي مُنحت للإنسان. هنا، نحن لا نقيس أعمارنا بالسنوات، بل بكل ثانية نصنع فيها إنجازاً حقيقياً.\n\nهنا ستكتشف أن كل انكسار مررت به لم يكن إلا تمهيداً لانطلاقة أعظم؛ فالماضي ليس للمحو، بل للتعلّم، والمستقبل هو ما يستحق انتباهك الآن.\n\nتذكّر دائماً: قصتك لا تزال تُكتب، والنهاية لم يحن وقتها بعد.',
+                    style: TextStyle(
+                      color: RoyalColors.muted,
+                      height: 1.65,
+                      fontSize: 15,
+                    ),
+                  ),
                   SizedBox(height: 14),
                   Divider(),
                   SizedBox(height: 8),
-                  Text('إهداء', style: TextStyle(color: RoyalColors.gold, fontWeight: FontWeight.w800, fontSize: 17)),
+                  Text(
+                    'إهداء',
+                    style: TextStyle(
+                      color: RoyalColors.gold,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 17,
+                    ),
+                  ),
                   SizedBox(height: 8),
                   Text(
                     'إلى أبنائي وأغلى ما أملك.. سلمى، سما، سارة، وسيف؛ النور الذي أضاء لي السهر، والحافز الذي جعل من الإصرار جسراً للقمة.\n\nتم تطوير Mirror Scorpion بجهد وشغف متواصل ليكون أكثر من مجرد أداة ذكية؛ إنه شاهدٌ حي على أن الشغف لا يحده زمن، وأن الحب هو المحرك الأكبر لكل نجاح وابتكار. أهديكم هذا الإنجاز، وإلى كل من آمن بفكري وساندني في رحلة البناء.',
-                    style: TextStyle(color: RoyalColors.muted, height: 1.65, fontSize: 15),
+                    style: TextStyle(
+                      color: RoyalColors.muted,
+                      height: 1.65,
+                      fontSize: 15,
+                    ),
                   ),
                   SizedBox(height: 12),
-                  Text('المطور: تامر الدسوقي', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+                  Text(
+                    'المطور: تامر الدسوقي',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                  ),
                 ],
               ),
             ),
@@ -3260,10 +4024,7 @@ class _ElevenLabsVoicePage extends StatelessWidget {
                     const SizedBox(height: 6),
                     const Text(
                       'ستُستخدم لاحقاً لقراءة نص تختاره فقط. لا تعد بديلاً عن أصوات النظام ولا تعمل قبل اعتماد الخطة والخادم وحد الاستخدام.',
-                      style: TextStyle(
-                        color: RoyalColors.muted,
-                        height: 1.5,
-                      ),
+                      style: TextStyle(color: RoyalColors.muted, height: 1.5),
                     ),
                     const SizedBox(height: 10),
                     FilledButton.icon(
@@ -3292,10 +4053,7 @@ class _ElevenLabsVoicePage extends StatelessWidget {
                     const SizedBox(height: 6),
                     const Text(
                       'مغلق الآن. عند إطلاقه سيطلب موافقة منفصلة، تأكيد العمر وملكية الصوت، ثم يسمح بعينة يختارها المستخدم يدوياً. لا يدعم نسخ أصوات الغير أو تشغيل التسجيل في الخلفية.',
-                      style: TextStyle(
-                        color: RoyalColors.muted,
-                        height: 1.5,
-                      ),
+                      style: TextStyle(color: RoyalColors.muted, height: 1.5),
                     ),
                     const SizedBox(height: 10),
                     OutlinedButton.icon(
@@ -3458,7 +4216,8 @@ class _OfflinePackagesPageState extends State<_OfflinePackagesPage> {
         body: FutureBuilder<List<OfflinePackageRecord>>(
           future: _packages,
           builder: (context, snapshot) {
-            if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+            if (!snapshot.hasData)
+              return const Center(child: CircularProgressIndicator());
             final packages = snapshot.data!;
             final preferences = context.watch<LanguagePreferences>();
             return ListView(
@@ -3466,7 +4225,8 @@ class _OfflinePackagesPageState extends State<_OfflinePackagesPage> {
               children: [
                 const _SectionNotice(
                   title: 'مساحة العمل أوفلاين',
-                  detail: 'تعرض هذه المساحة حزم JSON التي اختارها المستخدم فقط، وتتيح تجهيز نموذجَي الترجمة باختيار صريح. تتحقق الحزم المتاحة من SHA-256 قبل الحفظ؛ المصادر غير الموثقة لا يظهر لها تنزيل.',
+                  detail:
+                      'تعرض هذه المساحة حزم JSON التي اختارها المستخدم فقط، وتتيح تجهيز نموذجَي الترجمة باختيار صريح. تتحقق الحزم المتاحة من SHA-256 قبل الحفظ؛ المصادر غير الموثقة لا يظهر لها تنزيل.',
                 ),
                 const SizedBox(height: 16),
                 Card(
@@ -3496,7 +4256,12 @@ class _OfflinePackagesPageState extends State<_OfflinePackagesPage> {
                 ),
                 const SizedBox(height: 12),
                 if (packages.isEmpty)
-                  const Card(child: ListTile(title: Text('لا توجد حزم مستوردة بعد'), subtitle: Text('يمكن استيراد حزمة JSON من كارت القصص.'))),
+                  const Card(
+                    child: ListTile(
+                      title: Text('لا توجد حزم مستوردة بعد'),
+                      subtitle: Text('يمكن استيراد حزمة JSON من كارت القصص.'),
+                    ),
+                  ),
                 ...packages.map(
                   (item) => Card(
                     child: ListTile(
@@ -3510,7 +4275,10 @@ class _OfflinePackagesPageState extends State<_OfflinePackagesPage> {
                       ),
                       trailing: IconButton(
                         tooltip: 'حذف الحزمة من الجهاز',
-                        icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                        icon: const Icon(
+                          Icons.delete_outline,
+                          color: Colors.redAccent,
+                        ),
                         onPressed: () => _deletePackage(item),
                       ),
                     ),
@@ -3552,8 +4320,13 @@ class _OfflinePackagesPageState extends State<_OfflinePackagesPage> {
                             ),
                             IconButton(
                               tooltip: 'تحديث الفهرس',
-                              icon: const Icon(Icons.refresh, color: RoyalColors.gold),
-                              onPressed: _isDownloading ? null : _refreshCatalog,
+                              icon: const Icon(
+                                Icons.refresh,
+                                color: RoyalColors.gold,
+                              ),
+                              onPressed: _isDownloading
+                                  ? null
+                                  : _refreshCatalog,
                             ),
                           ],
                         ),
@@ -3572,18 +4345,24 @@ class _OfflinePackagesPageState extends State<_OfflinePackagesPage> {
                               subtitle: Text(
                                 package.canDownload
                                     ? '${package.scope} • ${package.sourceName ?? 'مصدر غير محدد'}'
-                                    : package.reason ?? 'قيد المراجعة قبل الإتاحة.',
+                                    : package.reason ??
+                                          'قيد المراجعة قبل الإتاحة.',
                               ),
                               trailing: package.canDownload
                                   ? FilledButton(
                                       onPressed: _isDownloading
                                           ? null
-                                          : () => _downloadPackage(catalog, package),
+                                          : () => _downloadPackage(
+                                              catalog,
+                                              package,
+                                            ),
                                       child: const Text('تنزيل'),
                                     )
                                   : const Text(
                                       'قيد المراجعة',
-                                      style: TextStyle(color: RoyalColors.muted),
+                                      style: TextStyle(
+                                        color: RoyalColors.muted,
+                                      ),
                                     ),
                             ),
                           ),
@@ -3597,7 +4376,10 @@ class _OfflinePackagesPageState extends State<_OfflinePackagesPage> {
                     padding: const EdgeInsets.only(top: 12),
                     child: Text(
                       _notice!,
-                      style: const TextStyle(color: RoyalColors.gold, height: 1.5),
+                      style: const TextStyle(
+                        color: RoyalColors.gold,
+                        height: 1.5,
+                      ),
                     ),
                   ),
               ],
@@ -3651,36 +4433,71 @@ class _BubblePrivacyPageState extends State<_BubblePrivacyPage> {
           children: [
             const _SectionNotice(
               title: 'حدود الفقاعة',
-              detail: 'فقاعة Android قابلة للسحب تظهر فقط بعد إذنك وتحت إشعار foreground. تترجم النص الذي تكتبه داخلها أو تلصقه بنفسك؛ ولا تقرأ التطبيقات الأخرى أو الحافظة تلقائياً.',
+              detail:
+                  'فقاعة Android قابلة للسحب تظهر فقط بعد إذنك وتحت إشعار foreground. تترجم النص الذي تكتبه داخلها أو تلصقه بنفسك؛ ولا تقرأ التطبيقات الأخرى أو الحافظة تلقائياً.',
             ),
             const SizedBox(height: 12),
-            const Card(child: ListTile(leading: Icon(Icons.block_outlined, color: Colors.redAccent), title: Text('غير مسموح'), subtitle: Text('لا خدمة Accessibility، ولا Notification Listener، ولا قراءة تلقائية لرسائل WhatsApp أو البريد أو Messenger.'))),
+            const Card(
+              child: ListTile(
+                leading: Icon(Icons.block_outlined, color: Colors.redAccent),
+                title: Text('غير مسموح'),
+                subtitle: Text(
+                  'لا خدمة Accessibility، ولا Notification Listener، ولا قراءة تلقائية لرسائل WhatsApp أو البريد أو Messenger.',
+                ),
+              ),
+            ),
             const SizedBox(height: 12),
             Card(
               child: ListTile(
-                leading: const Icon(Icons.info_outline, color: RoyalColors.gold),
-                title: Text(context.watch<AndroidOverlayService>().isSupported ? (context.watch<AndroidOverlayService>().isVisible ? 'الفقاعة مفعلة الآن' : 'Android Overlay متاح للاختبار') : 'هذه المنصة لا تدعم Overlay'),
-                subtitle: const Text('تفعيل الفقاعة يفتح صفحة الإذن الرسمية من Android عند الحاجة.'),
+                leading: const Icon(
+                  Icons.info_outline,
+                  color: RoyalColors.gold,
+                ),
+                title: Text(
+                  context.watch<AndroidOverlayService>().isSupported
+                      ? (context.watch<AndroidOverlayService>().isVisible
+                            ? 'الفقاعة مفعلة الآن'
+                            : 'Android Overlay متاح للاختبار')
+                      : 'هذه المنصة لا تدعم Overlay',
+                ),
+                subtitle: const Text(
+                  'تفعيل الفقاعة يفتح صفحة الإذن الرسمية من Android عند الحاجة.',
+                ),
               ),
             ),
             const SizedBox(height: 16),
             FilledButton.icon(
-              onPressed: _isWorking || !context.watch<AndroidOverlayService>().isSupported ? null : _startBubble,
+              onPressed:
+                  _isWorking ||
+                      !context.watch<AndroidOverlayService>().isSupported
+                  ? null
+                  : _startBubble,
               icon: _isWorking
-                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
                   : const Icon(Icons.bubble_chart_outlined),
               label: const Text('تفعيل الفقاعة فوق التطبيقات'),
             ),
             const SizedBox(height: 10),
             OutlinedButton.icon(
-              onPressed: _isWorking || !context.watch<AndroidOverlayService>().isSupported ? null : _stopBubble,
+              onPressed:
+                  _isWorking ||
+                      !context.watch<AndroidOverlayService>().isSupported
+                  ? null
+                  : _stopBubble,
               icon: const Icon(Icons.close),
               label: const Text('إيقاف الفقاعة'),
             ),
             if (_notice != null)
               Padding(
                 padding: const EdgeInsets.only(top: 14),
-                child: Text(_notice!, style: const TextStyle(color: RoyalColors.gold, height: 1.5)),
+                child: Text(
+                  _notice!,
+                  style: const TextStyle(color: RoyalColors.gold, height: 1.5),
+                ),
               ),
           ],
         ),
@@ -3731,13 +4548,22 @@ class _ProActivationPageState extends State<_ProActivationPage> {
             children: [
               const _SectionNotice(
                 title: 'المزايا الاحترافية',
-                detail: 'الفقاعة العائمة، تنزيلات أوفلاين، وثائق بلا حد، صوت المستخدم، ومشاهد الفيديو. تتطلب جميعها تحققاً موقعاً من الخادم واتصالاً بالإنترنت ووقتاً موثوقاً.',
+                detail:
+                    'الفقاعة العائمة، تنزيلات أوفلاين، وثائق بلا حد، صوت المستخدم، ومشاهد الفيديو. تتطلب جميعها تحققاً موقعاً من الخادم واتصالاً بالإنترنت ووقتاً موثوقاً.',
               ),
               const SizedBox(height: 18),
-              const Text('معرّف التثبيت', style: TextStyle(fontWeight: FontWeight.w800)),
+              const Text(
+                'معرّف التثبيت',
+                style: TextStyle(fontWeight: FontWeight.w800),
+              ),
               const SizedBox(height: 8),
               Container(
-                padding: const EdgeInsetsDirectional.only(start: 12, end: 4, top: 8, bottom: 8),
+                padding: const EdgeInsetsDirectional.only(
+                  start: 12,
+                  end: 4,
+                  top: 8,
+                  bottom: 8,
+                ),
                 decoration: BoxDecoration(
                   border: Border.all(color: RoyalColors.border),
                   borderRadius: BorderRadius.circular(12),
@@ -3754,10 +4580,14 @@ class _ProActivationPageState extends State<_ProActivationPage> {
                       tooltip: 'نسخ المعرّف',
                       icon: const Icon(Icons.copy, color: RoyalColors.gold),
                       onPressed: () async {
-                        await Clipboard.setData(ClipboardData(text: premium.installationId));
+                        await Clipboard.setData(
+                          ClipboardData(text: premium.installationId),
+                        );
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('تم نسخ معرّف التثبيت.')),
+                            const SnackBar(
+                              content: Text('تم نسخ معرّف التثبيت.'),
+                            ),
                           );
                         }
                       },
@@ -3766,7 +4596,10 @@ class _ProActivationPageState extends State<_ProActivationPage> {
                 ),
               ),
               const SizedBox(height: 16),
-              const Text('باتش التفعيل الموقّع', style: TextStyle(fontWeight: FontWeight.w800)),
+              const Text(
+                'باتش التفعيل الموقّع',
+                style: TextStyle(fontWeight: FontWeight.w800),
+              ),
               const SizedBox(height: 8),
               TextField(
                 controller: _patchController,
@@ -3774,26 +4607,46 @@ class _ProActivationPageState extends State<_ProActivationPage> {
                 maxLines: 5,
                 decoration: InputDecoration(
                   hintText: 'MS4.payload.signature',
-                  suffixIcon: IconButton(tooltip: 'لصق', icon: const Icon(Icons.content_paste, color: RoyalColors.gold), onPressed: _pastePatch),
+                  suffixIcon: IconButton(
+                    tooltip: 'لصق',
+                    icon: const Icon(
+                      Icons.content_paste,
+                      color: RoyalColors.gold,
+                    ),
+                    onPressed: _pastePatch,
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
               SizedBox(
                 height: 52,
                 child: FilledButton.icon(
-style: FilledButton.styleFrom(
+                  style: FilledButton.styleFrom(
                     backgroundColor: const Color(0xFFD4AF37),
                     foregroundColor: Colors.black,
-                    textStyle: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18),
+                    textStyle: const TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 18,
+                    ),
                     elevation: 8,
                     shadowColor: const Color(0xFFD4AF37).withValues(alpha: 0.5),
                   ),
                   onPressed: _activate,
-icon: const Icon(Icons.workspace_premium),
-label: const Text('تفعيل PRO'),
+                  icon: const Icon(Icons.workspace_premium),
+                  label: const Text('تفعيل PRO'),
                 ),
               ),
-              if (_notice != null) Padding(padding: const EdgeInsets.only(top: 12), child: Text(_notice!, style: const TextStyle(color: RoyalColors.gold, height: 1.5))),
+              if (_notice != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: Text(
+                    _notice!,
+                    style: const TextStyle(
+                      color: RoyalColors.gold,
+                      height: 1.5,
+                    ),
+                  ),
+                ),
               const SizedBox(height: 24),
               const Text(
                 'التواصل لتفعيل الاشتراك',
@@ -3858,9 +4711,9 @@ class _ContactMethodCard extends StatelessWidget {
         onTap: () async {
           await Clipboard.setData(ClipboardData(text: value));
           if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('تم نسخ $value')),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text('تم نسخ $value')));
           }
         },
         child: Ink(
@@ -3875,7 +4728,10 @@ class _ContactMethodCard extends StatelessWidget {
               Container(
                 width: 44,
                 height: 44,
-                decoration: BoxDecoration(color: iconColor, shape: BoxShape.circle),
+                decoration: BoxDecoration(
+                  color: iconColor,
+                  shape: BoxShape.circle,
+                ),
                 child: Icon(icon, color: Colors.white, size: 24),
               ),
               const SizedBox(width: 14),
@@ -3883,12 +4739,21 @@ class _ContactMethodCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(label, style: const TextStyle(color: RoyalColors.muted, fontSize: 14)),
+                    Text(
+                      label,
+                      style: const TextStyle(
+                        color: RoyalColors.muted,
+                        fontSize: 14,
+                      ),
+                    ),
                     const SizedBox(height: 3),
                     Text(
                       value,
                       textDirection: TextDirection.ltr,
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ],
                 ),
@@ -3920,9 +4785,15 @@ class _SectionNotice extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+          Text(
+            title,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+          ),
           const SizedBox(height: 6),
-          Text(detail, style: const TextStyle(color: RoyalColors.muted, height: 1.55)),
+          Text(
+            detail,
+            style: const TextStyle(color: RoyalColors.muted, height: 1.55),
+          ),
         ],
       ),
     );
