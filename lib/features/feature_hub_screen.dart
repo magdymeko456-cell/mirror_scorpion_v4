@@ -35,6 +35,18 @@ import '../l10n/generated/app_localizations.dart';
 
 enum FeatureKind { translation, dialogue, documents, stories, games, settings }
 
+/// لغات الترجمة المعروضة في الواجهة = تقاطع الكتالوج مع ما يدعمه ML Kit
+/// المحلي فعلياً. تُبنى من محرك الترجمة نفسه ولا تعتمد على لغة الجهاز.
+final Map<String, String> kMlKitTranslationLabels = () {
+  final labels = <String, String>{};
+  TranslationLanguageCatalog.labels.forEach((code, label) {
+    if (OnDeviceTranslationService.isSupportedLanguageCode(code)) {
+      labels[code] = label;
+    }
+  });
+  return labels;
+}();
+
 abstract final class TranslationLanguageCatalog {
   static const labels = <String, String>{
     'af': 'Afrikaans',
@@ -907,7 +919,7 @@ class _TranslationLanguageMenu extends StatelessWidget {
                 Icons.keyboard_arrow_down,
                 color: Colors.cyanAccent,
               ),
-              items: TranslationLanguageCatalog.labels.entries
+              items: kMlKitTranslationLabels.entries
                   .map(
                     (entry) => DropdownMenuItem(
                       value: entry.key,
@@ -1477,7 +1489,7 @@ class _DialogueLanguageMenu extends StatelessWidget {
             value: value,
             isExpanded: true,
             dropdownColor: const Color(0xFF1B2838),
-            items: TranslationLanguageCatalog.labels.entries
+            items: kMlKitTranslationLabels.entries
                 .map(
                   (entry) => DropdownMenuItem(
                     value: entry.key,

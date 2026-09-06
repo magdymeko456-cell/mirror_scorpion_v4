@@ -42,9 +42,8 @@ class OnDeviceModelPreparationResult {
       state == OnDeviceModelPreparationState.downloaded;
 }
 
-typedef OnDeviceTranslationProgressCallback = void Function(
-  OnDeviceTranslationProgress progress,
-);
+typedef OnDeviceTranslationProgressCallback =
+    void Function(OnDeviceTranslationProgress progress);
 
 class OnDeviceTranslationResult {
   const OnDeviceTranslationResult({
@@ -69,9 +68,7 @@ class OnDeviceTranslationResult {
 class OnDeviceTranslationService {
   const OnDeviceTranslationService();
 
-  static const Map<String, String> _aliases = <String, String>{
-    'iw': 'he',
-  };
+  static const Map<String, String> _aliases = <String, String>{'iw': 'he'};
 
   static TranslateLanguage? languageForCode(String code) {
     final normalized = _aliases[code.toLowerCase()] ?? code.toLowerCase();
@@ -80,6 +77,11 @@ class OnDeviceTranslationService {
     }
     return null;
   }
+
+  /// هل يدعم ML Kit المحلي هذا الكود؟ المصدر الوحيد للحكم هو محرك
+  /// الترجمة نفسه (TranslateLanguage.values) — لا الجهاز ولا أي قائمة يدوية.
+  static bool isSupportedLanguageCode(String code) =>
+      languageForCode(code) != null;
 
   static bool get isNativePlatform =>
       !kIsWeb &&
@@ -108,10 +110,12 @@ class OnDeviceTranslationService {
     }
     try {
       final manager = OnDeviceTranslatorModelManager();
-      final sourceAlreadyReady =
-          await manager.isModelDownloaded(sourceLanguage.bcpCode);
-      final targetAlreadyReady =
-          await manager.isModelDownloaded(targetLanguage.bcpCode);
+      final sourceAlreadyReady = await manager.isModelDownloaded(
+        sourceLanguage.bcpCode,
+      );
+      final targetAlreadyReady = await manager.isModelDownloaded(
+        targetLanguage.bcpCode,
+      );
       final sourceReady = await _ensureModel(manager, sourceLanguage);
       final targetReady = sourceReady
           ? await _ensureModel(manager, targetLanguage)
@@ -119,7 +123,8 @@ class OnDeviceTranslationService {
       if (!sourceReady || !targetReady) {
         return const OnDeviceModelPreparationResult(
           state: OnDeviceModelPreparationState.failed,
-          message: 'تعذر تنزيل نموذجَي الترجمة. اتصل بالإنترنت ثم أعد المحاولة.',
+          message:
+              'تعذر تنزيل نموذجَي الترجمة. اتصل بالإنترنت ثم أعد المحاولة.',
         );
       }
       final wasAlreadyReady = sourceAlreadyReady && targetAlreadyReady;
@@ -196,10 +201,12 @@ class OnDeviceTranslationService {
 
       final modelManager = OnDeviceTranslatorModelManager();
       onProgress?.call(OnDeviceTranslationProgress.checkingModels);
-      final sourceAlreadyDownloaded =
-          await modelManager.isModelDownloaded(sourceLanguage.bcpCode);
-      final targetAlreadyDownloaded =
-          await modelManager.isModelDownloaded(targetLanguage.bcpCode);
+      final sourceAlreadyDownloaded = await modelManager.isModelDownloaded(
+        sourceLanguage.bcpCode,
+      );
+      final targetAlreadyDownloaded = await modelManager.isModelDownloaded(
+        targetLanguage.bcpCode,
+      );
       if (!sourceAlreadyDownloaded || !targetAlreadyDownloaded) {
         onProgress?.call(OnDeviceTranslationProgress.downloadingModels);
       }
@@ -237,7 +244,8 @@ class OnDeviceTranslationService {
     } catch (error) {
       return OnDeviceTranslationResult(
         state: OnDeviceTranslationState.failed,
-        message: 'تعذرت الترجمة المحلية. تحقق من اتصالك عند تنزيل النموذج ثم أعد المحاولة. '
+        message:
+            'تعذرت الترجمة المحلية. تحقق من اتصالك عند تنزيل النموذج ثم أعد المحاولة. '
             '${failureDetail(error)}',
       );
     } finally {
